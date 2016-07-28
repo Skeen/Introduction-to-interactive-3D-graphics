@@ -17,7 +17,9 @@ window.onload = function init()
     // initTurtle(-1, 0, 0, true);
     // forward(.5);
     // left(45);
+    // pen(false);
     // forward(.5);
+    // pen(true);
     // right(90);
     // forward(.5);
     // left(45);
@@ -87,12 +89,10 @@ function forward(distance) {
 
 function right(angle) {
     _theta -= radians(angle);
-    // TODO: handle full circles.
 }
 
 function left(angle) {
     _theta += radians(angle);
-    // TODO: handle full circles.
 }
 
 function pen(up_down) {

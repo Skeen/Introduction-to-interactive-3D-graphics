@@ -11,7 +11,7 @@ window.onload = function init()
 
     points = [];
 
-    var m = 20, n = 20;
+    var m = 4, n = 4;
     var s = 2 / Math.max(m, n);
 
     function MazeGen(m, n, offsetM, offsetN, chance) {
@@ -80,7 +80,7 @@ window.onload = function init()
     
     var program = initShaders( gl, "vertex-shader", "fragment-shader" );
     gl.useProgram( program );
-    
+
     // Load the data into the GPU
     
     var bufferId = gl.createBuffer();

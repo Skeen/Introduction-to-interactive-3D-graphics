@@ -86,7 +86,7 @@ function divideTriangle( a, b, c, count )
 }
 
 function mixRand() {
-    return getRandomArbitrary(.2, .8);
+    return getRandomArbitrary(.4, .6);
 }
 
 function getRandomArbitrary(min, max) {

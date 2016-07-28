@@ -21,7 +21,7 @@ main()
                        x * sin(d * theta) + y * cos(d * theta),
                        vPosition.z,
                        vPosition.w);
-    fColor = vec4(sin(theta), cos(theta + .5), sin(theta + 1.0), 1.0);
+    fColor = vec4(sin(theta * d), cos(theta), sin(theta), 1.0);
 }
 </script>
 
