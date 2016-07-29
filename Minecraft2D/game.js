@@ -13,7 +13,7 @@ $(function() {
     // Blocks
     var vertexBuffer;
     var colorBuffer;
-    var verts_per_block = 6;
+    var verts_per_block = 4;
     // Stick figure
     var stickBuffer;
 
@@ -45,6 +45,7 @@ $(function() {
         FIRE: 7
     }
 
+    // TODO: Throw inside blocks
     function tile_to_color(block)
     {
         switch(block)
@@ -70,8 +71,31 @@ $(function() {
         }
     }
 
+    // TODO: Add checks all-over
+    function isInt(n)
+    {
+        return n % 1 === 0;
+    }
+
+    function valid_index(x, y)
+    {
+        if(isInt(x) == false || isInt(y) == false)
+        {
+            alert("valid_index called with non-integer arguments!");
+        }
+
+        return (x >= 0 && x < worldWidth &&
+                y >= 0 && y < worldHeight)
+         
+    }
+
     function can_build(x, y)
     {
+        if(isInt(x) == false || isInt(y) == false)
+        {
+            alert("can_build called with non-integer arguments!");
+        }
+
         // Check if the block is free
         if(worldGrid[x][y].tile != blocks.EMPTY)
         {
@@ -81,8 +105,7 @@ $(function() {
         for(var i = -1; i <= 1; i++)
             for(var j = -1; j <= 1; j++)
                 // Ensure that the indicies are valid (i.e. within array bounds)
-                if(x+i >= 0 && x+i < worldWidth &&
-                   y+j >= 0 && y+j < worldHeight)
+                if(valid_index(x+i, y+j))
                     // If we find one adjecent, we're good
                     if((worldGrid[x+i][y+j].tile != blocks.EMPTY))
                         return true;
@@ -123,11 +146,13 @@ $(function() {
         worldGrid[x][y+1].tile = blocks.GRASS;
     }
 
+    // Create lake
     for (var x = Math.floor(worldWidth/4*2); x < Math.floor(worldWidth/4*3); x++) {
         var y = Math.floor(worldHeight/3);
         worldGrid[x][y+1].tile = blocks.WATER;
     }
 
+    // Create fire/lava pit
     for (var x = 0; x < Math.floor(worldWidth/4); x++) {
         var y = Math.floor(worldHeight/3);
         worldGrid[x][y+1].tile = blocks.FIRE;
@@ -140,10 +165,10 @@ $(function() {
                 if(point.tile != blocks.EMPTY)
                 {
                     var tile_color = tile_to_color(point.tile);
-
+/*
                     points.push(point.pos);
                     colors.push(vec4(0., 0., 0., tile_color[3]));
-
+*/
                     points.push(vec2(point.pos[0] - 0.5, point.pos[1] - 0.5));
                     colors.push(tile_color);
                     points.push(vec2(point.pos[0] - 0.5, point.pos[1] + 0.5));
@@ -152,8 +177,10 @@ $(function() {
                     colors.push(tile_color);
                     points.push(vec2(point.pos[0] + 0.5, point.pos[1] - 0.5));
                     colors.push(tile_color);
+                    /*
                     points.push(vec2(point.pos[0] - 0.5, point.pos[1] - 0.5));
                     colors.push(tile_color);
+                    */
                 }
             }
         }
@@ -224,36 +251,55 @@ $(function() {
         var move_length = 0.5;
         var jump_height = 5;
 
+        var x = stick_man_pos[0];
+        var y = stick_man_pos[1];
+
+        function valid_rindex(x, y)
+        {
+            return valid_index(Math.round(x), Math.round(y));
+        }
+
         function jump()
         {
-            var block = block_by_pos(stick_man_pos[0], stick_man_pos[1] - 0.1);
+            var new_x = x;
+            var new_y = y + jump_height;
+            var check_y = y - 0.1;
+
+            if(valid_rindex(new_x, check_y) == false)
+                return;
+
+            // Check that we stand on a block
+            var block = block_by_pos(new_x, check_y);
             if(is_sink_block(block) == false)
             {
-                update_stick_man(stick_man_pos[0], stick_man_pos[1] + jump_height);
+                update_stick_man(new_x, new_y);
+                render();
+            }
+        }
+
+        function move(new_x, new_y)
+        {
+            if(valid_rindex(new_x, new_y) == false)
+                return;
+
+            // Check that we can stand in the new position
+            var block = block_by_pos(new_x, new_y);
+            if(is_sink_block(block))
+            {
+                update_stick_man(new_x, new_y);
                 render();
             }
         }
 
         function move_left()
         {
-            var block = block_by_pos(stick_man_pos[0] - move_length, stick_man_pos[1]);
-            if(is_sink_block(block))
-            {
-                update_stick_man(stick_man_pos[0] - move_length, stick_man_pos[1]);
-                render();
-            }
+            move(x - move_length, y);
         }
 
         function move_right()
         {
-            var block = block_by_pos(stick_man_pos[0] + move_length, stick_man_pos[1]);
-            if(is_sink_block(block))
-            {
-                update_stick_man(stick_man_pos[0] + move_length, stick_man_pos[1]);
-                render();
-            }
+            move(x + move_length, y);
         }
-
 
         switch(key) {
             case "W":
