@@ -485,13 +485,29 @@ $(function() {
     var duration = 1000;
     var currentTime;
     var delta = 1000;
-
     var timerId;
 
     canvas.addEventListener("mousedown", function (event)
     {
-        if (timerId)
-            clearInterval(timerId);
+        function shockwave()
+        {
+            function doClickExplosion() {
+                delta = new Date().getTime() - currentTime;
+                if (delta > duration)
+                    clearInterval(timerId);
+                gl.uniform1f(vTime, delta);
+                gl.uniform2fv(vClickPos, mouseClickPos);
+            }
+
+            if (timerId)
+                clearInterval(timerId);
+
+            mouseClickPos = mousePoint;
+            currentTime = new Date().getTime();
+            timerId = setInterval(doClickExplosion, 0);
+
+            delta = 0;
+        }
 
         var mousePoint = vec2((((-1 + 2 * event.clientX / canvas.width)+1)/2)*worldWidth,
                 (((-1 + 2 * ( canvas.height - event.clientY ) / canvas.height)+1)/2)*worldHeight);
@@ -512,31 +528,18 @@ $(function() {
 
             worldGrid[blockX][blockY].tile = block_id;
             flatten2dArray(worldGrid);
+            shockwave();
             render();
         }
         else if(worldGrid[blockX][blockY] != blocks.EMPTY && event.shiftKey == true)
         {
             worldGrid[blockX][blockY].tile = blocks.EMPTY;
             flatten2dArray(worldGrid);
+            shockwave();
             render();
         }
-
-        mouseClickPos = mousePoint;
-        currentTime = new Date().getTime();
-        timerId = setInterval(doClickExplosion, 10);
-
-        delta = 0;
     });
 
-    var timerId;
-
-    function doClickExplosion() {
-        delta = new Date().getTime() - currentTime;
-        if (delta > duration)
-            clearInterval(timerId);
-        gl.uniform1f(vTime, delta);
-        gl.uniform2fv(vClickPos, mouseClickPos);
-    }
 
     //MouseListener with a point that follows the mouse
     canvas.addEventListener("mousemove", function (event)
