@@ -29,6 +29,10 @@ $(function() {
     var worldGrid = [];
     var points = [];
     var colors = [];
+    // stick-man variables
+    var move_length = 0.5;
+    var jump_height = 5;
+    var gravity_check = 0.1;
 
     // Render stuf
     var render_scale = 2 / Math.max(worldWidth, worldHeight);
@@ -162,7 +166,7 @@ $(function() {
         for (var x = 0; x < pointsArray.length; x++) {
             for (var y = 0; y < pointsArray[x].length; y++) {
                 var point = pointsArray[x][y];
-                if(point.tile != blocks.EMPTY)
+                //if(point.tile != blocks.EMPTY)
                 {
                     var tile_color = tile_to_color(point.tile);
 /*
@@ -217,7 +221,12 @@ $(function() {
 
     function block_by_pos(x, y)
     {
-        return worldGrid[Math.round(x)][Math.round(y)];
+        if(isInt(x) == false || isInt(y) == false)
+        {
+            alert("block_by_pos called with non-integer arguments!");
+        }
+
+        return worldGrid[x][y];
     }
 
     function is_sink_block(block)
@@ -233,43 +242,42 @@ $(function() {
     setInterval(function gravity()
     {
         // Get block below stickman
-        var block = block_by_pos(stick_man_pos[0], stick_man_pos[1] - 0.1);
-        if(is_sink_block(block))
+        var block_left = block_by_pos(Math.floor(stick_man_pos[0]), Math.floor(stick_man_pos[1] - gravity_check));
+        var block_right = block_by_pos(1 + Math.ceil(stick_man_pos[0]), Math.floor(stick_man_pos[1] - gravity_check));
+        if(is_sink_block(block_left) && is_sink_block(block_right))
         {
-            update_stick_man(stick_man_pos[0], stick_man_pos[1] - 0.1);
+            update_stick_man(stick_man_pos[0], stick_man_pos[1] - gravity_check);
             render();
         }
-        else if(is_jump_block(block))
+        else if(is_jump_block(block_left) || is_jump_block(block_right))
         {
-            update_stick_man(stick_man_pos[0], stick_man_pos[1] + 5);
+            update_stick_man(stick_man_pos[0], stick_man_pos[1] + jump_height);
             render();
         }
     }, 10);
 
     window.addEventListener("keydown", function (e) {
         var key = String.fromCharCode(e.keyCode);
-        var move_length = 0.5;
-        var jump_height = 5;
 
         var x = stick_man_pos[0];
         var y = stick_man_pos[1];
 
         function valid_rindex(x, y)
         {
-            return valid_index(Math.round(x), Math.round(y));
+            return valid_index(Math.round(x), Math.floor(y));
         }
 
         function jump()
         {
             var new_x = x;
             var new_y = y + jump_height;
-            var check_y = y - 0.1;
+            var check_y = y - gravity_check;
 
             if(valid_rindex(new_x, check_y) == false)
                 return;
 
             // Check that we stand on a block
-            var block = block_by_pos(new_x, check_y);
+            var block = block_by_pos(Math.round(new_x), Math.floor(check_y));
             if(is_sink_block(block) == false)
             {
                 update_stick_man(new_x, new_y);
@@ -277,13 +285,13 @@ $(function() {
             }
         }
 
-        function move(new_x, new_y)
+        function move(new_x, new_y, rounder)
         {
             if(valid_rindex(new_x, new_y) == false)
                 return;
 
             // Check that we can stand in the new position
-            var block = block_by_pos(new_x, new_y);
+            var block = block_by_pos(rounder(new_x), Math.floor(new_y));
             if(is_sink_block(block))
             {
                 update_stick_man(new_x, new_y);
@@ -293,12 +301,12 @@ $(function() {
 
         function move_left()
         {
-            move(x - move_length, y);
+            move(x - move_length, y, Math.floor);
         }
 
         function move_right()
         {
-            move(x + move_length, y);
+            move(x + move_length, y, function(x) { return 1 + Math.ceil(x) });
         }
 
         switch(key) {
@@ -320,6 +328,12 @@ $(function() {
     function render() {
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
+        gl.bindBuffer(gl.ARRAY_BUFFER, stickBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, flatten(stick_man), gl.STATIC_DRAW);
+        gl.vertexAttribPointer(vPosition, 2, gl.FLOAT, false, 0, 0);
+
+        gl.drawArrays(gl.LINES, 0, stick_man.length);
+
         gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);
         gl.bufferData(gl.ARRAY_BUFFER, flatten(colors), gl.STATIC_DRAW);
         gl.vertexAttribPointer(vColor, 4, gl.FLOAT, false, 0, 0);
@@ -332,12 +346,6 @@ $(function() {
         {
             gl.drawArrays(gl.TRIANGLE_FAN, verts_per_block*i, verts_per_block);
         }
-
-        gl.bindBuffer(gl.ARRAY_BUFFER, stickBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, flatten(stick_man), gl.STATIC_DRAW);
-        gl.vertexAttribPointer(vPosition, 2, gl.FLOAT, false, 0, 0);
-
-        gl.drawArrays(gl.LINES, 0, stick_man.length);
     }
     render();
 
