@@ -36,20 +36,35 @@
         attribute vec2 vCenterPos;
 
         uniform float vScale;
+        uniform float vTime;
+        uniform vec2 vClickPos;
 
         varying vec4 fColor;
         varying vec4 fCenter;
         varying vec4 fPosition;
+        varying vec2 fClickPos;
+        varying float fTime;
 
         void
         main()
         {
+            fTime = vTime;
+            float tTime = vTime / 1000.;
+
             gl_PointSize = 100. * vScale;
-            gl_Position = vec4(vPosition.xy * vScale - 1.0, 0., 1.);
 
             fColor      = vColor; //* vCenterPos;
             fCenter     = vec4(vCenterPos.xy * vScale - 1.0, 0., 1.);
             fPosition   = vec4(vPosition.xy  * vScale - 1.0, 0., 1.);
+
+
+            float dist = distance(vPosition.xy, vClickPos);
+
+            gl_Position = vec4((vPosition.xy * vScale - 1.0) - (1. - tTime) * (sin(dist / tTime / 10.) / dist / 10.) , 0., 1.);
+            fColor = vColor;
+
+            fClickPos = vClickPos;
+
         }
     </script>
     <script id='block-fragment-shader' type="x-shader/x-fragment">
@@ -58,6 +73,8 @@
         varying vec4 fPosition;
         varying vec4 fColor;
         varying vec4 fCenter;
+        varying float fTime;
+        varying vec2 fClickPos;
 
         void main() {
             vec4 color0 = mix(fColor, vec4(1.0, 1.0, 1.0, 1.0), 0.5);
