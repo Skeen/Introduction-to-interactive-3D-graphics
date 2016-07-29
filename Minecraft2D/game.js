@@ -21,7 +21,7 @@ $(function() {
     var points = [];
 
     var render_scale = 2 / Math.max(worldWidth, worldHeight);
-
+    var lastPoint = vec2(.0, .0);
     initBuffers();
 
     var blocks = {
@@ -53,8 +53,27 @@ $(function() {
             }
         }
     }
+    var bufferId;
     flatten2dArray(worldGrid);
+    bufferId = gl.createBuffer();
+    //gl.bindBuffer(gl.ARRAY_BUFFER, bufferId);
+    //gl.bufferData(gl.ARRAY_BUFFER, sizeof['vec2'], gl.STATIC_DRAW);
+    canvas.addEventListener("mousedown", function (event) {
 
+        t = vec2(2 * event.clientX / canvas.width - 1,
+            2 * (canvas.height - event.clientY) / canvas.height - 1);
+
+        //color = vec4(red.value, green.value, blue.value, 1.0);
+
+        //gl.bindBuffer(gl.ARRAY_BUFFER, bufferId);
+        //gl.bufferSubData(gl.ARRAY_BUFFER, 8 * index, flatten(t));
+
+        //gl.bindBuffer(gl.ARRAY_BUFFER, cBufferId);
+        //gl.bufferSubData(gl.ARRAY_BUFFER, 16 * index, flatten(color));
+
+        numIndices[numPolygons]++;
+        index++;
+    });
     function render() {
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
         gl.bufferData(gl.ARRAY_BUFFER, flatten(points), gl.STATIC_DRAW);
