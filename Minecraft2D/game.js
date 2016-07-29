@@ -57,9 +57,28 @@ $(function() {
         WOOD: 4,
         METAL: 5,
         WATER: 6,
-        FIRE: 7
-    }
+        FIRE: 7,
 
+        to_string: function(value)
+        {
+            for(var key in this)
+                if(this[key] == value)
+                    return key;
+            return null;
+        },
+
+        from_string: function(string)
+        {
+            for(var key in this)
+                if(key == string)
+                    return this[key];
+            return null;
+        }
+    }
+/*
+    console.log(blocks.to_string(blocks.STONE));
+    console.log(blocks.from_string("STONE"));
+*/
     // TODO: Throw inside blocks
     function tile_to_color(block)
     {
@@ -470,7 +489,13 @@ $(function() {
         var placeable = can_build(blockX, blockY);
         if(placeable && event.shiftKey == false)
         {
-            worldGrid[blockX][blockY].tile = blocks.WOOD;
+            var block_picker = document.getElementById('block_picker');
+            var block_string = block_picker.options[block_picker.selectedIndex].value;
+            var block_id = blocks.from_string(block_string);
+            console.log(block_string);
+            console.log(block_id);
+
+            worldGrid[blockX][blockY].tile = block_id;
             flatten2dArray(worldGrid);
             render();
         }
