@@ -52,7 +52,7 @@ $(function() {
     initBuffers();
 
     var blocks = {
-        EMTPY: 0,
+        EMPTY: 0,
         STONE: 1,
         GRASS: 2,
         DIRT: 3,
@@ -70,7 +70,7 @@ $(function() {
             case blocks.EMPTY:
                 return vec4(0., 0., 1., 0.1);
             case blocks.STONE:
-                return vec4(5., 5., 5., 1.);
+                return vec4(2., 2., 2., 1.);
             case blocks.GRASS:
                 return vec4(0., 1., 0., 1.);
             case blocks.DIRT:
@@ -108,10 +108,20 @@ $(function() {
 
     function can_build(x, y)
     {
+        // Check that x and y are valid
         if(isInt(x) == false || isInt(y) == false)
         {
             alert("can_build called with non-integer arguments!");
         }
+        if(valid_index(x, y) == false)
+        {
+            return false;
+        }
+
+        // Check if stickman is blocking (i.e. if we're inside his sprite)
+        if(x >= stick_man_pos[0] - 0.5 && x < stick_man_pos[0]+2 &&
+           y >= stick_man_pos[1] - 0.5 && y < stick_man_pos[1]+4)
+            return false;
 
         // Check if the block is free
         if(worldGrid[x][y].tile != blocks.EMPTY)
@@ -176,6 +186,8 @@ $(function() {
     }
 
     function flatten2dArray(pointsArray) {
+        world_points = [];
+        world_colors = [];
         for (var x = 0; x < pointsArray.length; x++) {
             for (var y = 0; y < pointsArray[x].length; y++) {
                 var point = pointsArray[x][y];
@@ -254,6 +266,77 @@ $(function() {
         return block.tile == blocks.FIRE;
     }
 
+    function is_flow_block(block)
+    {
+        return block.tile == blocks.FIRE || block.tile == blocks.WATER;
+    }
+
+    // Let blocks flow onto empty blocks
+    setInterval(function block_flow()
+    {
+        var flip_world = JSON.parse(JSON.stringify(worldGrid));
+        for (var x = 0; x < worldWidth; x++) {
+            for (var y = 0; y < worldHeight; y++) {
+                var point = worldGrid[x][y];
+                if(is_flow_block(point))
+                {
+                    if(valid_index(x-1, y) && worldGrid[x-1][y].tile == blocks.EMPTY)
+                    {
+                        flip_world[x-1][y].tile = point.tile;
+                    }
+                    if(valid_index(x+1, y) && worldGrid[x+1][y].tile == blocks.EMPTY)
+                    {
+                        flip_world[x+1][y].tile = point.tile;
+                    }
+                    if(valid_index(x, y-1) && worldGrid[x][y-1].tile == blocks.EMPTY)
+                    {
+                        flip_world[x][y-1].tile = point.tile;
+                    }
+                }
+            }
+        }
+        worldGrid = flip_world;
+        flatten2dArray(worldGrid);
+        render();
+    }, 300);
+
+    setInterval(function stonify()
+    {
+        function flip_material(block)
+        {
+            if(block.tile == blocks.FIRE)
+                return blocks.WATER;
+            else if (block.tile == blocks.WATER)
+                return blocks.FIRE;
+            else
+                alert("Invalid usage!");
+        }
+
+        for (var x = 0; x < worldWidth; x++) {
+            for (var y = 0; y < worldHeight; y++) {
+                var point = worldGrid[x][y];
+                if(point.tile == blocks.FIRE || point.tile == blocks.WATER)
+                {
+                    for(var i = -1; i <= 1; i++)
+                    {
+                        for(var j = -1; j <= 1; j++)
+                        {
+                            if(i == j) continue;
+
+                            if(valid_index(x+i, y+j) && worldGrid[x+i][y+j].tile == flip_material(point))
+                            {
+                                worldGrid[x+i][y+j].tile = blocks.STONE;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        flatten2dArray(worldGrid);
+        render();
+    }, 10);
+
+    // Apply gravity to stick-man
     setInterval(function gravity()
     {
         // Get blocks below stickman (left and right)
@@ -340,6 +423,31 @@ $(function() {
             case "D":
                 move_right();
                 break;
+        }
+    });
+
+    canvas.addEventListener("mousedown", function (event)
+    {
+        var mousePoint = vec2((((-1 + 2 * event.clientX / canvas.width)+1)/2)*worldWidth,
+                (((-1 + 2 * ( canvas.height - event.clientY ) / canvas.height)+1)/2)*worldHeight);
+        // Get closest block position for rendering
+        mousePoint = vec2(Math.round(mousePoint[0]) - 0.5, Math.round(mousePoint[1]) + 0.5);
+        // Get block coordinates
+        var blockX = Math.floor(mousePoint[0]);
+        var blockY = Math.floor(mousePoint[1]);
+        // Check if block is free
+        var placeable = can_build(blockX, blockY);
+        if(placeable && event.shiftKey == false)
+        {
+            worldGrid[blockX][blockY].tile = blocks.WOOD;
+            flatten2dArray(worldGrid);
+            render();
+        }
+        else if(worldGrid[blockX][blockY] != blocks.EMPTY && event.shiftKey == true)
+        {
+            worldGrid[blockX][blockY].tile = blocks.EMPTY;
+            flatten2dArray(worldGrid);
+            render();
         }
     });
 
