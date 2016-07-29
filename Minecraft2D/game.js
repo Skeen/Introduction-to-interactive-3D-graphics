@@ -1,43 +1,73 @@
 /**
  * Created by dkchokk on 27-07-2016.
  */
-function windowLoadHandler() {
+$(function() {
+    // WebGL stuff.
     var canvas, gl, program;
-    var points = [
-        vec2(.5, .5),
-        vec2(.75, .75),
-        vec2(1., .5)
-    ];
 
-    canvas = document.getElementById("gl-canvas");
-    gl = WebGLUtils.setupWebGL(canvas);
-    if (!gl)
-        return;
-    gl.viewport(0, 0, canvas.clientWidth, canvas.clientHeight);
-    gl.clearColor(1.0, 1.0, 1.0, 1.0);
-    gl.enable(gl.DEPTH_TEST);
+    // Initialization of WebGL.
+    initWebGl();
 
-    program = initShaders(gl, "vertex-shader", "fragment-shader");
-    gl.useProgram(program);
+    // Buffers.
+    var vertexBuffer;
 
-    // Bind the buffer.
-    var bufferId = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, bufferId);
+    // Initialize buffers.
+    initBuffers();
 
-    // Associate shader vars with data buffer.
-    var vPosition = gl.getAttribLocation(program, "vPosition");
-    gl.vertexAttribPointer(vPosition, 2, gl.FLOAT, false, 0, 0);
-    gl.enableVertexAttribArray(vPosition);
+    // Game related stuff.
+    var squareSize = canvas.clientWidth / 10;
+    var worldWidth = squareSize, worldHeight = squareSize, worldGrid = [], points = [];
 
-    function buffer() {
-        gl.bufferData(gl.ARRAY_BUFFER, flatten(points), gl.STATIC_DRAW);
+    // Generate world.
+    for (var x = 0; x < worldWidth; x++) {
+        worldGrid[x] = [];
+        for (var y = x; y < worldHeight; y++) {
+            console.log(0 - (worldGrid.length / 2))
+            var newX = (((x -(worldGrid.length/2))*(-1))/ (worldGrid.length/2));
+            var newY = ((y -(worldGrid.length/2))*(-1))/ (worldGrid.length/2);
+            worldGrid[x][y] = vec2(newX, newY);
+        }
     }
+
+    function flatten2dArray(pointsArray) {
+        for (var x = 0; x < pointsArray.length; x++) {
+            for (var y = x; y < pointsArray[0].length; y++) {
+                points.push(pointsArray[x][y]);
+            }
+        }
+    }
+    flatten2dArray(worldGrid);
 
     function render() {
-        buffer();
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-        gl.drawArrays(gl.TRIANGLES, 0, points.length);
+        gl.bufferData(gl.ARRAY_BUFFER, flatten(points), gl.STATIC_DRAW);
+        gl.drawArrays(gl.POINTS, 0, points.length);
     }
     render();
-}
-window.addEventListener("load", windowLoadHandler);
+
+
+    // Initialize WebGL render context.
+    function initWebGl() {
+        canvas = document.getElementById("gl-canvas");
+        gl = WebGLUtils.setupWebGL(canvas);
+        if (!gl)
+            return;
+        gl.viewport(0, 0, canvas.clientWidth, canvas.clientHeight);
+        gl.clearColor(1.0, 1.0, 1.0, 1.0);
+        gl.enable(gl.DEPTH_TEST);
+
+        // Initialize shaders.
+        program = initShaders(gl, "vertex-shader", "fragment-shader");
+        gl.useProgram(program);
+    }
+
+    // Initialize buffers.
+    function initBuffers() {
+        vertexBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
+
+        var vPosition = gl.getAttribLocation(program, 'vPosition');
+        gl.vertexAttribPointer(vPosition, 2, gl.FLOAT, false, 0, 0);
+        gl.enableVertexAttribArray(vPosition);
+    }
+});
