@@ -16,8 +16,10 @@ $(function() {
     var verts_per_block = 4;
     // Stick figure
     var stickBuffer;
+    // Mouse
+    var mouseBuffer;
 
-    // Shader positions.
+    // Initialize buffers.
     var vPosition;
     var vColor;
 
@@ -33,6 +35,8 @@ $(function() {
     var move_length = 0.5;
     var jump_height = 5;
     var gravity_check = 0.1;
+    // mouse
+    var mousePoint = vec2(.0, .0);
 
     // Render stuf
     var render_scale = 2 / Math.max(worldWidth, worldHeight);
@@ -181,14 +185,15 @@ $(function() {
                     colors.push(tile_color);
                     points.push(vec2(point.pos[0] + 0.5, point.pos[1] - 0.5));
                     colors.push(tile_color);
-                    /*
+/*                  
                     points.push(vec2(point.pos[0] - 0.5, point.pos[1] - 0.5));
                     colors.push(tile_color);
-                    */
+*/                   
                 }
             }
         }
     }
+
     flatten2dArray(worldGrid);
 
     var stick_man;
@@ -328,8 +333,23 @@ $(function() {
         }
     });
 
+    //MouseListener with a point that follows the mouse
+    canvas.addEventListener("mousemove", function (event) {
 
+        mousePoint = vec2((((-1 + 2 * event.clientX / canvas.width)+1)/2)*worldWidth,
+                (((-1 + 2 * ( canvas.height - event.clientY ) / canvas.height)+1)/2)*worldHeight);
+        //var selectedBlock = document.getElementById('Block');
+        //console.log(selectedBlock);
+        //color = selectedBlock;
 
+        gl.bindBuffer(gl.ARRAY_BUFFER, mouseBuffer);
+        gl.bufferSubData(gl.ARRAY_BUFFER, 0, flatten(mousePoint));
+        console.log((mousePoint[0]+1)/2);
+        console.log((mousePoint[1]+1)/2);
+        render();
+        //gl.bindBuffer(gl.ARRAY_BUFFER, cBufferId);
+        //gl.bufferSubData(gl.ARRAY_BUFFER, 16 * index, flatten(color));
+    });
 
     function render() {
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
@@ -339,6 +359,10 @@ $(function() {
         gl.vertexAttribPointer(vPosition, 2, gl.FLOAT, false, 0, 0);
 
         gl.drawArrays(gl.LINES, 0, stick_man.length);
+
+        gl.bindBuffer(gl.ARRAY_BUFFER, mouseBuffer);
+        gl.vertexAttribPointer(vPosition, 2, gl.FLOAT, false, 0, 0);
+        gl.drawArrays(gl.POINTS, 0, 1);
 
         gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);
         gl.bufferData(gl.ARRAY_BUFFER, flatten(colors), gl.STATIC_DRAW);
@@ -371,7 +395,8 @@ $(function() {
     }
 
     // Initialize buffers.
-    function initBuffers() {
+    function initBuffers()
+    {
         var vPosition = gl.getAttribLocation(program, 'vPosition');
         var vColor = gl.getAttribLocation(program, "vColor");
 
@@ -393,6 +418,13 @@ $(function() {
         stickBuffer = gl.createBuffer();
         gl.bindBuffer(gl.ARRAY_BUFFER, stickBuffer);
         gl.bufferData(gl.ARRAY_BUFFER, sizeof['vec2'] * 7 * 2, gl.STATIC_DRAW);
+        gl.vertexAttribPointer(vPosition, 2, gl.FLOAT, false, 0, 0);
+        gl.enableVertexAttribArray(vPosition);
+
+        // Mouse square buffer
+        mouseBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, mouseBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, flatten(mousePoint), gl.STATIC_DRAW);
         gl.vertexAttribPointer(vPosition, 2, gl.FLOAT, false, 0, 0);
         gl.enableVertexAttribArray(vPosition);
     }
