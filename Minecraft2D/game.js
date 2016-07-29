@@ -484,8 +484,18 @@ $(function() {
         }
     });
 
+    var mouseClickPos;
+    var duration = 1000;
+    var currentTime;
+    var delta = 1000;
+
+    var timerId;
+
     canvas.addEventListener("mousedown", function (event)
     {
+        if (timerId)
+            clearInterval(timerId);
+
         var mousePoint = vec2((((-1 + 2 * event.clientX / canvas.width)+1)/2)*worldWidth,
                 (((-1 + 2 * ( canvas.height - event.clientY ) / canvas.height)+1)/2)*worldHeight);
         // Get closest block position for rendering
@@ -513,7 +523,23 @@ $(function() {
             flatten2dArray(worldGrid);
             render();
         }
+
+        mouseClickPos = mousePoint;
+        currentTime = new Date().getTime();
+        timerId = setInterval(doClickExplosion, 10);
+
+        delta = 0;
     });
+
+    var timerId;
+
+    function doClickExplosion() {
+        delta = new Date().getTime() - currentTime;
+        if (delta > duration)
+            clearInterval(timerId);
+        gl.uniform1f(vTime, delta);
+        gl.uniform2fv(vClickPos, mouseClickPos);
+    }
 
     //MouseListener with a point that follows the mouse
     canvas.addEventListener("mousemove", function (event)
@@ -588,6 +614,8 @@ $(function() {
 
         gl.useProgram(boxShaderProgram);
 
+        gl.uniform1f(vTime, delta);
+
         // Draw the world
         gl.bindBuffer(gl.ARRAY_BUFFER, worldCBuffer);
         gl.bufferData(gl.ARRAY_BUFFER, flatten(world_colors), gl.STATIC_DRAW);
@@ -645,6 +673,9 @@ $(function() {
     var vCenterPos;
     var worldCenterBuffer;
 
+    var vClickPos;
+    var vTime;
+
     // Initialize buffers.
     function initBuffers()
     {
@@ -656,6 +687,8 @@ $(function() {
         vScalePos = gl.getUniformLocation(boxShaderProgram, "vScale");
 
         vCenterPos = gl.getAttribLocation(boxShaderProgram, 'vCenterPos');
+        vClickPos = gl.getUniformLocation(boxShaderProgram, 'vClickPos');
+        vTime = gl.getUniformLocation(boxShaderProgram, 'vTime');
 
         // World Vertex buffer
         worldVBuffer = gl.createBuffer();
