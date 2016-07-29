@@ -320,7 +320,7 @@ $(function() {
         }
         worldGrid = flip_world;
         flatten2dArray(worldGrid);
-        render();
+        //render();
     }, 300);
 
     setInterval(function stonify()
@@ -356,7 +356,7 @@ $(function() {
             }
         }
         flatten2dArray(worldGrid);
-        render();
+        //render();
     }, 10);
 
     function get_stickman_blocks(x, y)
@@ -395,7 +395,7 @@ $(function() {
         if(all_sink)
         {
             update_stick_man(new_x, new_y);
-            render();
+            //render();
         }
 
         // Check if any blocks below us are fire blocks
@@ -408,7 +408,7 @@ $(function() {
         {
             new_y = stick_man_pos[1] + jump_height;
             update_stick_man(new_x, new_y);
-            render();
+            //render();
         }
     }, 10);
 
@@ -438,7 +438,7 @@ $(function() {
             {
                 new_y = stick_man_pos[1] + jump_height;
                 update_stick_man(new_x, new_y);
-                render();
+                //render();
             }
         }
 
@@ -452,7 +452,7 @@ $(function() {
             if(is_sink_block(block))
             {
                 update_stick_man(new_x, new_y);
-                render();
+                //render();
             }
         }
 
@@ -504,7 +504,7 @@ $(function() {
 
             mouseClickPos = mousePoint;
             currentTime = new Date().getTime();
-            timerId = setInterval(doClickExplosion, 0);
+            timerId = setInterval(doClickExplosion, 1);
 
             delta = 0;
         }
@@ -523,20 +523,20 @@ $(function() {
             var block_picker = document.getElementById('block_picker');
             var block_string = block_picker.options[block_picker.selectedIndex].value;
             var block_id = blocks.from_string(block_string);
-            console.log(block_string);
-            console.log(block_id);
+            //console.log(block_string);
+            //console.log(block_id);
 
             worldGrid[blockX][blockY].tile = block_id;
             flatten2dArray(worldGrid);
             shockwave();
-            render();
+            //render();
         }
         else if(worldGrid[blockX][blockY] != blocks.EMPTY && event.shiftKey == true)
         {
             worldGrid[blockX][blockY].tile = blocks.EMPTY;
             flatten2dArray(worldGrid);
             shockwave();
-            render();
+            //render();
         }
     });
 
@@ -579,7 +579,7 @@ $(function() {
         // gl.bindBuffer(gl.ARRAY_BUFFER, mouseBuffer);
         // gl.bufferSubData(gl.ARRAY_BUFFER, 0, flatten(mousePoint));
 
-        render();
+        //render();
     });
 
     function render()
@@ -631,6 +631,8 @@ $(function() {
         {
             gl.drawArrays(gl.TRIANGLE_FAN, verts_per_block*i, verts_per_block);
         }
+
+        window.requestAnimFrame(render, canvas);
     }
     render();
 
