@@ -96,6 +96,7 @@ $(function() {
     {
         if(isInt(x) == false || isInt(y) == false)
         {
+            console.log("valid_index called with non-integer arguments!", x, y);
             alert("valid_index called with non-integer arguments!");
         }
 
@@ -342,22 +343,55 @@ $(function() {
         render();
     }, 10);
 
+    function get_stickman_blocks(x, y)
+    {
+        if( valid_index(Math.floor(x), Math.floor(y)) == false &&
+            valid_index(Math.ceil(x), Math.floor(y)) == false &&
+            valid_index(1 + Math.floor(x), Math.floor(y)) == false &&
+            valid_index(1 + Math.ceil(x), Math.floor(y)) == false)
+            return;
+
+        // Get all the blocks under the stickman
+        // Only ever 3 unique points
+        var block_left = block_by_pos(Math.floor(x), Math.floor(y));
+        var block_center_left = block_by_pos(Math.ceil(x), Math.floor(y));
+        //var block_center_right = block_by_pos(1 + Math.floor(x), Math.floor(y));
+        var block_right = block_by_pos(1 + Math.ceil(x), Math.floor(y));
+
+        return [block_left, block_center_left, /*block_center_right,*/ block_right];
+    }
+
     // Apply gravity to stick-man
     setInterval(function gravity()
     {
-        // Get blocks below stickman (left and right)
-        var block_left = block_by_pos(Math.floor(stick_man_pos[0]), Math.floor(stick_man_pos[1] - gravity_check));
-        var block_right = block_by_pos(1 + Math.ceil(stick_man_pos[0]), Math.floor(stick_man_pos[1] - gravity_check));
-        // If both are sinkable, we sink
-        if(is_sink_block(block_left) && is_sink_block(block_right))
+        var new_x = stick_man_pos[0];
+        var new_y = stick_man_pos[1] - gravity_check;
+
+        // Get blocks below stickman
+        var blocks = get_stickman_blocks(new_x, new_y);
+
+        // Check if all blocks below us are sink blocks
+        var all_sink = true;
+        for(var x = 0; x < blocks.length; x++)
         {
-            update_stick_man(stick_man_pos[0], stick_man_pos[1] - gravity_check);
+            all_sink &= is_sink_block(blocks[x]);
+        }
+        if(all_sink)
+        {
+            update_stick_man(new_x, new_y);
             render();
         }
-        // If one is fire we jump
-        else if(is_jump_block(block_left) || is_jump_block(block_right))
+
+        // Check if any blocks below us are fire blocks
+        var any_fire = false;
+        for(var x = 0; x < blocks.length; x++)
         {
-            update_stick_man(stick_man_pos[0], stick_man_pos[1] + jump_height);
+            any_fire |= is_jump_block(blocks[x]);
+        }
+        if(any_fire)
+        {
+            new_y = stick_man_pos[1] + jump_height;
+            update_stick_man(new_x, new_y);
             render();
         }
     }, 10);
@@ -371,19 +405,22 @@ $(function() {
         function jump()
         {
             var new_x = x;
-            var new_y = y + jump_height;
-            var check_y = y - gravity_check;
+            var new_y = y - gravity_check;
 
-            if(valid_index(Math.floor(new_x), Math.floor(check_y)) == false &&
-               valid_index(1 + Math.ceil(new_x), Math.floor(check_y)) == false)
+            // Get blocks below stickman
+            var blocks = get_stickman_blocks(new_x, new_y);
+            if(blocks == undefined)
                 return;
 
-            // Get blocks below stickman (left and right)
-            var block_left = block_by_pos(Math.floor(new_x), Math.floor(check_y));
-            var block_right = block_by_pos(1 + Math.ceil(new_x), Math.floor(check_y));
-            // If we stand on any of the block, we can jump
-            if(is_sink_block(block_left) == false || is_sink_block(block_right) == false)
+            // Check if all blocks below us are sink blocks
+            var all_sink = true;
+            for(var i = 0; i < blocks.length; i++)
             {
+                all_sink &= is_sink_block(blocks[i]);
+            }
+            if(all_sink == false) // We can jump off something
+            {
+                new_y = stick_man_pos[1] + jump_height;
                 update_stick_man(new_x, new_y);
                 render();
             }
