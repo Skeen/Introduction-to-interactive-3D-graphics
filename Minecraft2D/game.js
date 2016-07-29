@@ -11,17 +11,19 @@ $(function() {
     // Buffers
     //--------
     // Blocks
-    var vertexBuffer;
-    var colorBuffer;
-    var verts_per_block = 4;
+    var worldVBuffer;
+    var worldCBuffer;
     // Stick figure
-    var stickBuffer;
+    var stickVBuffer;
+    var stickCBuffer;
     // Mouse
-    var mouseBuffer;
+    var mouseVBuffer;
+    var mouseCBuffer;
 
     // Initialize buffers.
     var vPosition;
     var vColor;
+    var vScalePos;
 
     // Game related stuff.
     var worldWidth = 40;
@@ -29,14 +31,21 @@ $(function() {
     var worldBlocks = worldWidth * worldHeight;
     //var squareSize = canvas.clientWidth / 10;
     var worldGrid = [];
-    var points = [];
-    var colors = [];
+    // world render
+    var world_points = [];
+    var world_colors = [];
+    // world variables
+    var verts_per_block = 4;
     // stick-man variables
     var move_length = 0.5;
     var jump_height = 5;
     var gravity_check = 0.1;
+    var stick_man_pos;
+    var stick_points = [];
+    var stick_colors = [];
     // mouse
-    var mousePoint = vec2(.0, .0);
+    var mouse_points = [];
+    var mouse_colors = [];
 
     // Render stuf
     var render_scale = 2 / Math.max(worldWidth, worldHeight);
@@ -174,20 +183,20 @@ $(function() {
                 {
                     var tile_color = tile_to_color(point.tile);
 /*
-                    points.push(point.pos);
-                    colors.push(vec4(0., 0., 0., tile_color[3]));
+                    world_points.push(point.pos);
+                    world_colors.push(vec4(0., 0., 0., tile_color[3]));
 */
-                    points.push(vec2(point.pos[0] - 0.5, point.pos[1] - 0.5));
-                    colors.push(tile_color);
-                    points.push(vec2(point.pos[0] - 0.5, point.pos[1] + 0.5));
-                    colors.push(tile_color);
-                    points.push(vec2(point.pos[0] + 0.5, point.pos[1] + 0.5));
-                    colors.push(tile_color);
-                    points.push(vec2(point.pos[0] + 0.5, point.pos[1] - 0.5));
-                    colors.push(tile_color);
+                    world_points.push(vec2(point.pos[0] - 0.5, point.pos[1] - 0.5));
+                    world_colors.push(tile_color);
+                    world_points.push(vec2(point.pos[0] - 0.5, point.pos[1] + 0.5));
+                    world_colors.push(tile_color);
+                    world_points.push(vec2(point.pos[0] + 0.5, point.pos[1] + 0.5));
+                    world_colors.push(tile_color);
+                    world_points.push(vec2(point.pos[0] + 0.5, point.pos[1] - 0.5));
+                    world_colors.push(tile_color);
 /*                  
-                    points.push(vec2(point.pos[0] - 0.5, point.pos[1] - 0.5));
-                    colors.push(tile_color);
+                    world_points.push(vec2(point.pos[0] - 0.5, point.pos[1] - 0.5));
+                    world_colors.push(tile_color);
 */                   
                 }
             }
@@ -196,29 +205,30 @@ $(function() {
 
     flatten2dArray(worldGrid);
 
-    var stick_man;
-    var stick_man_pos;
-
     function update_stick_man(x, y)
     {
         stick_man_pos = vec2(x,y);
-        stick_man = [];
+        stick_points = [];
+        stick_colors = [];
         // Legs
-        stick_man.push(vec2(0,0), vec2(1,1));
-        stick_man.push(vec2(2,0), vec2(1,1));
+        stick_points.push(vec2(0,0), vec2(1,1));
+        stick_points.push(vec2(2,0), vec2(1,1));
         // Body
-        stick_man.push(vec2(1,1), vec2(1,3));
+        stick_points.push(vec2(1,1), vec2(1,3));
         // Arms
-        stick_man.push(vec2(0,2.5), vec2(2,2.5));
+        stick_points.push(vec2(0,2.5), vec2(2,2.5));
         // Face
-        stick_man.push(vec2(1,3), vec2(0.5,4));
-        stick_man.push(vec2(1,3), vec2(1.5,4));
-        stick_man.push(vec2(0.5,4), vec2(1.5,4));
+        stick_points.push(vec2(1,3), vec2(0.5,4));
+        stick_points.push(vec2(1,3), vec2(1.5,4));
+        stick_points.push(vec2(0.5,4), vec2(1.5,4));
 
-        for(var i = 0; i < stick_man.length; i++)
+        for(var i = 0; i < stick_points.length; i++)
         {
-            stick_man[i][0] += x;
-            stick_man[i][1] += y;
+            // Update points
+            stick_points[i][0] += x;
+            stick_points[i][1] += y;
+            // Add color
+            stick_colors.push(vec4(0., 0., 0., 1.));
         }
     }
 
@@ -334,10 +344,39 @@ $(function() {
     });
 
     //MouseListener with a point that follows the mouse
-    canvas.addEventListener("mousemove", function (event) {
-
-        mousePoint = vec2((((-1 + 2 * event.clientX / canvas.width)+1)/2)*worldWidth,
+    canvas.addEventListener("mousemove", function (event)
+    {
+        var mousePoint = vec2((((-1 + 2 * event.clientX / canvas.width)+1)/2)*worldWidth,
                 (((-1 + 2 * ( canvas.height - event.clientY ) / canvas.height)+1)/2)*worldHeight);
+        // Get closest block position for rendering
+        mousePoint = vec2(Math.round(mousePoint[0]) - 0.5, Math.round(mousePoint[1]) + 0.5);
+
+        mouse_points = [];
+        // Left edge
+        mouse_points.push(vec2(mousePoint[0] - 0.5, mousePoint[1] - 0.5));
+        mouse_points.push(vec2(mousePoint[0] - 0.5, mousePoint[1] + 0.5));
+        // Right edge
+        mouse_points.push(vec2(mousePoint[0] + 0.5, mousePoint[1] + 0.5));
+        mouse_points.push(vec2(mousePoint[0] + 0.5, mousePoint[1] - 0.5));
+        // Top edge
+        mouse_points.push(vec2(mousePoint[0] - 0.5, mousePoint[1] + 0.5));
+        mouse_points.push(vec2(mousePoint[0] + 0.5, mousePoint[1] + 0.5));
+        // Bot edge
+        mouse_points.push(vec2(mousePoint[0] - 0.5, mousePoint[1] - 0.5));
+        mouse_points.push(vec2(mousePoint[0] + 0.5, mousePoint[1] - 0.5));
+        // Diagonal edge
+        mouse_points.push(vec2(mousePoint[0] - 0.5, mousePoint[1] - 0.5));
+        mouse_points.push(vec2(mousePoint[0] + 0.5, mousePoint[1] + 0.5));
+
+        var placeable = can_build(Math.floor(mousePoint[0]), Math.floor(mousePoint[1]));
+
+        var color = (placeable ? vec4(0., 0., 0., 1.) : vec4(1., 0., 0., 1.));
+
+        mouse_colors = [];
+        for(var i = 0; i < mouse_points.length; i++)
+        {
+            mouse_colors.push(color);
+        }
 
         gl.bindBuffer(gl.ARRAY_BUFFER, mouseBuffer);
         gl.bufferSubData(gl.ARRAY_BUFFER, 0, flatten(mousePoint));
@@ -345,34 +384,50 @@ $(function() {
         render();
     });
 
-    function render() {
+    function render()
+    {
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
         gl.useProgram(program);
 
-        gl.bindBuffer(gl.ARRAY_BUFFER, stickBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, flatten(stick_man), gl.STATIC_DRAW);
-        gl.vertexAttribPointer(vPosition, 2, gl.FLOAT, false, 0, 0);
+        // Draw the mouse block outline
+        if(mouse_points.length != 0)
+        {
+            gl.bindBuffer(gl.ARRAY_BUFFER, worldCBuffer);
+            gl.bufferData(gl.ARRAY_BUFFER, flatten(mouse_colors), gl.STATIC_DRAW);
+            gl.vertexAttribPointer(vColor, 4, gl.FLOAT, false, 0, 0);
 
-        gl.drawArrays(gl.LINES, 0, stick_man.length);
+            gl.bindBuffer(gl.ARRAY_BUFFER, mouseVBuffer);
+            gl.bufferData(gl.ARRAY_BUFFER, flatten(mouse_points), gl.STATIC_DRAW);
+            gl.vertexAttribPointer(vPosition, 2, gl.FLOAT, false, 0, 0);
 
-        gl.bindBuffer(gl.ARRAY_BUFFER, mouseBuffer);
-        gl.vertexAttribPointer(vPosition, 2, gl.FLOAT, false, 0, 0);
-        gl.drawArrays(gl.POINTS, 0, 1);
+            gl.drawArrays(gl.LINES, 0, mouse_points.length);
+        }
 
-        gl.useProgram(boxShaderProgram);
-
-        gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, flatten(colors), gl.STATIC_DRAW);
+        // Draw the stick figure
+        gl.bindBuffer(gl.ARRAY_BUFFER, stickCBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, flatten(stick_colors), gl.STATIC_DRAW);
         gl.vertexAttribPointer(vColor, 4, gl.FLOAT, false, 0, 0);
 
-        gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, flatten(points), gl.STATIC_DRAW);
+        gl.bindBuffer(gl.ARRAY_BUFFER, stickVBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, flatten(stick_points), gl.STATIC_DRAW);
+        gl.vertexAttribPointer(vPosition, 2, gl.FLOAT, false, 0, 0);
+        gl.drawArrays(gl.LINES, 0, stick_points.length);
+
+        gl.useProgram(boxShaderProgram);
+
+        // Draw the world
+        gl.bindBuffer(gl.ARRAY_BUFFER, worldCBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, flatten(world_colors), gl.STATIC_DRAW);
+        gl.vertexAttribPointer(vColor, 4, gl.FLOAT, false, 0, 0);
+
+        gl.bindBuffer(gl.ARRAY_BUFFER, worldVBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, flatten(world_points), gl.STATIC_DRAW);
         gl.vertexAttribPointer(vPosition, 2, gl.FLOAT, false, 0, 0);
 
         gl.useProgram(boxShaderProgram);
 
-        for (var i = 0; i < points.length/verts_per_block; i+=1)
+        for (var i = 0; i < world_points.length/verts_per_block; i+=1)
         {
             gl.drawArrays(gl.TRIANGLE_FAN, verts_per_block*i, verts_per_block);
         }
@@ -380,11 +435,15 @@ $(function() {
     render();
 
     // Initialize WebGL render context.
-    function initWebGl() {
+    function initWebGl()
+    {
         canvas = document.getElementById("gl-canvas");
         gl = WebGLUtils.setupWebGL(canvas);
         if (!gl)
+        {
+            alert("Unable to setup WebGL!");
             return;
+        }
         gl.viewport(0, 0, canvas.clientWidth, canvas.clientHeight);
         gl.clearColor(1.0, 1.0, 1.0, 1.0);
         gl.enable(gl.DEPTH_TEST);
@@ -412,20 +471,54 @@ $(function() {
         var vPosition = gl.getAttribLocation(program, 'vPosition');
         var vScalePos = gl.getUniformLocation(program, "vScale");
 
+        // Get Shader variable positions
+        vPosition = gl.getAttribLocation(program, "vPosition");
+        vColor = gl.getAttribLocation(program, "vColor");
+        vScalePos = gl.getUniformLocation(program, "vScale");
+
+        // Set the uniform scale variable
         gl.uniform1f(vScalePos, render_scale);
 
+        // World Vertex buffer
+        worldVBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, worldVBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, sizeof['vec2'] * worldBlocks, gl.STATIC_DRAW);
+        gl.vertexAttribPointer(vPosition, 2, gl.FLOAT, false, 0, 0);
+        gl.enableVertexAttribArray(vPosition);
+        // World Color buffer
+        worldCBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, worldCBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, sizeof['vec4'] * worldBlocks, gl.STATIC_DRAW);
+        gl.vertexAttribPointer(vColor, 4, gl.FLOAT, false, 0, 0);
+        gl.enableVertexAttribArray(vColor);
+
+        // Stickman Vertex buffer
+        stickVBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, stickVBuffer);
         stickBuffer = gl.createBuffer();
         gl.bindBuffer(gl.ARRAY_BUFFER, stickBuffer);
         gl.bufferData(gl.ARRAY_BUFFER, sizeof['vec2'] * 7 * 2, gl.STATIC_DRAW);
         gl.vertexAttribPointer(vPosition, 2, gl.FLOAT, false, 0, 0);
         gl.enableVertexAttribArray(vPosition);
+        // Stickman Color buffer
+        stickCBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, stickCBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, sizeof['vec4'] * worldBlocks, gl.STATIC_DRAW);
+        gl.vertexAttribPointer(vColor, 4, gl.FLOAT, false, 0, 0);
+        gl.enableVertexAttribArray(vColor);
 
-        // Mouse square buffer
-        mouseBuffer = gl.createBuffer();
-        gl.bindBuffer(gl.ARRAY_BUFFER, mouseBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, flatten(mousePoint), gl.STATIC_DRAW);
+        // Mouse Vertex buffer
+        mouseVBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, mouseVBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, sizeof['vec2'] * 5 * 2, gl.STATIC_DRAW);
         gl.vertexAttribPointer(vPosition, 2, gl.FLOAT, false, 0, 0);
         gl.enableVertexAttribArray(vPosition);
+        // Mouse Color buffer
+        mouseCBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, mouseCBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, sizeof['vec4'] * 5 * 2, gl.STATIC_DRAW);
+        gl.vertexAttribPointer(vColor, 2, gl.FLOAT, false, 0, 0);
+        gl.enableVertexAttribArray(vColor);
 
         gl.useProgram(boxShaderProgram);
 
