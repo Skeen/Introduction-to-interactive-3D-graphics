@@ -21,9 +21,7 @@ $(function() {
     var mouseCBuffer;
 
     // Initialize buffers.
-    var vPosition;
-    var vColor;
-    var vScalePos;
+
 
     // Game related stuff.
     var worldWidth = 40;
@@ -378,8 +376,8 @@ $(function() {
             mouse_colors.push(color);
         }
 
-        gl.bindBuffer(gl.ARRAY_BUFFER, mouseBuffer);
-        gl.bufferSubData(gl.ARRAY_BUFFER, 0, flatten(mousePoint));
+        // gl.bindBuffer(gl.ARRAY_BUFFER, mouseBuffer);
+        // gl.bufferSubData(gl.ARRAY_BUFFER, 0, flatten(mousePoint));
 
         render();
     });
@@ -463,21 +461,19 @@ $(function() {
         gl.linkProgram(boxShaderProgram, boxShader);
     }
 
+    var vPosition;
+    var vColor;
+    var vScalePos;
+
     // Initialize buffers.
     function initBuffers()
     {
-        gl.useProgram(program);
-
-        var vPosition = gl.getAttribLocation(program, 'vPosition');
-        var vScalePos = gl.getUniformLocation(program, "vScale");
+        gl.useProgram(boxShaderProgram);
 
         // Get Shader variable positions
-        vPosition = gl.getAttribLocation(program, "vPosition");
-        vColor = gl.getAttribLocation(program, "vColor");
-        vScalePos = gl.getUniformLocation(program, "vScale");
-
-        // Set the uniform scale variable
-        gl.uniform1f(vScalePos, render_scale);
+        vPosition = gl.getAttribLocation(boxShaderProgram, "vPosition");
+        vColor = gl.getAttribLocation(boxShaderProgram, "vColor");
+        vScalePos = gl.getUniformLocation(boxShaderProgram, "vScale");
 
         // World Vertex buffer
         worldVBuffer = gl.createBuffer();
@@ -491,6 +487,15 @@ $(function() {
         gl.bufferData(gl.ARRAY_BUFFER, sizeof['vec4'] * worldBlocks, gl.STATIC_DRAW);
         gl.vertexAttribPointer(vColor, 4, gl.FLOAT, false, 0, 0);
         gl.enableVertexAttribArray(vColor);
+
+        // Set the uniform scale variable
+        gl.uniform1f(vScalePos, render_scale);
+
+        gl.useProgram(program);
+
+        vPosition = gl.getAttribLocation(program, "vPosition");
+        vColor = gl.getAttribLocation(program, "vColor");
+        vScalePos = gl.getUniformLocation(program, "vScale");
 
         // Stickman Vertex buffer
         stickVBuffer = gl.createBuffer();
@@ -520,24 +525,7 @@ $(function() {
         gl.vertexAttribPointer(vColor, 2, gl.FLOAT, false, 0, 0);
         gl.enableVertexAttribArray(vColor);
 
-        gl.useProgram(boxShaderProgram);
-
-        var vBoxPosition = gl.getAttribLocation(boxShaderProgram, 'vPosition');
-        var vColor = gl.getAttribLocation(boxShaderProgram, "vColor");
-        var vBoxScalePos = gl.getUniformLocation(boxShaderProgram, "vScale");
-
-        gl.uniform1f(vBoxScalePos, render_scale);
-
-        vertexBuffer = gl.createBuffer();
-        gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, sizeof['vec2'] * worldBlocks, gl.STATIC_DRAW);
-        gl.vertexAttribPointer(vBoxPosition, 2, gl.FLOAT, false, 0, 0);
-        gl.enableVertexAttribArray(vBoxPosition);
-
-        colorBuffer = gl.createBuffer();
-        gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, sizeof['vec4'] * worldBlocks, gl.STATIC_DRAW);
-        gl.vertexAttribPointer(vColor, 4, gl.FLOAT, false, 0, 0);
-        gl.enableVertexAttribArray(vColor);
+        // Set the uniform scale variable
+        gl.uniform1f(vScalePos, render_scale);
     }
 });
