@@ -12,27 +12,44 @@ $(function() {
     var vertexBuffer;
 
     // Initialize buffers.
-    initBuffers();
 
     // Game related stuff.
-    var squareSize = canvas.clientWidth / 10;
-    var worldWidth = squareSize, worldHeight = squareSize, worldGrid = [], points = [];
+    var worldWidth = 40;
+    var worldHeight = 40;
+    //var squareSize = canvas.clientWidth / 10;
+    var worldGrid = [];
+    var points = [];
+
+    var render_scale = 2 / Math.max(worldWidth, worldHeight);
+
+    initBuffers();
+
+    var blocks = {
+        EMTPY: 0,
+        STONE: 1,
+        GRASS: 2,
+        DIRT: 3,
+        WOOD: 4,
+        METAL: 5,
+        WATER: 6,
+        FIRE: 7
+    }
 
     // Generate world.
     for (var x = 0; x < worldWidth; x++) {
         worldGrid[x] = [];
-        for (var y = x; y < worldHeight; y++) {
-            console.log(0 - (worldGrid.length / 2))
-            var newX = (((x -(worldGrid.length/2))*(-1))/ (worldGrid.length/2));
-            var newY = ((y -(worldGrid.length/2))*(-1))/ (worldGrid.length/2);
-            worldGrid[x][y] = vec2(newX, newY);
+        for (var y = 0; y < worldHeight; y++) {
+            worldGrid[x][y] = {
+                tile: blocks.empty,
+                pos: vec2(x + 0.5, y + 0.5)
+            }
         }
     }
 
     function flatten2dArray(pointsArray) {
         for (var x = 0; x < pointsArray.length; x++) {
-            for (var y = x; y < pointsArray[0].length; y++) {
-                points.push(pointsArray[x][y]);
+            for (var y = 0; y < pointsArray[x].length; y++) {
+                points.push(pointsArray[x][y].pos);
             }
         }
     }
@@ -68,5 +85,10 @@ $(function() {
         var vPosition = gl.getAttribLocation(program, 'vPosition');
         gl.vertexAttribPointer(vPosition, 2, gl.FLOAT, false, 0, 0);
         gl.enableVertexAttribArray(vPosition);
+
+        var vScalePos = gl.getUniformLocation(program, "vScale");
+        gl.uniform1f(vScalePos, render_scale);
+
+
     }
 });

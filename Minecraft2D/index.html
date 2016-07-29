@@ -5,12 +5,14 @@
     <title>Title</title>
     <script id="vertex-shader" type="x-shader/x-vertex">
         attribute vec4 vPosition;
+        uniform float vScale;
+        
 
         void
         main()
         {
-            gl_PointSize = 5.;
-            gl_Position = vPosition;
+            gl_PointSize = 100. * vScale;
+            gl_Position = vec4(vPosition.xy * vScale - 1.0, 0., 1.);
         }
     </script>
     <script id="fragment-shader" type="x-shader/x-fragment">
@@ -29,8 +31,25 @@
     <script type="text/javascript" src="game.js"></script>
 </head>
 <body>
-<canvas id="gl-canvas" width="512" height="512">
+<div>
+<canvas id="gl-canvas" width="500"" height="500"
     Oops ... your browser doesn't support the HTML5 canvas element
 </canvas>
+</div>
+
+<div>
+<select name="block">
+  <option value="stone">Stone</option>
+  <option value="grass">Grass</option>
+  <option value="dirt">Dirt</option>
+  <option value="wood">Wood</option>
+  <option value="metal">Metal</option>
+  <option value="water">Water</option>
+  <option value="fire">Fire/option>
+</select>
+</div>
+
+
+
 </body>
 </html>
