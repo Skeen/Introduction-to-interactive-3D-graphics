@@ -46,15 +46,46 @@ $(function() {
         switch(block)
         {
             case blocks.EMPTY:
-                return vec4(0., 0., 1., 0.4);
+                return vec4(0., 0., 1., 0.1);
             case blocks.STONE:
                 return vec4(5., 5., 5., 1.);
             case blocks.GRASS:
                 return vec4(0., 1., 0., 1.);
             case blocks.DIRT:
                 return vec4(0.55, 0.27, 0.07, 1.);
-            // TODO: Rest of cases
+            case blocks.WOOD:
+                return vec4(0.87, 0.72, 0.53, 1.);
+            case blocks.METAL:
+                return vec4(0.82, 0.82, 0.82, 1.);
+            case blocks.WATER:
+                return vec4(0., 0., 1., 1.);
+            case blocks.FIRE:
+                return vec4(1., 0., 0., 1.);
+            default:
+                alert("Invalid tile, cannot convert to color!");
         }
+    }
+
+    function can_build(x, y)
+    {
+        // Check if the block is free
+        if(worldGrid[x][y].tile != blocks.EMPTY)
+        {
+            return false;
+        }
+        // Check that an adjecent block exists
+        for(var i = -1; i <= 1; i++)
+            for(var j = -1; j <= 1; j++)
+                // Ensure that the indicies are valid (i.e. within array bounds)
+                if(x+i >= 0 && x+i < worldWidth &&
+                   y+j >= 0 && y+j < worldHeight)
+                    // If we find one adjecent, we're good
+                    if((worldGrid[x+i][y+j].tile != blocks.EMPTY))
+                        return true;
+                    //console.log(x+i, y+j, worldGrid[x+i][y+j].tile != blocks.EMPTY);
+
+        return false;
+
     }
 
     // Generate empty world.
@@ -68,6 +99,11 @@ $(function() {
             }
         }
     }
+/*
+    worldGrid[1][0].tile = blocks.STONE;
+    worldGrid[0][0].tile = blocks.STONE;
+    console.log(can_build(0,0));
+*/
 
     // Create ground
     for (var x = 0; x < worldWidth; x++) {
@@ -87,21 +123,23 @@ $(function() {
         for (var x = 0; x < pointsArray.length; x++) {
             for (var y = 0; y < pointsArray[x].length; y++) {
                 var point = pointsArray[x][y];
-                if(point.tile != blocks.EMPTY)
+//                if(point.tile != blocks.EMPTY)
                 {
+                    var tile_color = tile_to_color(point.tile);
+
                     points.push(point.pos);
-                    colors.push(vec4(0., 0., 0., 1.));
+                    colors.push(vec4(0., 0., 0., tile_color[3]));
 
                     points.push(vec2(point.pos[0] - 0.5, point.pos[1] - 0.5));
-                    colors.push(tile_to_color(point.tile));
+                    colors.push(tile_color);
                     points.push(vec2(point.pos[0] - 0.5, point.pos[1] + 0.5));
-                    colors.push(tile_to_color(point.tile));
+                    colors.push(tile_color);
                     points.push(vec2(point.pos[0] + 0.5, point.pos[1] + 0.5));
-                    colors.push(tile_to_color(point.tile));
+                    colors.push(tile_color);
                     points.push(vec2(point.pos[0] + 0.5, point.pos[1] - 0.5));
-                    colors.push(tile_to_color(point.tile));
+                    colors.push(tile_color);
                     points.push(vec2(point.pos[0] - 0.5, point.pos[1] - 0.5));
-                    colors.push(tile_to_color(point.tile));
+                    colors.push(tile_color);
                 }
             }
         }
