@@ -3,7 +3,7 @@
  */
 $(function() {
     // WebGL stuff.
-    var canvas, gl, program;
+    var canvas, gl, program, boxShaderProgram;
 
     // Initialization of WebGL.
     initWebGl();
@@ -338,21 +338,17 @@ $(function() {
 
         mousePoint = vec2((((-1 + 2 * event.clientX / canvas.width)+1)/2)*worldWidth,
                 (((-1 + 2 * ( canvas.height - event.clientY ) / canvas.height)+1)/2)*worldHeight);
-        //var selectedBlock = document.getElementById('Block');
-        //console.log(selectedBlock);
-        //color = selectedBlock;
 
         gl.bindBuffer(gl.ARRAY_BUFFER, mouseBuffer);
         gl.bufferSubData(gl.ARRAY_BUFFER, 0, flatten(mousePoint));
-        console.log((mousePoint[0]+1)/2);
-        console.log((mousePoint[1]+1)/2);
+
         render();
-        //gl.bindBuffer(gl.ARRAY_BUFFER, cBufferId);
-        //gl.bufferSubData(gl.ARRAY_BUFFER, 16 * index, flatten(color));
     });
 
     function render() {
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
+        gl.useProgram(program);
 
         gl.bindBuffer(gl.ARRAY_BUFFER, stickBuffer);
         gl.bufferData(gl.ARRAY_BUFFER, flatten(stick_man), gl.STATIC_DRAW);
@@ -364,6 +360,8 @@ $(function() {
         gl.vertexAttribPointer(vPosition, 2, gl.FLOAT, false, 0, 0);
         gl.drawArrays(gl.POINTS, 0, 1);
 
+        gl.useProgram(boxShaderProgram);
+
         gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);
         gl.bufferData(gl.ARRAY_BUFFER, flatten(colors), gl.STATIC_DRAW);
         gl.vertexAttribPointer(vColor, 4, gl.FLOAT, false, 0, 0);
@@ -371,6 +369,8 @@ $(function() {
         gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
         gl.bufferData(gl.ARRAY_BUFFER, flatten(points), gl.STATIC_DRAW);
         gl.vertexAttribPointer(vPosition, 2, gl.FLOAT, false, 0, 0);
+
+        gl.useProgram(boxShaderProgram);
 
         for (var i = 0; i < points.length/verts_per_block; i+=1)
         {
@@ -389,31 +389,30 @@ $(function() {
         gl.clearColor(1.0, 1.0, 1.0, 1.0);
         gl.enable(gl.DEPTH_TEST);
 
-        // Initialize shaders.
-        program = initShaders(gl, "vertex-shader", "fragment-shader");
-        gl.useProgram(program);
+        var vertexShader = initShader(gl, 'vertex-shader', gl.VERTEX_SHADER);
+        var fragmentShader = initShader(gl, 'fragment-shader', gl.FRAGMENT_SHADER);
+        var boxShader = initShader(gl, 'block-fragment-shader', gl.FRAGMENT_SHADER);
+
+        program = gl.createProgram();
+        gl.attachShader(program, fragmentShader);
+        gl.attachShader(program, vertexShader);
+        gl.linkProgram(program);
+
+        boxShaderProgram = gl.createProgram();
+        gl.attachShader(boxShaderProgram, vertexShader);
+        gl.attachShader(boxShaderProgram, boxShader);
+        gl.linkProgram(boxShaderProgram, boxShader);
     }
 
     // Initialize buffers.
     function initBuffers()
     {
+        gl.useProgram(program);
+
         var vPosition = gl.getAttribLocation(program, 'vPosition');
-        var vColor = gl.getAttribLocation(program, "vColor");
-
         var vScalePos = gl.getUniformLocation(program, "vScale");
+
         gl.uniform1f(vScalePos, render_scale);
-
-        vertexBuffer = gl.createBuffer();
-        gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, sizeof['vec2'] * worldBlocks, gl.STATIC_DRAW);
-        gl.vertexAttribPointer(vPosition, 2, gl.FLOAT, false, 0, 0);
-        gl.enableVertexAttribArray(vPosition);
-
-        colorBuffer = gl.createBuffer();
-        gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, sizeof['vec4'] * worldBlocks, gl.STATIC_DRAW);
-        gl.vertexAttribPointer(vColor, 4, gl.FLOAT, false, 0, 0);
-        gl.enableVertexAttribArray(vColor);
 
         stickBuffer = gl.createBuffer();
         gl.bindBuffer(gl.ARRAY_BUFFER, stickBuffer);
@@ -427,5 +426,25 @@ $(function() {
         gl.bufferData(gl.ARRAY_BUFFER, flatten(mousePoint), gl.STATIC_DRAW);
         gl.vertexAttribPointer(vPosition, 2, gl.FLOAT, false, 0, 0);
         gl.enableVertexAttribArray(vPosition);
+
+        gl.useProgram(boxShaderProgram);
+
+        var vBoxPosition = gl.getAttribLocation(boxShaderProgram, 'vPosition');
+        var vColor = gl.getAttribLocation(boxShaderProgram, "vColor");
+        var vBoxScalePos = gl.getUniformLocation(boxShaderProgram, "vScale");
+
+        gl.uniform1f(vBoxScalePos, render_scale);
+
+        vertexBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, sizeof['vec2'] * worldBlocks, gl.STATIC_DRAW);
+        gl.vertexAttribPointer(vBoxPosition, 2, gl.FLOAT, false, 0, 0);
+        gl.enableVertexAttribArray(vBoxPosition);
+
+        colorBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, sizeof['vec4'] * worldBlocks, gl.STATIC_DRAW);
+        gl.vertexAttribPointer(vColor, 4, gl.FLOAT, false, 0, 0);
+        gl.enableVertexAttribArray(vColor);
     }
 });
