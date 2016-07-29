@@ -48,9 +48,6 @@
         void
         main()
         {
-            fTime = vTime;
-            float tTime = vTime / 1000.;
-
             gl_PointSize = 100. * vScale;
 
             fColor      = vColor; //* vCenterPos;
@@ -58,6 +55,8 @@
             fPosition   = vec4(vPosition.xy  * vScale - 1.0, 0., 1.);
 
 
+            fTime = vTime;
+            float tTime = vTime / 1000.;
             float dist = distance(vPosition.xy, vClickPos);
 
             gl_Position = vec4((vPosition.xy * vScale - 1.0) - (1. - tTime) * (sin(dist / tTime / 10.) / dist / 10.) , 0., 1.);
