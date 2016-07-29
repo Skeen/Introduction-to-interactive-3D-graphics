@@ -20,9 +20,6 @@ $(function() {
     var mouseVBuffer;
     var mouseCBuffer;
 
-    // Initialize buffers.
-
-
     // Game related stuff.
     var worldWidth = 40;
     var worldHeight = 40;
@@ -85,7 +82,7 @@ $(function() {
         switch(block)
         {
             case blocks.EMPTY:
-                return vec4(0., 0., 1., 0.1);
+                return vec4(0., 0., 1., 0.);
             case blocks.STONE:
                 return vec4(2., 2., 2., 1.);
             case blocks.GRASS:
@@ -561,6 +558,9 @@ $(function() {
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
         gl.useProgram(program);
+        vPosition = gl.getAttribLocation(program, "vPosition");
+        vColor = gl.getAttribLocation(program, "vColor");
+        vScalePos = gl.getUniformLocation(program, "vScale");
 
         // Draw the mouse block outline
         if(mouse_points.length != 0)
@@ -587,6 +587,11 @@ $(function() {
         gl.drawArrays(gl.LINES, 0, stick_points.length);
 
         gl.useProgram(boxShaderProgram);
+        // Get Shader variable positions
+        vPosition = gl.getAttribLocation(boxShaderProgram, "vPosition");
+        vColor = gl.getAttribLocation(boxShaderProgram, "vColor");
+        vScalePos = gl.getUniformLocation(boxShaderProgram, "vScale");
+        vCenterPos = gl.getAttribLocation(boxShaderProgram, 'vCenterPos');
 
         // Draw the world
         gl.bindBuffer(gl.ARRAY_BUFFER, worldCBuffer);
@@ -654,8 +659,7 @@ $(function() {
         vPosition = gl.getAttribLocation(boxShaderProgram, "vPosition");
         vColor = gl.getAttribLocation(boxShaderProgram, "vColor");
         vScalePos = gl.getUniformLocation(boxShaderProgram, "vScale");
-
-        vCenterPos = gl.getAttribLocation(boxShaderProgram, 'vCenterPos');
+        vCenterPos = gl.getAttribLocation(boxShaderProgram, "vCenterPos");
 
         // World Vertex buffer
         worldVBuffer = gl.createBuffer();
