@@ -123,6 +123,16 @@ $(function() {
         worldGrid[x][y+1].tile = blocks.GRASS;
     }
 
+    for (var x = Math.floor(worldWidth/4*2); x < Math.floor(worldWidth/4*3); x++) {
+        var y = Math.floor(worldHeight/3);
+        worldGrid[x][y+1].tile = blocks.WATER;
+    }
+
+    for (var x = 0; x < Math.floor(worldWidth/4); x++) {
+        var y = Math.floor(worldHeight/3);
+        worldGrid[x][y+1].tile = blocks.FIRE;
+    }
+
     function flatten2dArray(pointsArray) {
         for (var x = 0; x < pointsArray.length; x++) {
             for (var y = 0; y < pointsArray[x].length; y++) {
@@ -176,20 +186,35 @@ $(function() {
         }
     }
 
-    update_stick_man(0.5, Math.floor(worldHeight/3)+10);
+    update_stick_man(0.5 + Math.floor(worldHeight/3), Math.floor(worldHeight/3)+10);
 
     function block_by_pos(x, y)
     {
-        return worldGrid[Math.floor(x)][Math.floor(y)];
+        return worldGrid[Math.round(x)][Math.round(y)];
+    }
+
+    function is_sink_block(block)
+    {
+        return block.tile == blocks.EMPTY || block.tile == blocks.WATER;
+    }
+
+    function is_jump_block(block)
+    {
+        return block.tile == blocks.FIRE;
     }
 
     setInterval(function gravity()
     {
         // Get block below stickman
         var block = block_by_pos(stick_man_pos[0], stick_man_pos[1] - 0.1);
-        if(block.tile == blocks.EMPTY)
+        if(is_sink_block(block))
         {
             update_stick_man(stick_man_pos[0], stick_man_pos[1] - 0.1);
+            render();
+        }
+        else if(is_jump_block(block))
+        {
+            update_stick_man(stick_man_pos[0], stick_man_pos[1] + 5);
             render();
         }
     }, 10);
@@ -202,7 +227,7 @@ $(function() {
         function jump()
         {
             var block = block_by_pos(stick_man_pos[0], stick_man_pos[1] - 0.1);
-            if(block.tile != blocks.EMPTY)
+            if(is_sink_block(block) == false)
             {
                 update_stick_man(stick_man_pos[0], stick_man_pos[1] + jump_height);
                 render();
@@ -212,7 +237,7 @@ $(function() {
         function move_left()
         {
             var block = block_by_pos(stick_man_pos[0] - move_length, stick_man_pos[1]);
-            if(block.tile == blocks.EMPTY)
+            if(is_sink_block(block))
             {
                 update_stick_man(stick_man_pos[0] - move_length, stick_man_pos[1]);
                 render();
@@ -222,7 +247,7 @@ $(function() {
         function move_right()
         {
             var block = block_by_pos(stick_man_pos[0] + move_length, stick_man_pos[1]);
-            if(block.tile == blocks.EMPTY)
+            if(is_sink_block(block))
             {
                 update_stick_man(stick_man_pos[0] + move_length, stick_man_pos[1]);
                 render();
