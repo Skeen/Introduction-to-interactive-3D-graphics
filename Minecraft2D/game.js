@@ -151,8 +151,11 @@ $(function() {
     flatten2dArray(worldGrid);
 
     var stick_man;
+    var stick_man_pos;
+
     function update_stick_man(x, y)
     {
+        stick_man_pos = vec2(x,y);
         stick_man = [];
         // Legs
         stick_man.push(vec2(0,0), vec2(1,1));
@@ -173,7 +176,24 @@ $(function() {
         }
     }
 
-    update_stick_man(0, Math.floor(worldHeight/3)+2);
+    update_stick_man(0.5, Math.floor(worldHeight/3)+10);
+
+    function block_by_pos(x, y)
+    {
+        return worldGrid[Math.floor(x)][Math.floor(y)];
+    }
+
+    setInterval(function gravity()
+    {
+        // Get block below stickman
+        var block = block_by_pos(stick_man_pos[0], stick_man_pos[1] - 0.1);
+        if(block.tile == blocks.EMPTY)
+        {
+            update_stick_man(stick_man_pos[0], stick_man_pos[1] - 0.1);
+            render();
+        }
+    }, 10);
+
 
     function render() {
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
@@ -198,7 +218,6 @@ $(function() {
         gl.drawArrays(gl.LINES, 0, stick_man.length);
     }
     render();
-
 
     // Initialize WebGL render context.
     function initWebGl() {
