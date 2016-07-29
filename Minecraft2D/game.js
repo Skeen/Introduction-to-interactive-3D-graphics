@@ -360,18 +360,14 @@ $(function() {
         var x = stick_man_pos[0];
         var y = stick_man_pos[1];
 
-        function valid_rindex(x, y)
-        {
-            return valid_index(Math.round(x), Math.floor(y));
-        }
-
         function jump()
         {
             var new_x = x;
             var new_y = y + jump_height;
             var check_y = y - gravity_check;
 
-            if(valid_rindex(new_x, check_y) == false)
+            if(valid_index(Math.floor(new_x), Math.floor(check_y)) == false &&
+               valid_index(1 + Math.ceil(new_x), Math.floor(check_y)) == false)
                 return;
 
             // Get blocks below stickman (left and right)
@@ -387,7 +383,7 @@ $(function() {
 
         function move(new_x, new_y, rounder)
         {
-            if(valid_rindex(new_x, new_y) == false)
+            if(valid_index(rounder(new_x), Math.floor(new_y)) == false)
                 return;
 
             // Check that we can stand in the new position
