@@ -8,12 +8,16 @@ $(function() {
     // Initialization of WebGL.
     initWebGl();
 
-    // Buffers.
+    // Buffers
+    //--------
+    // Blocks
     var vertexBuffer;
     var colorBuffer;
     var verts_per_block = 6;
+    // Stick figure
+    var stickBuffer;
 
-    // Initialize buffers.
+    // Shader positions.
     var vPosition;
     var vColor;
 
@@ -26,8 +30,8 @@ $(function() {
     var points = [];
     var colors = [];
 
+    // Render stuf
     var render_scale = 2 / Math.max(worldWidth, worldHeight);
-
     initBuffers();
 
     var blocks = {
@@ -123,7 +127,7 @@ $(function() {
         for (var x = 0; x < pointsArray.length; x++) {
             for (var y = 0; y < pointsArray[x].length; y++) {
                 var point = pointsArray[x][y];
-//                if(point.tile != blocks.EMPTY)
+                if(point.tile != blocks.EMPTY)
                 {
                     var tile_color = tile_to_color(point.tile);
 
@@ -146,6 +150,31 @@ $(function() {
     }
     flatten2dArray(worldGrid);
 
+    var stick_man;
+    function update_stick_man(x, y)
+    {
+        stick_man = [];
+        // Legs
+        stick_man.push(vec2(0,0), vec2(1,1));
+        stick_man.push(vec2(2,0), vec2(1,1));
+        // Body
+        stick_man.push(vec2(1,1), vec2(1,3));
+        // Arms
+        stick_man.push(vec2(0,2.5), vec2(2,2.5));
+        // Face
+        stick_man.push(vec2(1,3), vec2(0.5,4));
+        stick_man.push(vec2(1,3), vec2(1.5,4));
+        stick_man.push(vec2(0.5,4), vec2(1.5,4));
+
+        for(var i = 0; i < stick_man.length; i++)
+        {
+            stick_man[i][0] += x;
+            stick_man[i][1] += y;
+        }
+    }
+
+    update_stick_man(0, Math.floor(worldHeight/3)+2);
+
     function render() {
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
@@ -161,6 +190,12 @@ $(function() {
         {
             gl.drawArrays(gl.TRIANGLE_FAN, verts_per_block*i, verts_per_block);
         }
+
+        gl.bindBuffer(gl.ARRAY_BUFFER, stickBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, flatten(stick_man), gl.STATIC_DRAW);
+        gl.vertexAttribPointer(vPosition, 2, gl.FLOAT, false, 0, 0);
+
+        gl.drawArrays(gl.LINES, 0, stick_man.length);
     }
     render();
 
@@ -182,26 +217,28 @@ $(function() {
 
     // Initialize buffers.
     function initBuffers() {
-        vertexBuffer = gl.createBuffer();
-        gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, sizeof['vec2'] * worldBlocks, gl.STATIC_DRAW);
-
-        colorBuffer = gl.createBuffer();
-        gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, sizeof['vec4'] * worldBlocks, gl.STATIC_DRAW);
- 
-
         var vPosition = gl.getAttribLocation(program, 'vPosition');
-        gl.vertexAttribPointer(vPosition, 2, gl.FLOAT, false, 0, 0);
-        gl.enableVertexAttribArray(vPosition);
-
         var vColor = gl.getAttribLocation(program, "vColor");
-        gl.vertexAttribPointer(vColor, 4, gl.FLOAT, false, 0, 0);
-        gl.enableVertexAttribArray(vColor);
 
         var vScalePos = gl.getUniformLocation(program, "vScale");
         gl.uniform1f(vScalePos, render_scale);
 
+        vertexBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, sizeof['vec2'] * worldBlocks, gl.STATIC_DRAW);
+        gl.vertexAttribPointer(vPosition, 2, gl.FLOAT, false, 0, 0);
+        gl.enableVertexAttribArray(vPosition);
 
+        colorBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, sizeof['vec4'] * worldBlocks, gl.STATIC_DRAW);
+        gl.vertexAttribPointer(vColor, 4, gl.FLOAT, false, 0, 0);
+        gl.enableVertexAttribArray(vColor);
+
+        stickBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, stickBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, sizeof['vec2'] * 6 * 2, gl.STATIC_DRAW);
+        gl.vertexAttribPointer(vPosition, 2, gl.FLOAT, false, 0, 0);
+        gl.enableVertexAttribArray(vPosition);
     }
 });
