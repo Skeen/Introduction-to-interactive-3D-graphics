@@ -45,6 +45,15 @@
         varying vec2 fClickPos;
         varying float fTime;
 
+        const float PI = 3.14159265358979323846264;
+
+        // Higher == Higher waves
+        const float amptitude = 0.01;
+        // Higher == Faster wiggle
+        const float speed = 20.;
+        // Lower == Larger waves
+        const float waves = 0.5;
+
         void
         main()
         {
@@ -58,7 +67,9 @@
             float tTime = vTime / 1000.;
             float dist = distance(vPosition.xy, vClickPos);
 
-            gl_Position = vec4((vPosition.xy * vScale - 1.0) - (1. - tTime) * (sin(dist / tTime / 10.) / dist / 10.) , 0., 1.);
+            float wave = sin(tTime * PI * speed) * sin(dist * PI * waves);
+
+            gl_Position = vec4(fPosition.xy - (wave * amptitude) , 0., 1.);
             fClickPos = vClickPos;
         }
     </script>
@@ -77,7 +88,10 @@
 
             float distance = length(fCenter.xy - fPosition.xy);
             vec4 color_mix = mix(color0, color1, distance * 60.0);
-
+/*
+            float distance_shockwave = length(fClickPos.xy - fPosition.xy);
+            color_mix = mix(vec4(0., 0., 0., 1.), color_mix, distance_shockwave * 60);
+*/
             gl_FragColor = color_mix;
     }
     </script>

@@ -484,7 +484,7 @@ $(function() {
     var mouseClickPos;
     var duration = 1000;
     var currentTime;
-    var delta = 1000;
+    var delta = 0;
     var timerId;
 
     canvas.addEventListener("mousedown", function (event)
