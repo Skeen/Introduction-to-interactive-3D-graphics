@@ -38,27 +38,36 @@
         uniform float vScale;
 
         varying vec4 fColor;
-        varying vec2 vCenter;
+        varying vec4 fCenter;
+        varying vec4 fPosition;
 
         void
         main()
         {
             gl_PointSize = 100. * vScale;
             gl_Position = vec4(vPosition.xy * vScale - 1.0, 0., 1.);
-            fColor = vColor; //* vCenterPos;
-            vCenter = vCenterPos;
+
+            fColor      = vColor; //* vCenterPos;
+            fCenter     = vec4(vCenterPos.xy * vScale - 1.0, 0., 1.);
+            fPosition   = vec4(vPosition.xy  * vScale - 1.0, 0., 1.);
         }
     </script>
     <script id='block-fragment-shader' type="x-shader/x-fragment">
         precision mediump float;
 
+        varying vec4 fPosition;
         varying vec4 fColor;
-        varying vec2 vCenter;
+        varying vec4 fCenter;
 
         void main() {
-            vec2 temp = 2. * vCenter;
-            gl_FragColor = fColor; //vec4(vec2(fColor.x * vCenter.xy), 0.0, 1.0);
-        }
+            vec4 color0 = mix(fColor, vec4(1.0, 1.0, 1.0, 1.0), 0.5);
+            vec4 color1 = fColor;
+
+            float distance = length(fCenter.xy - fPosition.xy);
+            vec4 color_mix = mix(color0, color1, distance * 60.0);
+
+            gl_FragColor = color_mix;
+    }
     </script>
     <script type="text/javascript" src="../Common/webgl-utils.js"></script>
     <script type="text/javascript" src="../Common/initShaders.js"></script>
