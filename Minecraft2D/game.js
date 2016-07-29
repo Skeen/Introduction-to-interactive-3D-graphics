@@ -194,6 +194,57 @@ $(function() {
         }
     }, 10);
 
+    window.addEventListener("keydown", function (e) {
+        var key = String.fromCharCode(e.keyCode);
+        var move_length = 0.5;
+        var jump_height = 5;
+
+        function jump()
+        {
+            var block = block_by_pos(stick_man_pos[0], stick_man_pos[1] - 0.1);
+            if(block.tile != blocks.EMPTY)
+            {
+                update_stick_man(stick_man_pos[0], stick_man_pos[1] + jump_height);
+                render();
+            }
+        }
+
+        function move_left()
+        {
+            var block = block_by_pos(stick_man_pos[0] - move_length, stick_man_pos[1]);
+            if(block.tile == blocks.EMPTY)
+            {
+                update_stick_man(stick_man_pos[0] - move_length, stick_man_pos[1]);
+                render();
+            }
+        }
+
+        function move_right()
+        {
+            var block = block_by_pos(stick_man_pos[0] + move_length, stick_man_pos[1]);
+            if(block.tile == blocks.EMPTY)
+            {
+                update_stick_man(stick_man_pos[0] + move_length, stick_man_pos[1]);
+                render();
+            }
+        }
+
+
+        switch(key) {
+            case "W":
+                jump();
+                break;
+            case "A":
+                move_left();
+                break;
+            case "D":
+                move_right();
+                break;
+        }
+    });
+
+
+
 
     function render() {
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
@@ -256,7 +307,7 @@ $(function() {
 
         stickBuffer = gl.createBuffer();
         gl.bindBuffer(gl.ARRAY_BUFFER, stickBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, sizeof['vec2'] * 6 * 2, gl.STATIC_DRAW);
+        gl.bufferData(gl.ARRAY_BUFFER, sizeof['vec2'] * 7 * 2, gl.STATIC_DRAW);
         gl.vertexAttribPointer(vPosition, 2, gl.FLOAT, false, 0, 0);
         gl.enableVertexAttribArray(vPosition);
     }
