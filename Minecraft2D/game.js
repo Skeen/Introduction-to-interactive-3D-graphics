@@ -11,6 +11,7 @@ $(function() {
     // Buffers.
     var vertexBuffer;
     var colorBuffer;
+    var verts_per_block = 6;
 
     // Initialize buffers.
     var vPosition;
@@ -89,6 +90,17 @@ $(function() {
                 if(point.tile != blocks.EMPTY)
                 {
                     points.push(point.pos);
+                    colors.push(vec4(0., 0., 0., 1.));
+
+                    points.push(vec2(point.pos[0] - 0.5, point.pos[1] - 0.5));
+                    colors.push(tile_to_color(point.tile));
+                    points.push(vec2(point.pos[0] - 0.5, point.pos[1] + 0.5));
+                    colors.push(tile_to_color(point.tile));
+                    points.push(vec2(point.pos[0] + 0.5, point.pos[1] + 0.5));
+                    colors.push(tile_to_color(point.tile));
+                    points.push(vec2(point.pos[0] + 0.5, point.pos[1] - 0.5));
+                    colors.push(tile_to_color(point.tile));
+                    points.push(vec2(point.pos[0] - 0.5, point.pos[1] - 0.5));
                     colors.push(tile_to_color(point.tile));
                 }
             }
@@ -107,7 +119,10 @@ $(function() {
         gl.bufferData(gl.ARRAY_BUFFER, flatten(points), gl.STATIC_DRAW);
         gl.vertexAttribPointer(vPosition, 2, gl.FLOAT, false, 0, 0);
 
-        gl.drawArrays(gl.POINTS, 0, points.length);
+        for (var i = 0; i < points.length/verts_per_block; i+=1)
+        {
+            gl.drawArrays(gl.TRIANGLE_FAN, verts_per_block*i, verts_per_block);
+        }
     }
     render();
 
