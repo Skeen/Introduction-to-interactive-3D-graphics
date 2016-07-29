@@ -45,7 +45,6 @@ $(function() {
     }
     render();
 
-
     // Initialize WebGL render context.
     function initWebGl() {
         canvas = document.getElementById("gl-canvas");
