@@ -53,6 +53,8 @@
         const float speed = 20.;
         // Lower == Larger waves
         const float waves = 0.5;
+        // Lower == Less falloff
+        const float falloff = 0.25;
 
         void
         main()
@@ -69,7 +71,7 @@
 
             float wave = sin(tTime * PI * speed) * sin(dist * PI * waves);
 
-            gl_Position = vec4(fPosition.xy - (wave * amptitude) , 0., 1.);
+            gl_Position = vec4(fPosition.xy - (wave * amptitude) / (dist * falloff), 0., 1.);
             fClickPos = vClickPos;
         }
     </script>
