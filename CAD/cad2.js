@@ -65,6 +65,7 @@ window.onload = function init() {
     var program = initShaders(gl, "vertex-shader", "fragment-shader");
     gl.useProgram(program);
 
+    // Vertex buffer
     bufferId = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, bufferId);
     gl.bufferData(gl.ARRAY_BUFFER, 8 * maxNumVertices, gl.STATIC_DRAW);
@@ -72,6 +73,7 @@ window.onload = function init() {
     gl.vertexAttribPointer(vPos, 2, gl.FLOAT, false, 0, 0);
     gl.enableVertexAttribArray(vPos);
 
+    // Vertex color buffer
     cBufferId = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, cBufferId);
     gl.bufferData(gl.ARRAY_BUFFER, 16 * maxNumVertices, gl.STATIC_DRAW);
@@ -79,17 +81,20 @@ window.onload = function init() {
     gl.vertexAttribPointer(vColor, 4, gl.FLOAT, false, 0, 0);
     gl.enableVertexAttribArray(vColor);
 
+    // Mouse square buffer
     mBufferId = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, mBufferId);
     gl.bufferData(gl.ARRAY_BUFFER, flatten(lastPoint), gl.STATIC_DRAW);
     gl.vertexAttribPointer(vPos, 2, gl.FLOAT, false, 0, 0);
     gl.enableVertexAttribArray(vPos);
 
+    // Mouse square color buffer
     mCBufferId = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, mCBufferId);
     gl.bufferData(gl.ARRAY_BUFFER, flatten(color), gl.STATIC_DRAW);
     gl.vertexAttribPointer(vColor, 4, gl.FLOAT, false, 0, 0);
     gl.enableVertexAttribArray(vColor);
+
 
     canvas.addEventListener("mousemove", function (event) {
 

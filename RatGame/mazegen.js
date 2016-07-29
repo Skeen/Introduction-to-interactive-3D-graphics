@@ -11,7 +11,7 @@ window.onload = function init()
 
     points = [];
 
-    var m = 8, n = 8;
+    var m = 500, n = 500;
     var s = 2 / Math.max(m, n);
 
     function MazeGen(m, n, offsetM, offsetN, chance) {
@@ -72,8 +72,7 @@ window.onload = function init()
     gl.bindBuffer( gl.ARRAY_BUFFER, bufferId );
     gl.bufferData( gl.ARRAY_BUFFER, flatten(points), gl.STATIC_DRAW );
 
-    // Associate out shader variables with our data buffer
-    
+    // Associate our shader variables with our data buffer
     var vPosition = gl.getAttribLocation( program, "vPosition" );
     gl.vertexAttribPointer( vPosition, 2, gl.FLOAT, false, 0, 0 );
     gl.enableVertexAttribArray( vPosition );
@@ -100,7 +99,7 @@ window.onload = function init()
         gl.bindBuffer( gl.ARRAY_BUFFER, bufferId );
         gl.vertexAttribPointer( vPosition, 2, gl.FLOAT, false, 0, 0 );
 
-        gl.drawArrays( gl.LINES, 0, points.length);
+        gl.( gl.LINES, 0, points.length);
 
         // draw mouse.
         gl.bindBuffer( gl.ARRAY_BUFFER, musseBufferId );

@@ -125,7 +125,7 @@ function loadHandler(){
         var idx = vec2(Math.floor((pos[0] + 1) * (1 / (2/3))), Math.floor((2 - (pos[1] + 1)) * (1 / (2/3))));
 
         if (board[idx[0]][idx[1]] != pieces.empty) {
-            alert('nope');
+            alert('illegal move');
             return;
         }
 
@@ -137,7 +137,7 @@ function loadHandler(){
         isPlayerOne = !isPlayerOne;
 
         render();
-        checkWinner() != -1 ? alert(checkWinner()) : 0;
+        checkWinner() != -1 && checkWinner() != 0 ? (checkWinner() === 1 ? alert("black wins") : alert("white wins")) : 0;
     });
 
     function checkWinner() {
