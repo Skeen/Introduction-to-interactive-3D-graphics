@@ -241,14 +241,16 @@ $(function() {
 
     setInterval(function gravity()
     {
-        // Get block below stickman
+        // Get blocks below stickman (left and right)
         var block_left = block_by_pos(Math.floor(stick_man_pos[0]), Math.floor(stick_man_pos[1] - gravity_check));
         var block_right = block_by_pos(1 + Math.ceil(stick_man_pos[0]), Math.floor(stick_man_pos[1] - gravity_check));
+        // If both are sinkable, we sink
         if(is_sink_block(block_left) && is_sink_block(block_right))
         {
             update_stick_man(stick_man_pos[0], stick_man_pos[1] - gravity_check);
             render();
         }
+        // If one is fire we jump
         else if(is_jump_block(block_left) || is_jump_block(block_right))
         {
             update_stick_man(stick_man_pos[0], stick_man_pos[1] + jump_height);
@@ -276,9 +278,11 @@ $(function() {
             if(valid_rindex(new_x, check_y) == false)
                 return;
 
-            // Check that we stand on a block
-            var block = block_by_pos(Math.round(new_x), Math.floor(check_y));
-            if(is_sink_block(block) == false)
+            // Get blocks below stickman (left and right)
+            var block_left = block_by_pos(Math.floor(new_x), Math.floor(check_y));
+            var block_right = block_by_pos(1 + Math.ceil(new_x), Math.floor(check_y));
+            // If we stand on any of the block, we can jump
+            if(is_sink_block(block_left) == false || is_sink_block(block_right) == false)
             {
                 update_stick_man(new_x, new_y);
                 render();
@@ -301,11 +305,13 @@ $(function() {
 
         function move_left()
         {
+            // We only need to check the left block (i.e. floor(x))
             move(x - move_length, y, Math.floor);
         }
 
         function move_right()
         {
+            // We only need to check the right block (i.e. 1+ceil(x))
             move(x + move_length, y, function(x) { return 1 + Math.ceil(x) });
         }
 
