@@ -45,6 +45,8 @@ function initShaders( gl, vertexShaderId, fragmentShaderId )
     gl.attachShader( program, vertShdr );
     gl.attachShader( program, fragShdr );
     gl.linkProgram( program );
+
+
     
     if ( !gl.getProgramParameter(program, gl.LINK_STATUS) ) {
         var msg = "Shader program failed to link.  The error log is:"
@@ -54,4 +56,12 @@ function initShaders( gl, vertexShaderId, fragmentShaderId )
     }
 
     return program;
+}
+
+function initShader(gl, shaderId, shaderType) {
+    var shaderElement = document.getElementById(shaderId);
+    var shader = gl.createShader(shaderType);
+    gl.shaderSource(shader, shaderElement.text);
+    gl.compileShader(shader);
+    return shader;
 }
