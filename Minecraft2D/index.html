@@ -30,13 +30,34 @@
             gl_FragColor = fColor;
         }
     </script>
+    <script id='block-vertex-shader' type="x-shader/x-fragment">
+        attribute vec4 vPosition;
+        attribute vec4 vColor;
+        attribute vec2 vCenterPos;
+
+        uniform float vScale;
+
+        varying vec4 fColor;
+        varying vec2 vCenter;
+
+        void
+        main()
+        {
+            gl_PointSize = 100. * vScale;
+            gl_Position = vec4(vPosition.xy * vScale - 1.0, 0., 1.);
+            fColor = vColor; //* vCenterPos;
+            vCenter = vCenterPos;
+        }
+    </script>
     <script id='block-fragment-shader' type="x-shader/x-fragment">
         precision mediump float;
 
         varying vec4 fColor;
+        varying vec2 vCenter;
 
         void main() {
-            gl_FragColor = fColor;
+            vec2 temp = 2. * vCenter;
+            gl_FragColor = fColor; //vec4(vec2(fColor.x * vCenter.xy), 0.0, 1.0);
         }
     </script>
     <script type="text/javascript" src="../Common/webgl-utils.js"></script>
