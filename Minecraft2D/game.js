@@ -16,6 +16,7 @@ $(function() {
     var verts_per_block = 4;
     // Stick figure
     var stickBuffer;
+    var mouseBuffer;
 
     // Shader positions.
     var verts_per_block = 6;
@@ -356,15 +357,20 @@ $(function() {
     function render() {
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
+        gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, flatten(colors), gl.STATIC_DRAW);
+        gl.vertexAttribPointer(vColor, 4, gl.FLOAT, false, 0, 0);
+
+        gl.bindBuffer(gl.ARRAY_BUFFER, mouseBuffer);
+        //gl.bufferData(gl.ARRAY_BUFFER, flatten(t), gl.STATIC_DRAW);
+        gl.vertexAttribPointer(vPosition, 2, gl.FLOAT, false, 0, 0);
+        gl.drawArrays(gl.POINTS, 0, 1);
+
         gl.bindBuffer(gl.ARRAY_BUFFER, stickBuffer);
         gl.bufferData(gl.ARRAY_BUFFER, flatten(stick_man), gl.STATIC_DRAW);
         gl.vertexAttribPointer(vPosition, 2, gl.FLOAT, false, 0, 0);
 
         gl.drawArrays(gl.LINES, 0, stick_man.length);
-
-        gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, flatten(colors), gl.STATIC_DRAW);
-        gl.vertexAttribPointer(vColor, 4, gl.FLOAT, false, 0, 0);
 
         gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
         gl.bufferData(gl.ARRAY_BUFFER, flatten(points), gl.STATIC_DRAW);
@@ -374,10 +380,7 @@ $(function() {
         {
             gl.drawArrays(gl.TRIANGLE_FAN, verts_per_block*i, verts_per_block);
         }
-        gl.bindBuffer(gl.ARRAY_BUFFER, mouseBuffer);
-        //gl.bufferData(gl.ARRAY_BUFFER, flatten(t), gl.STATIC_DRAW);
-        gl.vertexAttribPointer(vPosition, 2, gl.FLOAT, false, 0, 0);
-        gl.drawArrays(gl.POINTS, 0, 1);
+
     }
     render();
 
