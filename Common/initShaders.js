@@ -63,5 +63,11 @@ function initShader(gl, shaderId, shaderType) {
     var shader = gl.createShader(shaderType);
     gl.shaderSource(shader, shaderElement.text);
     gl.compileShader(shader);
+    if ( !gl.getShaderParameter(shader, gl.COMPILE_STATUS) ) {
+        var msg = "Fragment shader failed to compile.  The error log is:"
+            + "<pre>" + gl.getShaderInfoLog( shader ) + "</pre>";
+        alert( msg );
+        return -1;
+    }
     return shader;
 }

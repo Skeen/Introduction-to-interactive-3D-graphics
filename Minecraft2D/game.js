@@ -203,7 +203,10 @@ $(function() {
         worldGrid[x][y+1].tile = blocks.FIRE;
     }
 
+    var world_block_center = [];
+
     function flatten2dArray(pointsArray) {
+        world_block_center = [];
         world_points = [];
         world_colors = [];
         for (var x = 0; x < pointsArray.length; x++) {
@@ -224,6 +227,11 @@ $(function() {
                     world_colors.push(tile_color);
                     world_points.push(vec2(point.pos[0] + 0.5, point.pos[1] - 0.5));
                     world_colors.push(tile_color);
+
+                    world_block_center.push(vec2(point.pos[0], point.pos[1]));
+                    world_block_center.push(vec2(point.pos[0], point.pos[1]));
+                    world_block_center.push(vec2(point.pos[0], point.pos[1]));
+                    world_block_center.push(vec2(point.pos[0], point.pos[1]));
 /*                  
                     world_points.push(vec2(point.pos[0] - 0.5, point.pos[1] - 0.5));
                     world_colors.push(tile_color);
@@ -589,7 +597,9 @@ $(function() {
         gl.bufferData(gl.ARRAY_BUFFER, flatten(world_points), gl.STATIC_DRAW);
         gl.vertexAttribPointer(vPosition, 2, gl.FLOAT, false, 0, 0);
 
-        gl.useProgram(boxShaderProgram);
+        gl.bindBuffer(gl.ARRAY_BUFFER, worldCenterBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, flatten(world_block_center), gl.STATIC_DRAW);
+        gl.vertexAttribPointer(vCenterPos, 2, gl.FLOAT, false, 0, 0);
 
         for (var i = 0; i < world_points.length/verts_per_block; i+=1)
         {
@@ -615,6 +625,7 @@ $(function() {
         var vertexShader = initShader(gl, 'vertex-shader', gl.VERTEX_SHADER);
         var fragmentShader = initShader(gl, 'fragment-shader', gl.FRAGMENT_SHADER);
         var boxShader = initShader(gl, 'block-fragment-shader', gl.FRAGMENT_SHADER);
+        var boxVShader = initShader(gl, 'block-vertex-shader', gl.VERTEX_SHADER);
 
         program = gl.createProgram();
         gl.attachShader(program, fragmentShader);
@@ -622,14 +633,17 @@ $(function() {
         gl.linkProgram(program);
 
         boxShaderProgram = gl.createProgram();
-        gl.attachShader(boxShaderProgram, vertexShader);
+        gl.attachShader(boxShaderProgram, boxVShader);
         gl.attachShader(boxShaderProgram, boxShader);
-        gl.linkProgram(boxShaderProgram, boxShader);
+        gl.linkProgram(boxShaderProgram);
     }
 
     var vPosition;
     var vColor;
     var vScalePos;
+
+    var vCenterPos;
+    var worldCenterBuffer;
 
     // Initialize buffers.
     function initBuffers()
@@ -641,18 +655,26 @@ $(function() {
         vColor = gl.getAttribLocation(boxShaderProgram, "vColor");
         vScalePos = gl.getUniformLocation(boxShaderProgram, "vScale");
 
+        vCenterPos = gl.getAttribLocation(boxShaderProgram, 'vCenterPos');
+
         // World Vertex buffer
         worldVBuffer = gl.createBuffer();
         gl.bindBuffer(gl.ARRAY_BUFFER, worldVBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, sizeof['vec2'] * worldBlocks, gl.STATIC_DRAW);
+        gl.bufferData(gl.ARRAY_BUFFER, sizeof['vec2'] * worldBlocks * 4, gl.STATIC_DRAW);
         gl.vertexAttribPointer(vPosition, 2, gl.FLOAT, false, 0, 0);
         gl.enableVertexAttribArray(vPosition);
         // World Color buffer
         worldCBuffer = gl.createBuffer();
         gl.bindBuffer(gl.ARRAY_BUFFER, worldCBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, sizeof['vec4'] * worldBlocks, gl.STATIC_DRAW);
+        gl.bufferData(gl.ARRAY_BUFFER, sizeof['vec4'] * worldBlocks * 4, gl.STATIC_DRAW);
         gl.vertexAttribPointer(vColor, 4, gl.FLOAT, false, 0, 0);
         gl.enableVertexAttribArray(vColor);
+        // World Color buffer
+        worldCenterBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, worldCenterBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, sizeof['vec2'] * worldBlocks * 4, gl.STATIC_DRAW);
+        gl.vertexAttribPointer(vCenterPos, 2, gl.FLOAT, false, 0, 0);
+        gl.enableVertexAttribArray(vCenterPos);
 
         // Set the uniform scale variable
         gl.uniform1f(vScalePos, render_scale);
