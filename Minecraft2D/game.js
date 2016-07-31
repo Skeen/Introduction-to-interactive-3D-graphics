@@ -1,3 +1,5 @@
+// TODO: Send stickman as buffer, then move via uniform variable?
+
 /**
  * Created by dkchokk on 27-07-2016.
  */
@@ -592,6 +594,19 @@ $(function() {
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
         gl.useProgram(program);
+        // Draw the stick figure
+        gl.bindBuffer(gl.ARRAY_BUFFER, stickCBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, flatten(stick_colors), gl.STATIC_DRAW);
+        gl.vertexAttribPointer(vColor, 4, gl.FLOAT, false, 0, 0);
+
+        gl.bindBuffer(gl.ARRAY_BUFFER, stickVBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, flatten(stick_points), gl.STATIC_DRAW);
+        gl.vertexAttribPointer(vPosition, 2, gl.FLOAT, false, 0, 0);
+        gl.drawArrays(gl.LINES, 0, stick_points.length);
+
+        gl.useProgram(boxShaderProgram);
+        gl.uniform1f(vTime, delta);
+
         // Draw the mouse block outline
         if(mouse_points.length != 0)
         {
@@ -605,19 +620,6 @@ $(function() {
 
             gl.drawArrays(gl.LINES, 0, mouse_points.length);
         }
-
-        // Draw the stick figure
-        gl.bindBuffer(gl.ARRAY_BUFFER, stickCBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, flatten(stick_colors), gl.STATIC_DRAW);
-        gl.vertexAttribPointer(vColor, 4, gl.FLOAT, false, 0, 0);
-
-        gl.bindBuffer(gl.ARRAY_BUFFER, stickVBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, flatten(stick_points), gl.STATIC_DRAW);
-        gl.vertexAttribPointer(vPosition, 2, gl.FLOAT, false, 0, 0);
-        gl.drawArrays(gl.LINES, 0, stick_points.length);
-
-        gl.useProgram(boxShaderProgram);
-        gl.uniform1f(vTime, delta);
 
         // Draw the world
         gl.bindBuffer(gl.ARRAY_BUFFER, worldCBuffer);
@@ -706,12 +708,26 @@ $(function() {
         gl.bufferData(gl.ARRAY_BUFFER, sizeof['vec4'] * worldBlocks * 4, gl.STATIC_DRAW);
         gl.vertexAttribPointer(vColor, 4, gl.FLOAT, false, 0, 0);
         gl.enableVertexAttribArray(vColor);
-        // World Color buffer
+        // World Center buffer
         worldCenterBuffer = gl.createBuffer();
         gl.bindBuffer(gl.ARRAY_BUFFER, worldCenterBuffer);
         gl.bufferData(gl.ARRAY_BUFFER, sizeof['vec2'] * worldBlocks * 4, gl.STATIC_DRAW);
         gl.vertexAttribPointer(vCenterPos, 2, gl.FLOAT, false, 0, 0);
         gl.enableVertexAttribArray(vCenterPos);
+
+        // Mouse Vertex buffer
+        mouseVBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, mouseVBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, sizeof['vec2'] * 5 * 2, gl.STATIC_DRAW);
+        gl.vertexAttribPointer(vPosition, 2, gl.FLOAT, false, 0, 0);
+        gl.enableVertexAttribArray(vPosition);
+        // Mouse Color buffer
+        mouseCBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, mouseCBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, sizeof['vec4'] * 5 * 2, gl.STATIC_DRAW);
+        gl.vertexAttribPointer(vColor, 2, gl.FLOAT, false, 0, 0);
+        gl.enableVertexAttribArray(vColor);
+        // TODO: Mouse Center buffer
 
         // Set the uniform scale variable
         gl.uniform1f(vScalePos, render_scale);
@@ -735,19 +751,6 @@ $(function() {
         gl.bindBuffer(gl.ARRAY_BUFFER, stickCBuffer);
         gl.bufferData(gl.ARRAY_BUFFER, sizeof['vec4'] * worldBlocks, gl.STATIC_DRAW);
         gl.vertexAttribPointer(vColor, 4, gl.FLOAT, false, 0, 0);
-        gl.enableVertexAttribArray(vColor);
-
-        // Mouse Vertex buffer
-        mouseVBuffer = gl.createBuffer();
-        gl.bindBuffer(gl.ARRAY_BUFFER, mouseVBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, sizeof['vec2'] * 5 * 2, gl.STATIC_DRAW);
-        gl.vertexAttribPointer(vPosition, 2, gl.FLOAT, false, 0, 0);
-        gl.enableVertexAttribArray(vPosition);
-        // Mouse Color buffer
-        mouseCBuffer = gl.createBuffer();
-        gl.bindBuffer(gl.ARRAY_BUFFER, mouseCBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, sizeof['vec4'] * 5 * 2, gl.STATIC_DRAW);
-        gl.vertexAttribPointer(vColor, 2, gl.FLOAT, false, 0, 0);
         gl.enableVertexAttribArray(vColor);
 
         // Set the uniform scale variable
