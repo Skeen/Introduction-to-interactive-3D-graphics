@@ -203,6 +203,17 @@ $(function() {
 
     var world_block_center = [];
 
+    function update_block(x, y, tile)
+    {
+        worldGrid[x][y].tile = tile;
+        var tile_color = blocks.to_color(tile);
+        for(var i = 0; i < 4; i ++)
+        {
+            var offset = x + y * worldGrid.length;
+            world_colors[i] = tile_color;
+        }
+    }
+
     function flatten2dArray(pointsArray) {
         world_block_center = [];
         world_points = [];
@@ -531,15 +542,13 @@ $(function() {
             //console.log(block_string);
             //console.log(block_id);
 
-            worldGrid[blockX][blockY].tile = block_id;
-            flatten2dArray(worldGrid);
+            update_block(blockX, blockY, block_id);
             shockwave();
             //render();
         }
-        else if(worldGrid[blockX][blockY] != blocks.EMPTY && event.shiftKey == true)
+        else if(worldGrid[blockX][blockY].tile != blocks.EMPTY && event.shiftKey == true)
         {
-            worldGrid[blockX][blockY].tile = blocks.EMPTY;
-            flatten2dArray(worldGrid);
+            update_block(blockX, blockY, blocks.EMPTY);
             shockwave();
             //render();
         }
