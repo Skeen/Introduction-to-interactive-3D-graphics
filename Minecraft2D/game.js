@@ -36,6 +36,7 @@ $(function() {
     // world render
     var world_points = [];
     var world_colors = [];
+    var world_centers = [];
     // world variables
     var verts_per_block = 4;
     // stick-man variables
@@ -49,9 +50,22 @@ $(function() {
     var mouse_points = [];
     var mouse_colors = [];
     var mouse_centers = [];
-
+    // Shockwave variables
+    var shockwave_duration = 1000;
+    var timerId;
     // Render stuf
     var render_scale = 2 / Math.max(worldWidth, worldHeight);
+
+    // Shader variables
+    var vPosition;
+    var vColor;
+    var vScalePos;
+    var vCenterPos;
+    var vClickPos;
+    var vTime;
+    var vStickPos;
+
+    // Setup buffers
     initBuffers();
 
     var blocks = {
@@ -163,50 +177,58 @@ $(function() {
 
     }
 
-    // Generate empty world.
-    for (var x = 0; x < worldWidth; x++) {
-        worldGrid[x] = [];
-        for (var y = 0; y < worldHeight; y++) {
-            worldGrid[x][y] = {
-                tile: blocks.EMPTY,
-                pos: vec2(x + 0.5, y + 0.5)
-                //rendered: false
-            }
-        }
-    }
-/*
+    /*
     worldGrid[1][0].tile = blocks.STONE;
     worldGrid[0][0].tile = blocks.STONE;
     console.log(can_build(0,0));
 */
 
-    // Create ground
-    for (var x = 0; x < worldWidth; x++) {
-        for (var y = 0; y < Math.floor(worldHeight/3); y++) {
-            worldGrid[x][y].tile = blocks.DIRT;
+    function setup_initial_world()
+    {
+        // Generate empty world.
+        for (var x = 0; x < worldWidth; x++) {
+            worldGrid[x] = [];
+            for (var y = 0; y < worldHeight; y++) {
+                worldGrid[x][y] = {
+                    // Tile
+                    tile: blocks.EMPTY,
+                    // Center position
+                    pos: vec2(x + 0.5, y + 0.5)
+                }
+            }
+        }
+
+        // ------------ //
+        // Update tiles //
+        // ------------ //
+        // Create ground
+        for (var x = 0; x < worldWidth; x++) {
+            for (var y = 0; y < Math.floor(worldHeight/3); y++) {
+                worldGrid[x][y].tile = blocks.DIRT;
+            }
+        }
+
+        // Create grass
+        for (var x = 0; x < worldWidth; x++) {
+            var y = Math.floor(worldHeight/3);
+            worldGrid[x][y].tile = blocks.GRASS;
+            worldGrid[x][y+1].tile = blocks.GRASS;
+        }
+
+        // Create lake
+        for (var x = Math.floor(worldWidth/4*2); x < Math.floor(worldWidth/4*3); x++) {
+            var y = Math.floor(worldHeight/3);
+            worldGrid[x][y+1].tile = blocks.WATER;
+        }
+
+        // Create fire/lava pit
+        for (var x = 0; x < Math.floor(worldWidth/4); x++) {
+            var y = Math.floor(worldHeight/3);
+            worldGrid[x][y+1].tile = blocks.FIRE;
         }
     }
 
-    // Create grass
-    for (var x = 0; x < worldWidth; x++) {
-        var y = Math.floor(worldHeight/3);
-        worldGrid[x][y].tile = blocks.GRASS;
-        worldGrid[x][y+1].tile = blocks.GRASS;
-    }
-
-    // Create lake
-    for (var x = Math.floor(worldWidth/4*2); x < Math.floor(worldWidth/4*3); x++) {
-        var y = Math.floor(worldHeight/3);
-        worldGrid[x][y+1].tile = blocks.WATER;
-    }
-
-    // Create fire/lava pit
-    for (var x = 0; x < Math.floor(worldWidth/4); x++) {
-        var y = Math.floor(worldHeight/3);
-        worldGrid[x][y+1].tile = blocks.FIRE;
-    }
-
-    var world_block_center = [];
+    setup_initial_world();
 
     function update_block(x, y, tile)
     {
@@ -226,7 +248,7 @@ $(function() {
 
     function initialize_block_world()
     {
-        world_block_center = [];
+        world_centers = [];
         world_points = [];
         world_colors = [];
         for (var x = 0; x < worldGrid.length; x++)
@@ -237,18 +259,15 @@ $(function() {
                     var tile_color = blocks.to_color(point.tile);
 
                     world_points.push(vec2(point.pos[0] - 0.5, point.pos[1] - 0.5));
-                    world_colors.push(tile_color);
                     world_points.push(vec2(point.pos[0] - 0.5, point.pos[1] + 0.5));
-                    world_colors.push(tile_color);
                     world_points.push(vec2(point.pos[0] + 0.5, point.pos[1] + 0.5));
-                    world_colors.push(tile_color);
                     world_points.push(vec2(point.pos[0] + 0.5, point.pos[1] - 0.5));
-                    world_colors.push(tile_color);
 
-                    world_block_center.push(vec2(point.pos[0], point.pos[1]));
-                    world_block_center.push(vec2(point.pos[0], point.pos[1]));
-                    world_block_center.push(vec2(point.pos[0], point.pos[1]));
-                    world_block_center.push(vec2(point.pos[0], point.pos[1]));
+                    for(var i = 0; i < 4; i++)
+                    {
+                        world_colors.push(tile_color);
+                        world_centers.push(vec2(point.pos[0], point.pos[1]));
+                    }
             }
         }
     }
@@ -563,20 +582,16 @@ $(function() {
         }
     });
 
-    var mouseClickPos;
-    var duration = 1000;
-    var currentTime;
-    var delta = 0;
-    var timerId;
-
     canvas.addEventListener("mousedown", function (event)
     {
         function shockwave()
         {
+            var startTime = new Date().getTime();
+
             function doClickExplosion()
             {
-                delta = new Date().getTime() - currentTime;
-                if (delta > duration)
+                var delta = new Date().getTime() - startTime;
+                if (delta > shockwave_duration)
                 {
                     delta = 0;
                     clearInterval(timerId);
@@ -585,16 +600,14 @@ $(function() {
                 gl.uniform1f(vTime, delta);
             }
 
+            gl.useProgram(boxShaderProgram);
+            var mouseClickPos = mousePoint;
+            gl.uniform2fv(vClickPos, mouseClickPos);
+
             if (timerId)
                 clearInterval(timerId);
 
-            mouseClickPos = mousePoint;
-            currentTime = new Date().getTime();
-            gl.useProgram(boxShaderProgram);
-            gl.uniform2fv(vClickPos, mouseClickPos);
             timerId = setInterval(doClickExplosion, 1);
-
-            delta = 0;
         }
 
         var mousePoint = vec2((((-1 + 2 * event.clientX / canvas.width)+1)/2)*worldWidth,
@@ -698,7 +711,7 @@ $(function() {
         // Draw BOXES //
         // -----------//
         gl.useProgram(boxShaderProgram);
-        gl.uniform1f(vTime, delta);
+        gl.uniform1f(vTime, 0);
 
         // Draw the mouse block outline
         if(mouse_points.length != 0)
@@ -754,7 +767,7 @@ $(function() {
         gl.bufferData(gl.ARRAY_BUFFER, flatten(world_points), gl.STATIC_DRAW);
         // Buffer Centers
         gl.bindBuffer(gl.ARRAY_BUFFER, worldCenterBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, flatten(world_block_center), gl.STATIC_DRAW);
+        gl.bufferData(gl.ARRAY_BUFFER, flatten(world_centers), gl.STATIC_DRAW);
     }
     bufferWorld();
 
@@ -800,17 +813,6 @@ $(function() {
         gl.attachShader(boxShaderProgram, boxShader);
         gl.linkProgram(boxShaderProgram);
     }
-
-    var vPosition;
-    var vColor;
-    var vScalePos;
-
-    var vCenterPos;
-
-    var vClickPos;
-    var vTime;
-
-    var vStickPos;
 
     // Initialize buffers.
     function initBuffers()
