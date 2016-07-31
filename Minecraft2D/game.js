@@ -711,7 +711,7 @@ $(function() {
         // Draw BOXES //
         // -----------//
         gl.useProgram(boxShaderProgram);
-        gl.uniform1f(vTime, 0);
+        //gl.uniform1f(vTime, 0);
 
         // Draw the mouse block outline
         if(mouse_points.length != 0)
