@@ -18,12 +18,14 @@ $(function() {
     // Blocks
     var worldVBuffer;
     var worldCBuffer;
+    var worldCenterBuffer;
     // Stick figure
     var stickVBuffer;
     var stickCBuffer;
     // Mouse
     var mouseVBuffer;
     var mouseCBuffer;
+    var mouseCenterBuffer;
 
     // Game related stuff.
     var worldWidth = 40;
@@ -46,6 +48,7 @@ $(function() {
     // mouse
     var mouse_points = [];
     var mouse_colors = [];
+    var mouse_centers = [];
 
     // Render stuf
     var render_scale = 2 / Math.max(worldWidth, worldHeight);
@@ -209,12 +212,16 @@ $(function() {
     {
         worldGrid[x][y].tile = tile;
         var tile_color = blocks.to_color(tile);
+
+        // Get the start offset into world_colors
+        var offset = 4 * (y + (x * worldGrid.length));
+
         for(var i = 0; i < 4; i ++)
         {
-            // Get the start offset into world_colors
-            var offset = 4 * (y + (x * worldGrid.length));
             world_colors[offset+i] = tile_color;
         }
+
+        rebufferColor(offset, offset+4);
     }
 
     function initialize_block_world()
@@ -578,14 +585,22 @@ $(function() {
         var color = (placeable ? vec4(0., 0., 0., 1.) : vec4(1., 0., 0., 1.));
 
         mouse_colors = [];
+        mouse_centers = [];
         for(var i = 0; i < mouse_points.length; i++)
         {
             mouse_colors.push(color);
+            mouse_centers.push(vec2(mousePoint[0], mousePoint[1]));
         }
 
-        // gl.bindBuffer(gl.ARRAY_BUFFER, mouseBuffer);
-        // gl.bufferSubData(gl.ARRAY_BUFFER, 0, flatten(mousePoint));
-
+        gl.bindBuffer(gl.ARRAY_BUFFER, mouseCBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, flatten(mouse_colors), gl.STATIC_DRAW);
+         
+        gl.bindBuffer(gl.ARRAY_BUFFER, mouseVBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, flatten(mouse_points), gl.STATIC_DRAW);
+         
+        gl.bindBuffer(gl.ARRAY_BUFFER, mouseCenterBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, flatten(mouse_centers), gl.STATIC_DRAW);
+         
         //render();
     });
 
@@ -610,28 +625,26 @@ $(function() {
         // Draw the mouse block outline
         if(mouse_points.length != 0)
         {
-            gl.bindBuffer(gl.ARRAY_BUFFER, worldCBuffer);
-            gl.bufferData(gl.ARRAY_BUFFER, flatten(mouse_colors), gl.STATIC_DRAW);
+            gl.bindBuffer(gl.ARRAY_BUFFER, mouseCBuffer);
             gl.vertexAttribPointer(vColor, 4, gl.FLOAT, false, 0, 0);
 
             gl.bindBuffer(gl.ARRAY_BUFFER, mouseVBuffer);
-            gl.bufferData(gl.ARRAY_BUFFER, flatten(mouse_points), gl.STATIC_DRAW);
             gl.vertexAttribPointer(vPosition, 2, gl.FLOAT, false, 0, 0);
+
+            gl.bindBuffer(gl.ARRAY_BUFFER, mouseCenterBuffer);
+            gl.vertexAttribPointer(vCenterPos, 2, gl.FLOAT, false, 0, 0);
 
             gl.drawArrays(gl.LINES, 0, mouse_points.length);
         }
 
         // Draw the world
         gl.bindBuffer(gl.ARRAY_BUFFER, worldCBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, flatten(world_colors), gl.STATIC_DRAW);
         gl.vertexAttribPointer(vColor, 4, gl.FLOAT, false, 0, 0);
 
         gl.bindBuffer(gl.ARRAY_BUFFER, worldVBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, flatten(world_points), gl.STATIC_DRAW);
         gl.vertexAttribPointer(vPosition, 2, gl.FLOAT, false, 0, 0);
 
         gl.bindBuffer(gl.ARRAY_BUFFER, worldCenterBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, flatten(world_block_center), gl.STATIC_DRAW);
         gl.vertexAttribPointer(vCenterPos, 2, gl.FLOAT, false, 0, 0);
 
         for (var i = 0; i < world_points.length/verts_per_block; i+=1)
@@ -641,6 +654,32 @@ $(function() {
 
         window.requestAnimFrame(render, canvas);
     }
+
+    function rebufferColor(start, end)
+    {
+        var replace_values = world_colors.slice(start, end);
+/*
+        console.log(start, end);
+        console.log(replace_values);
+*/        
+        gl.bindBuffer(gl.ARRAY_BUFFER, worldCBuffer);
+        gl.bufferSubData(gl.ARRAY_BUFFER, start*sizeof['vec4'], flatten(replace_values));
+    }
+
+    function bufferWorld()
+    {
+        // Buffer Color
+        gl.bindBuffer(gl.ARRAY_BUFFER, worldCBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, flatten(world_colors), gl.STATIC_DRAW);
+        // Buffer Verticies
+        gl.bindBuffer(gl.ARRAY_BUFFER, worldVBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, flatten(world_points), gl.STATIC_DRAW);
+        // Buffer Centers
+        gl.bindBuffer(gl.ARRAY_BUFFER, worldCenterBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, flatten(world_block_center), gl.STATIC_DRAW);
+    }
+    bufferWorld();
+
     render();
 
     // Initialize WebGL render context.
@@ -678,7 +717,6 @@ $(function() {
     var vScalePos;
 
     var vCenterPos;
-    var worldCenterBuffer;
 
     var vClickPos;
     var vTime;
@@ -727,7 +765,12 @@ $(function() {
         gl.bufferData(gl.ARRAY_BUFFER, sizeof['vec4'] * 5 * 2, gl.STATIC_DRAW);
         gl.vertexAttribPointer(vColor, 2, gl.FLOAT, false, 0, 0);
         gl.enableVertexAttribArray(vColor);
-        // TODO: Mouse Center buffer
+        // World Center buffer
+        mouseCenterBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, mouseCenterBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, sizeof['vec2'] * 5 * 4, gl.STATIC_DRAW);
+        gl.vertexAttribPointer(vCenterPos, 2, gl.FLOAT, false, 0, 0);
+        gl.enableVertexAttribArray(vCenterPos);
 
         // Set the uniform scale variable
         gl.uniform1f(vScalePos, render_scale);
