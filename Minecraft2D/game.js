@@ -50,9 +50,22 @@ $(function() {
     var mouse_points = [];
     var mouse_colors = [];
     var mouse_centers = [];
-
+    // Shockwave variables
+    var shockwave_duration = 1000;
+    var timerId;
     // Render stuf
     var render_scale = 2 / Math.max(worldWidth, worldHeight);
+
+    // Shader variables
+    var vPosition;
+    var vColor;
+    var vScalePos;
+    var vCenterPos;
+    var vClickPos;
+    var vTime;
+    var vStickPos;
+
+    // Setup buffers
     initBuffers();
 
     var blocks = {
@@ -216,7 +229,6 @@ $(function() {
     }
 
     setup_initial_world();
-
 
     function update_block(x, y, tile)
     {
@@ -568,20 +580,16 @@ $(function() {
         }
     });
 
-    var mouseClickPos;
-    var duration = 1000;
-    var currentTime;
-    var delta = 0;
-    var timerId;
-
     canvas.addEventListener("mousedown", function (event)
     {
         function shockwave()
         {
+            var startTime = new Date().getTime();
+
             function doClickExplosion()
             {
-                delta = new Date().getTime() - currentTime;
-                if (delta > duration)
+                var delta = new Date().getTime() - startTime;
+                if (delta > stockwave_duration)
                 {
                     delta = 0;
                     clearInterval(timerId);
@@ -590,16 +598,14 @@ $(function() {
                 gl.uniform1f(vTime, delta);
             }
 
+            gl.useProgram(boxShaderProgram);
+            var mouseClickPos = mousePoint;
+            gl.uniform2fv(vClickPos, mouseClickPos);
+
             if (timerId)
                 clearInterval(timerId);
 
-            mouseClickPos = mousePoint;
-            currentTime = new Date().getTime();
-            gl.useProgram(boxShaderProgram);
-            gl.uniform2fv(vClickPos, mouseClickPos);
             timerId = setInterval(doClickExplosion, 1);
-
-            delta = 0;
         }
 
         var mousePoint = vec2((((-1 + 2 * event.clientX / canvas.width)+1)/2)*worldWidth,
@@ -703,7 +709,7 @@ $(function() {
         // Draw BOXES //
         // -----------//
         gl.useProgram(boxShaderProgram);
-        gl.uniform1f(vTime, delta);
+        gl.uniform1f(vTime, 0);
 
         // Draw the mouse block outline
         if(mouse_points.length != 0)
@@ -805,17 +811,6 @@ $(function() {
         gl.attachShader(boxShaderProgram, boxShader);
         gl.linkProgram(boxShaderProgram);
     }
-
-    var vPosition;
-    var vColor;
-    var vScalePos;
-
-    var vCenterPos;
-
-    var vClickPos;
-    var vTime;
-
-    var vStickPos;
 
     // Initialize buffers.
     function initBuffers()
