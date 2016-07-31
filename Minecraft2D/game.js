@@ -84,7 +84,7 @@ $(function() {
             case blocks.EMPTY:
                 return vec4(0., 0., 1., 0.);
             case blocks.STONE:
-                return vec4(2., 2., 2., 1.);
+                return vec4(0.2, 0.2, 0.2, 1.);
             case blocks.GRASS:
                 return vec4(0., 1., 0., 1.);
             case blocks.DIRT:
@@ -494,9 +494,12 @@ $(function() {
             function doClickExplosion() {
                 delta = new Date().getTime() - currentTime;
                 if (delta > duration)
+                {
+                    delta = 0;
+                    gl.uniform1f(vTime, delta);
                     clearInterval(timerId);
+                }
                 gl.uniform1f(vTime, delta);
-                gl.uniform2fv(vClickPos, mouseClickPos);
             }
 
             if (timerId)
@@ -504,6 +507,7 @@ $(function() {
 
             mouseClickPos = mousePoint;
             currentTime = new Date().getTime();
+            gl.uniform2fv(vClickPos, mouseClickPos);
             timerId = setInterval(doClickExplosion, 1);
 
             delta = 0;
