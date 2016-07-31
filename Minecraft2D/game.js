@@ -309,29 +309,27 @@ $(function() {
     // Let blocks flow onto empty blocks
     setInterval(function block_flow()
     {
-        var flip_world = JSON.parse(JSON.stringify(worldGrid));
+        var old_world = JSON.parse(JSON.stringify(worldGrid));
         for (var x = 0; x < worldWidth; x++) {
             for (var y = 0; y < worldHeight; y++) {
-                var point = worldGrid[x][y];
+                var point = old_world[x][y];
                 if(is_flow_block(point))
                 {
-                    if(valid_index(x-1, y) && worldGrid[x-1][y].tile == blocks.EMPTY)
+                    if(valid_index(x-1, y) && old_world[x-1][y].tile == blocks.EMPTY)
                     {
-                        flip_world[x-1][y].tile = point.tile;
+                        update_block(x-1, y, point.tile);
                     }
-                    if(valid_index(x+1, y) && worldGrid[x+1][y].tile == blocks.EMPTY)
+                    if(valid_index(x+1, y) && old_world[x+1][y].tile == blocks.EMPTY)
                     {
-                        flip_world[x+1][y].tile = point.tile;
+                        update_block(x+1, y, point.tile);
                     }
-                    if(valid_index(x, y-1) && worldGrid[x][y-1].tile == blocks.EMPTY)
+                    if(valid_index(x, y-1) && old_world[x][y-1].tile == blocks.EMPTY)
                     {
-                        flip_world[x][y-1].tile = point.tile;
+                        update_block(x, y-1, point.tile);
                     }
                 }
             }
         }
-        worldGrid = flip_world;
-        flatten2dArray(worldGrid);
         //render();
     }, 300);
 
