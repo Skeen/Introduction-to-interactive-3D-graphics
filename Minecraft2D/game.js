@@ -255,9 +255,8 @@ $(function() {
 
     initialize_block_world();
 
-    function update_stick_man(x, y)
+    function initialize_stick_man()
     {
-        stick_man_pos = vec2(x,y);
         stick_points = [];
         stick_colors = [];
         // Legs
@@ -274,14 +273,20 @@ $(function() {
 
         for(var i = 0; i < stick_points.length; i++)
         {
-            // Update points
-            stick_points[i][0] += x;
-            stick_points[i][1] += y;
             // Add color
             stick_colors.push(vec4(0., 0., 0., 1.));
         }
     }
+    
+    function update_stick_man(x, y)
+    {
+        // Set the stickman position variable
+        stick_man_pos = vec2(x,y);
+        gl.useProgram(program);
+        gl.uniform2fv(vStickPos, stick_man_pos);
+    }
 
+    initialize_stick_man();
     update_stick_man(0.5 + Math.floor(worldHeight/3), Math.floor(worldHeight/3)+10);
 
     function block_by_pos(x, y)
@@ -671,17 +676,22 @@ $(function() {
     {
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
+        // ---------------/
+        // Draw STICKMAN -/
+        // ---------------/
         gl.useProgram(program);
         // Draw the stick figure
         gl.bindBuffer(gl.ARRAY_BUFFER, stickCBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, flatten(stick_colors), gl.STATIC_DRAW);
         gl.vertexAttribPointer(vColor, 4, gl.FLOAT, false, 0, 0);
 
         gl.bindBuffer(gl.ARRAY_BUFFER, stickVBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, flatten(stick_points), gl.STATIC_DRAW);
         gl.vertexAttribPointer(vPosition, 2, gl.FLOAT, false, 0, 0);
+
         gl.drawArrays(gl.LINES, 0, stick_points.length);
 
+        // -----------//
+        // Draw BOXES //
+        // -----------//
         gl.useProgram(boxShaderProgram);
         gl.uniform1f(vTime, delta);
 
@@ -743,6 +753,17 @@ $(function() {
     }
     bufferWorld();
 
+    function bufferStick()
+    {
+        // Buffer Color
+        gl.bindBuffer(gl.ARRAY_BUFFER, stickCBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, flatten(stick_colors), gl.STATIC_DRAW);
+        // Buffer Verticies
+        gl.bindBuffer(gl.ARRAY_BUFFER, stickVBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, flatten(stick_points), gl.STATIC_DRAW);
+    }
+    bufferStick();
+
     render();
 
     // Initialize WebGL render context.
@@ -783,6 +804,8 @@ $(function() {
 
     var vClickPos;
     var vTime;
+
+    var vStickPos;
 
     // Initialize buffers.
     function initBuffers()
@@ -843,6 +866,7 @@ $(function() {
         vPosition = gl.getAttribLocation(program, "vPosition");
         vColor = gl.getAttribLocation(program, "vColor");
         vScalePos = gl.getUniformLocation(program, "vScale");
+        vStickPos = gl.getUniformLocation(program, "vStickPos");
 
         // Stickman Vertex buffer
         stickVBuffer = gl.createBuffer();

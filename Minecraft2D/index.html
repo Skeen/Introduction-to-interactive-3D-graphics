@@ -8,6 +8,7 @@
         attribute vec4 vColor;
 
         uniform float vScale;
+        uniform vec2 vStickPos;
 
         varying vec4 fColor;
 
@@ -15,7 +16,7 @@
         main()
         {
             gl_PointSize = 100. * vScale;
-            gl_Position = vec4(vPosition.xy * vScale - 1.0, 0., 1.);
+            gl_Position = vec4((vPosition.xy + vStickPos.xy) * vScale - 1.0, 0., 1.);
             fColor = vColor;
         }
     </script>
@@ -83,12 +84,14 @@
         varying float effect;
 
         void main() {
-            vec4 color0 = mix(fColor, vec4(1.0, 1.0, 1.0, fColor.w), 0.5);
-            vec4 color1 = fColor;
+            vec4 color_center = mix(fColor, vec4(1.0, 1.0, 1.0, fColor.w), 0.5);
+            vec4 color_edge = fColor;
 
-            float gradient = length(fCenter.xy - fPosition.xy);
-            vec4 color_mix = mix(color0, color1, gradient * 60.0);
+            // Gradient
+            float gradient = distance(fCenter.xy, fPosition.xy);
+            vec4 color_mix = mix(color_center, color_edge, gradient * 60.0);
 
+            // Shockwave effect
             color_mix = mix(vec4(0., 0., 0., fColor.w), color_mix, 1. - (effect*25.));
 
             gl_FragColor = color_mix;
