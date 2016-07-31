@@ -589,7 +589,7 @@ $(function() {
             function doClickExplosion()
             {
                 var delta = new Date().getTime() - startTime;
-                if (delta > stockwave_duration)
+                if (delta > shockwave_duration)
                 {
                     delta = 0;
                     clearInterval(timerId);
