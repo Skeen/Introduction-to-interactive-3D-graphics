@@ -398,55 +398,52 @@ $(function() {
     {
         var new_x = xPos;
         var new_y = yPos;
-        var col11 = block_by_pos(Math.floor(new_x)-1, Math.floor(new_y)+4);
-        var col21 = block_by_pos(Math.floor(new_x), Math.floor(new_y)+4);
-        var col31 = block_by_pos(Math.floor(new_x)+1, Math.floor(new_y)+4);
-        var col12 = block_by_pos(Math.floor(new_x)-1, Math.floor(new_y)+5);
-        var col22 = block_by_pos(Math.floor(new_x), Math.floor(new_y)+5);
-        var col32 = block_by_pos(Math.floor(new_x)+1, Math.floor(new_y)+5);
-        var col13 = block_by_pos(Math.floor(new_x)-1, Math.floor(new_y)+6);
-        var col23 = block_by_pos(Math.floor(new_x), Math.floor(new_y)+6);
-        var col33 = block_by_pos(Math.floor(new_x)+1, Math.floor(new_y)+6);
-        var col14 = block_by_pos(Math.floor(new_x)-1, Math.floor(new_y)+7);
-        var col24 = block_by_pos(Math.floor(new_x), Math.floor(new_y)+7);
-        var col34 = block_by_pos(Math.floor(new_x)+1, Math.floor(new_y)+7);
-        //var bool = false;
+
+        //row 1 one above
+        var col11 = block_by_pos(Math.round(new_x), Math.floor(new_y)+5);
+        var col12 = block_by_pos(Math.floor(new_x)+1, Math.floor(new_y)+5);
+        //row 2
+        var col21 = block_by_pos(Math.round(new_x), Math.floor(new_y)+6);
+        var col22 = block_by_pos(Math.floor(new_x)+1, Math.floor(new_y)+6);
+        //row 3
+        var col31 = block_by_pos(Math.round(new_x), Math.floor(new_y)+7);
+        var col32 = block_by_pos(Math.floor(new_x)+1, Math.floor(new_y)+7);
+        //row 4
+        var col41 = block_by_pos(Math.round(new_x), Math.floor(new_y)+8);
+        var col42 = block_by_pos(Math.floor(new_x)+1, Math.floor(new_y)+8);
+
+        //var col51 = block_by_pos(Math.round(new_x), Math.floor(new_y)+9);
+        //var col52 = block_by_pos(Math.floor(new_x)+1, Math.floor(new_y)+9);
         var blocksAbove = [];
         //row 1
         blocksAbove.push(col11);
-        blocksAbove.push(col21);
-        blocksAbove.push(col31);
+        blocksAbove.push(col12);
         //row 2
-        blocksAbove.push(col12);
-        blocksAbove.push(col12);
-        blocksAbove.push(col32);
+        blocksAbove.push(col21);
+        blocksAbove.push(col22);
         //row 3
-        blocksAbove.push(col13);
-        blocksAbove.push(col23);
-        blocksAbove.push(col33);
+        blocksAbove.push(col31);
+        blocksAbove.push(col32);
         //row 4
-        blocksAbove.push(col14);
-        blocksAbove.push(col24);
-        blocksAbove.push(col34);
-        //blocksAbove.push(bool);
-        //console.log(Math.floor(new_y));
+        blocksAbove.push(col41);
+        blocksAbove.push(col42);
         var reducedJumpHeight = 0;
         var above_sink = true;
         for(var j=0; j < blocksAbove.length; j++){
             above_sink &= is_sink_block(blocksAbove[j]);
-            if(j<3 && !above_sink){
+            if(j<2 && !above_sink){
                 reducedJumpHeight = 5;
                 break;
             }
-            else if(j<6 && !above_sink){
+            else if(j<4 && !above_sink){
                 reducedJumpHeight = 4;
                 break;
             }
-            else if(j<9 && !above_sink){
+            else if(j<6 && !above_sink){
                 reducedJumpHeight = 3;
                 break;
             }
-            else if(j>9 && !above_sink){
+            else if(j<8 && !above_sink){
                 reducedJumpHeight = 2;
                 break;
             }
@@ -465,28 +462,33 @@ $(function() {
 
         // Check if all blocks below us are sink blocks
         var all_sink = true;
-        for(var x = 0; x < blocks.length; x++)
+        //TODO can't jump if blocks are undefined
+        if(blocks != undefined)
         {
-            all_sink &= is_sink_block(blocks[x]);
-        }
-        if(all_sink)
-        {
-            update_stick_man(new_x, new_y);
-            //render();
+            for(var x = 0; x < blocks.length; x++)
+            {
+                all_sink &= is_sink_block(blocks[x]);
+            }
+            if(all_sink)
+            {
+                update_stick_man(new_x, new_y);
+                //render();
+            }
+
+            // Check if any blocks below us are fire blocks
+            var any_fire = false;
+            for(var x = 0; x < blocks.length; x++)
+            {
+                any_fire |= is_jump_block(blocks[x]);
+            }
+            if(any_fire)
+            {
+                new_y = stick_man_pos[1] + (jump_height-reduced_jump_height(new_x, new_y));
+                update_stick_man(new_x, new_y);
+                //render();
+            }
         }
 
-        // Check if any blocks below us are fire blocks
-        var any_fire = false;
-        for(var x = 0; x < blocks.length; x++)
-        {
-            any_fire |= is_jump_block(blocks[x]);
-        }
-        if(any_fire)
-        {
-            new_y = stick_man_pos[1] + (jump_height-reduced_jump_height(new_x, new_y));
-            update_stick_man(new_x, new_y);
-            //render();
-        }
     }, 10);
 
     window.addEventListener("keydown", function (e) {
