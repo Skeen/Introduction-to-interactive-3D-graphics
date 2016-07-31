@@ -52,9 +52,9 @@
         // Higher == Faster wiggle
         const float speed = 20.;
         // Lower == Larger waves
-        const float waves = 0.5;
+        const float waves = 0.7;
         // Lower == Less falloff
-        const float falloff = 0.25;
+        const float falloff = 0.5;
 
         void
         main()
@@ -85,6 +85,7 @@
         varying vec2 fClickPos;
 
         void main() {
+
             vec4 color0 = mix(fColor, vec4(1.0, 1.0, 1.0, 1.0), 0.5);
             vec4 color1 = fColor;
 

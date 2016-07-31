@@ -84,7 +84,7 @@ $(function() {
             case blocks.EMPTY:
                 return vec4(0., 0., 1., 0.);
             case blocks.STONE:
-                return vec4(2., 2., 2., 1.);
+                return vec4(.2, .2, .2, 1.);
             case blocks.GRASS:
                 return vec4(0., 1., 0., 1.);
             case blocks.DIRT:
@@ -425,18 +425,70 @@ $(function() {
 
             // Get blocks below stickman
             var blocks = get_stickman_blocks(new_x, new_y);
+            var blocksAbove = [];
             if(blocks == undefined)
                 return;
 
             // Check if all blocks below us are sink blocks
             var all_sink = true;
-            for(var i = 0; i < blocks.length; i++)
-            {
+            for(var i = 0; i < blocks.length; i++) {
                 all_sink &= is_sink_block(blocks[i]);
             }
-            if(all_sink == false) // We can jump off something
+            var col11 = block_by_pos(Math.floor(new_x)-1, Math.floor(new_y)+4);
+            var col21 = block_by_pos(Math.floor(new_x), Math.floor(new_y)+4);
+            var col31 = block_by_pos(Math.floor(new_x)+1, Math.floor(new_y)+4);
+            var col12 = block_by_pos(Math.floor(new_x)-1, Math.floor(new_y)+5);
+            var col22 = block_by_pos(Math.floor(new_x), Math.floor(new_y)+5);
+            var col32 = block_by_pos(Math.floor(new_x)+1, Math.floor(new_y)+5);
+            var col13 = block_by_pos(Math.floor(new_x)-1, Math.floor(new_y)+6);
+            var col23 = block_by_pos(Math.floor(new_x), Math.floor(new_y)+6);
+            var col33 = block_by_pos(Math.floor(new_x)+1, Math.floor(new_y)+6);
+            var col14 = block_by_pos(Math.floor(new_x)-1, Math.floor(new_y)+7);
+            var col24 = block_by_pos(Math.floor(new_x), Math.floor(new_y)+7);
+            var col34 = block_by_pos(Math.floor(new_x)+1, Math.floor(new_y)+7);
+            //var bool = false;
+            //row 1
+            blocksAbove.push(col11);
+            blocksAbove.push(col21);
+            blocksAbove.push(col31);
+            //row 2
+            blocksAbove.push(col12);
+            blocksAbove.push(col12);
+            blocksAbove.push(col32);
+            //row 3
+            blocksAbove.push(col13);
+            blocksAbove.push(col23);
+            blocksAbove.push(col33);
+            //row 4
+            blocksAbove.push(col14);
+            blocksAbove.push(col24);
+            blocksAbove.push(col34);
+            //blocksAbove.push(bool);
+            //console.log(Math.floor(new_y));
+            var reducedJumpHeight = 0;
+            var above_sink = true;
+            for(var j=0; j < blocksAbove.length; j++){
+                above_sink &= is_sink_block(blocksAbove[j]);
+                if(j<3 && !above_sink){
+                    reducedJumpHeight = 5;
+                    break;
+                }
+                else if(j<6 && !above_sink){
+                    reducedJumpHeight = 4;
+                    break;
+                }
+                else if(j<9 && !above_sink){
+                    reducedJumpHeight = 3;
+                    break;
+                }
+                else if(j>9 && !above_sink){
+                    reducedJumpHeight = 2;
+                    break;
+                }
+            }
+            if(all_sink == false) // We can jump off something and nothing is above us
             {
-                new_y = stick_man_pos[1] + jump_height;
+                new_y = stick_man_pos[1] + (jump_height-reducedJumpHeight);
                 update_stick_man(new_x, new_y);
                 //render();
             }
@@ -449,7 +501,12 @@ $(function() {
 
             // Check that we can stand in the new position
             var block = block_by_pos(rounder(new_x), Math.floor(new_y));
-            if(is_sink_block(block))
+            var block2 = block_by_pos(rounder(new_x), Math.floor(new_y)+1);
+            var block3 = block_by_pos(rounder(new_x), Math.floor(new_y)+2);
+            var block4 = block_by_pos(rounder(new_x), Math.floor(new_y)+3);
+            console.log(rounder(new_x));
+            console.log(Math.floor(new_y));
+            if(is_sink_block(block) && is_sink_block(block2) && is_sink_block(block3) && is_sink_block(block4))
             {
                 update_stick_man(new_x, new_y);
                 //render();
@@ -511,6 +568,7 @@ $(function() {
 
         var mousePoint = vec2((((-1 + 2 * event.clientX / canvas.width)+1)/2)*worldWidth,
                 (((-1 + 2 * ( canvas.height - event.clientY ) / canvas.height)+1)/2)*worldHeight);
+        console.log(mousePoint);
         // Get closest block position for rendering
         mousePoint = vec2(Math.round(mousePoint[0]) - 0.5, Math.round(mousePoint[1]) + 0.5);
         // Get block coordinates
