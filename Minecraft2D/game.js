@@ -571,14 +571,15 @@ $(function() {
     {
         function shockwave()
         {
-            function doClickExplosion() {
+            function doClickExplosion()
+            {
                 delta = new Date().getTime() - currentTime;
                 if (delta > duration)
                 {
                     delta = 0;
-                    gl.uniform1f(vTime, delta);
                     clearInterval(timerId);
                 }
+                gl.useProgram(boxShaderProgram);
                 gl.uniform1f(vTime, delta);
             }
 
@@ -587,6 +588,7 @@ $(function() {
 
             mouseClickPos = mousePoint;
             currentTime = new Date().getTime();
+            gl.useProgram(boxShaderProgram);
             gl.uniform2fv(vClickPos, mouseClickPos);
             timerId = setInterval(doClickExplosion, 1);
 
@@ -595,6 +597,7 @@ $(function() {
 
         var mousePoint = vec2((((-1 + 2 * event.clientX / canvas.width)+1)/2)*worldWidth,
                 (((-1 + 2 * ( canvas.height - event.clientY ) / canvas.height)+1)/2)*worldHeight);
+        //console.log(mousePoint);
         // Get closest block position for rendering
         mousePoint = vec2(Math.round(mousePoint[0]) - 0.5, Math.round(mousePoint[1]) + 0.5);
         // Get block coordinates
