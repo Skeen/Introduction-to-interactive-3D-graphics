@@ -42,19 +42,17 @@
         varying vec4 fColor;
         varying vec4 fCenter;
         varying vec4 fPosition;
-        varying vec2 fClickPos;
-        varying float fTime;
 
-        const float PI = 3.14159265358979323846264;
+        const float PI      = 3.1415926536;
+        const float EULER   = 0.5772156649;
 
         // Higher == Higher waves
-        const float amptitude = 0.01;
-        // Higher == Faster wiggle
-        const float speed = 20.;
-        // Lower == Larger waves
-        const float waves = 0.7;
-        // Lower == Less falloff
-        const float falloff = 0.5;
+        const float amptitude = 0.1;
+        const float decay = 5.;
+        const float angular_frequency = 10.*PI;
+        const float speed = 10000. / 2.;
+
+        varying float effect;
 
         void
         main()
@@ -65,14 +63,14 @@
             fCenter     = vec4(vCenterPos.xy * vScale - 1.0, 0., 1.);
             fPosition   = vec4(vPosition.xy  * vScale - 1.0, 0., 1.);
 
-            fTime = vTime;
-            float tTime = vTime / 1000.;
+            float tTime = vTime / speed;
             float dist = distance(vPosition.xy, vClickPos);
+            // Amplified sinc function with decay
+            float t = dist * tTime;
+            float wave = amptitude * (sin(angular_frequency * t) / (angular_frequency * t * decay));
+            effect = (t == 0.) ? 0. : wave;
 
-            float wave = sin(tTime * PI * speed) * sin(dist * PI * waves);
-
-            gl_Position = vec4(fPosition.xy - (wave * amptitude) / (dist * falloff), 0., 1.);
-            fClickPos = vClickPos;
+            gl_Position = vec4(fPosition.xy - effect, 0., 1.);
         }
     </script>
     <script id='block-fragment-shader' type="x-shader/x-fragment">
@@ -81,20 +79,18 @@
         varying vec4 fPosition;
         varying vec4 fColor;
         varying vec4 fCenter;
-        varying float fTime;
-        varying vec2 fClickPos;
+
+        varying float effect;
 
         void main() {
-
-            vec4 color0 = mix(fColor, vec4(1.0, 1.0, 1.0, 1.0), 0.5);
+            vec4 color0 = mix(fColor, vec4(1.0, 1.0, 1.0, fColor.w), 0.5);
             vec4 color1 = fColor;
 
-            float distance = length(fCenter.xy - fPosition.xy);
-            vec4 color_mix = mix(color0, color1, distance * 60.0);
-/*
-            float distance_shockwave = length(fClickPos.xy - fPosition.xy);
-            color_mix = mix(vec4(0., 0., 0., 1.), color_mix, distance_shockwave * 60);
-*/
+            float gradient = length(fCenter.xy - fPosition.xy);
+            vec4 color_mix = mix(color0, color1, gradient * 60.0);
+
+            color_mix = mix(vec4(0., 0., 0., fColor.w), color_mix, 1. - (effect*25.));
+
             gl_FragColor = color_mix;
     }
     </script>

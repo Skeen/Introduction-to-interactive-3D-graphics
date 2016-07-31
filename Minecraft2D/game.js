@@ -1,9 +1,14 @@
+// TODO: Send stickman as buffer, then move via uniform variable?
+
 /**
  * Created by dkchokk on 27-07-2016.
  */
 $(function() {
     // WebGL stuff.
-    var canvas, gl, program, boxShaderProgram;
+    var canvas;
+    var gl;
+    var program;
+    var boxShaderProgram;
 
     // Initialization of WebGL.
     initWebGl();
@@ -61,6 +66,7 @@ $(function() {
             for(var key in this)
                 if(this[key] == value)
                     return key;
+            alert("Invalid tile value, cannot convert to string!");
             return null;
         },
 
@@ -69,36 +75,33 @@ $(function() {
             for(var key in this)
                 if(key == string)
                     return this[key];
+            alert("Invalid tile string, cannot convert to enum!");
             return null;
-        }
-    }
-/*
-    console.log(blocks.to_string(blocks.STONE));
-    console.log(blocks.from_string("STONE"));
-*/
-    // TODO: Throw inside blocks
-    function tile_to_color(block)
-    {
-        switch(block)
+        },
+
+        to_color: function(block)
         {
-            case blocks.EMPTY:
-                return vec4(0., 0., 1., 0.);
-            case blocks.STONE:
-                return vec4(.2, .2, .2, 1.);
-            case blocks.GRASS:
-                return vec4(0., 1., 0., 1.);
-            case blocks.DIRT:
-                return vec4(0.55, 0.27, 0.07, 1.);
-            case blocks.WOOD:
-                return vec4(0.87, 0.72, 0.53, 1.);
-            case blocks.METAL:
-                return vec4(0.82, 0.82, 0.82, 1.);
-            case blocks.WATER:
-                return vec4(0., 0., 1., 1.);
-            case blocks.FIRE:
-                return vec4(1., 0., 0., 1.);
-            default:
-                alert("Invalid tile, cannot convert to color!");
+            switch(block)
+            {
+                case blocks.EMPTY:
+                    return vec4(0., 0., 1., 0.);
+                case blocks.STONE:
+                    return vec4(0.2, 0.2, 0.2, 1.);
+                case blocks.GRASS:
+                    return vec4(0., 1., 0., 1.);
+                case blocks.DIRT:
+                    return vec4(0.55, 0.27, 0.07, 1.);
+                case blocks.WOOD:
+                    return vec4(0.87, 0.72, 0.53, 1.);
+                case blocks.METAL:
+                    return vec4(0.82, 0.82, 0.82, 1.);
+                case blocks.WATER:
+                    return vec4(0., 0., 1., 1.);
+                case blocks.FIRE:
+                    return vec4(1., 0., 0., 1.);
+                default:
+                    alert("Invalid tile, cannot convert to color!");
+            }
         }
     }
 
@@ -202,20 +205,30 @@ $(function() {
 
     var world_block_center = [];
 
-    function flatten2dArray(pointsArray) {
+    function update_block(x, y, tile)
+    {
+        worldGrid[x][y].tile = tile;
+        var tile_color = blocks.to_color(tile);
+        for(var i = 0; i < 4; i ++)
+        {
+            // Get the start offset into world_colors
+            var offset = 4 * (y + (x * worldGrid.length));
+            world_colors[offset+i] = tile_color;
+        }
+    }
+
+    function initialize_block_world()
+    {
         world_block_center = [];
         world_points = [];
         world_colors = [];
-        for (var x = 0; x < pointsArray.length; x++) {
-            for (var y = 0; y < pointsArray[x].length; y++) {
-                var point = pointsArray[x][y];
-                //if(point.tile != blocks.EMPTY)
-                {
-                    var tile_color = tile_to_color(point.tile);
-/*
-                    world_points.push(point.pos);
-                    world_colors.push(vec4(0., 0., 0., tile_color[3]));
-*/
+        for (var x = 0; x < worldGrid.length; x++)
+        {
+            for (var y = 0; y < worldGrid[x].length; y++)
+            {
+                var point = worldGrid[x][y];
+                    var tile_color = blocks.to_color(point.tile);
+
                     world_points.push(vec2(point.pos[0] - 0.5, point.pos[1] - 0.5));
                     world_colors.push(tile_color);
                     world_points.push(vec2(point.pos[0] - 0.5, point.pos[1] + 0.5));
@@ -229,16 +242,11 @@ $(function() {
                     world_block_center.push(vec2(point.pos[0], point.pos[1]));
                     world_block_center.push(vec2(point.pos[0], point.pos[1]));
                     world_block_center.push(vec2(point.pos[0], point.pos[1]));
-/*                  
-                    world_points.push(vec2(point.pos[0] - 0.5, point.pos[1] - 0.5));
-                    world_colors.push(tile_color);
-*/                   
-                }
             }
         }
     }
 
-    flatten2dArray(worldGrid);
+    initialize_block_world();
 
     function update_stick_man(x, y)
     {
@@ -297,29 +305,27 @@ $(function() {
     // Let blocks flow onto empty blocks
     setInterval(function block_flow()
     {
-        var flip_world = JSON.parse(JSON.stringify(worldGrid));
+        var old_world = JSON.parse(JSON.stringify(worldGrid));
         for (var x = 0; x < worldWidth; x++) {
             for (var y = 0; y < worldHeight; y++) {
-                var point = worldGrid[x][y];
+                var point = old_world[x][y];
                 if(is_flow_block(point))
                 {
-                    if(valid_index(x-1, y) && worldGrid[x-1][y].tile == blocks.EMPTY)
+                    if(valid_index(x-1, y) && old_world[x-1][y].tile == blocks.EMPTY)
                     {
-                        flip_world[x-1][y].tile = point.tile;
+                        update_block(x-1, y, point.tile);
                     }
-                    if(valid_index(x+1, y) && worldGrid[x+1][y].tile == blocks.EMPTY)
+                    if(valid_index(x+1, y) && old_world[x+1][y].tile == blocks.EMPTY)
                     {
-                        flip_world[x+1][y].tile = point.tile;
+                        update_block(x+1, y, point.tile);
                     }
-                    if(valid_index(x, y-1) && worldGrid[x][y-1].tile == blocks.EMPTY)
+                    if(valid_index(x, y-1) && old_world[x][y-1].tile == blocks.EMPTY)
                     {
-                        flip_world[x][y-1].tile = point.tile;
+                        update_block(x, y-1, point.tile);
                     }
                 }
             }
         }
-        worldGrid = flip_world;
-        flatten2dArray(worldGrid);
         //render();
     }, 300);
 
@@ -348,14 +354,13 @@ $(function() {
 
                             if(valid_index(x+i, y+j) && worldGrid[x+i][y+j].tile == flip_material(point))
                             {
-                                worldGrid[x+i][y+j].tile = blocks.STONE;
+                                update_block(x+i, y+j, blocks.STONE);
                             }
                         }
                     }
                 }
             }
         }
-        flatten2dArray(worldGrid);
         //render();
     }, 10);
 
@@ -551,9 +556,12 @@ $(function() {
             function doClickExplosion() {
                 delta = new Date().getTime() - currentTime;
                 if (delta > duration)
+                {
+                    delta = 0;
+                    gl.uniform1f(vTime, delta);
                     clearInterval(timerId);
+                }
                 gl.uniform1f(vTime, delta);
-                gl.uniform2fv(vClickPos, mouseClickPos);
             }
 
             if (timerId)
@@ -561,6 +569,7 @@ $(function() {
 
             mouseClickPos = mousePoint;
             currentTime = new Date().getTime();
+            gl.uniform2fv(vClickPos, mouseClickPos);
             timerId = setInterval(doClickExplosion, 1);
 
             delta = 0;
@@ -584,15 +593,13 @@ $(function() {
             //console.log(block_string);
             //console.log(block_id);
 
-            worldGrid[blockX][blockY].tile = block_id;
-            flatten2dArray(worldGrid);
+            update_block(blockX, blockY, block_id);
             shockwave();
             //render();
         }
-        else if(worldGrid[blockX][blockY] != blocks.EMPTY && event.shiftKey == true)
+        else if(worldGrid[blockX][blockY].tile != blocks.EMPTY && event.shiftKey == true)
         {
-            worldGrid[blockX][blockY].tile = blocks.EMPTY;
-            flatten2dArray(worldGrid);
+            update_block(blockX, blockY, blocks.EMPTY);
             shockwave();
             //render();
         }
@@ -645,6 +652,19 @@ $(function() {
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
         gl.useProgram(program);
+        // Draw the stick figure
+        gl.bindBuffer(gl.ARRAY_BUFFER, stickCBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, flatten(stick_colors), gl.STATIC_DRAW);
+        gl.vertexAttribPointer(vColor, 4, gl.FLOAT, false, 0, 0);
+
+        gl.bindBuffer(gl.ARRAY_BUFFER, stickVBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, flatten(stick_points), gl.STATIC_DRAW);
+        gl.vertexAttribPointer(vPosition, 2, gl.FLOAT, false, 0, 0);
+        gl.drawArrays(gl.LINES, 0, stick_points.length);
+
+        gl.useProgram(boxShaderProgram);
+        gl.uniform1f(vTime, delta);
+
         // Draw the mouse block outline
         if(mouse_points.length != 0)
         {
@@ -658,19 +678,6 @@ $(function() {
 
             gl.drawArrays(gl.LINES, 0, mouse_points.length);
         }
-
-        // Draw the stick figure
-        gl.bindBuffer(gl.ARRAY_BUFFER, stickCBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, flatten(stick_colors), gl.STATIC_DRAW);
-        gl.vertexAttribPointer(vColor, 4, gl.FLOAT, false, 0, 0);
-
-        gl.bindBuffer(gl.ARRAY_BUFFER, stickVBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, flatten(stick_points), gl.STATIC_DRAW);
-        gl.vertexAttribPointer(vPosition, 2, gl.FLOAT, false, 0, 0);
-        gl.drawArrays(gl.LINES, 0, stick_points.length);
-
-        gl.useProgram(boxShaderProgram);
-        gl.uniform1f(vTime, delta);
 
         // Draw the world
         gl.bindBuffer(gl.ARRAY_BUFFER, worldCBuffer);
@@ -759,12 +766,26 @@ $(function() {
         gl.bufferData(gl.ARRAY_BUFFER, sizeof['vec4'] * worldBlocks * 4, gl.STATIC_DRAW);
         gl.vertexAttribPointer(vColor, 4, gl.FLOAT, false, 0, 0);
         gl.enableVertexAttribArray(vColor);
-        // World Color buffer
+        // World Center buffer
         worldCenterBuffer = gl.createBuffer();
         gl.bindBuffer(gl.ARRAY_BUFFER, worldCenterBuffer);
         gl.bufferData(gl.ARRAY_BUFFER, sizeof['vec2'] * worldBlocks * 4, gl.STATIC_DRAW);
         gl.vertexAttribPointer(vCenterPos, 2, gl.FLOAT, false, 0, 0);
         gl.enableVertexAttribArray(vCenterPos);
+
+        // Mouse Vertex buffer
+        mouseVBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, mouseVBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, sizeof['vec2'] * 5 * 2, gl.STATIC_DRAW);
+        gl.vertexAttribPointer(vPosition, 2, gl.FLOAT, false, 0, 0);
+        gl.enableVertexAttribArray(vPosition);
+        // Mouse Color buffer
+        mouseCBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, mouseCBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, sizeof['vec4'] * 5 * 2, gl.STATIC_DRAW);
+        gl.vertexAttribPointer(vColor, 2, gl.FLOAT, false, 0, 0);
+        gl.enableVertexAttribArray(vColor);
+        // TODO: Mouse Center buffer
 
         // Set the uniform scale variable
         gl.uniform1f(vScalePos, render_scale);
@@ -788,19 +809,6 @@ $(function() {
         gl.bindBuffer(gl.ARRAY_BUFFER, stickCBuffer);
         gl.bufferData(gl.ARRAY_BUFFER, sizeof['vec4'] * worldBlocks, gl.STATIC_DRAW);
         gl.vertexAttribPointer(vColor, 4, gl.FLOAT, false, 0, 0);
-        gl.enableVertexAttribArray(vColor);
-
-        // Mouse Vertex buffer
-        mouseVBuffer = gl.createBuffer();
-        gl.bindBuffer(gl.ARRAY_BUFFER, mouseVBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, sizeof['vec2'] * 5 * 2, gl.STATIC_DRAW);
-        gl.vertexAttribPointer(vPosition, 2, gl.FLOAT, false, 0, 0);
-        gl.enableVertexAttribArray(vPosition);
-        // Mouse Color buffer
-        mouseCBuffer = gl.createBuffer();
-        gl.bindBuffer(gl.ARRAY_BUFFER, mouseCBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, sizeof['vec4'] * 5 * 2, gl.STATIC_DRAW);
-        gl.vertexAttribPointer(vColor, 2, gl.FLOAT, false, 0, 0);
         gl.enableVertexAttribArray(vColor);
 
         // Set the uniform scale variable
