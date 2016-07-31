@@ -3,7 +3,10 @@
  */
 $(function() {
     // WebGL stuff.
-    var canvas, gl, program, boxShaderProgram;
+    var canvas;
+    var gl;
+    var program;
+    var boxShaderProgram;
 
     // Initialization of WebGL.
     initWebGl();
@@ -61,6 +64,7 @@ $(function() {
             for(var key in this)
                 if(this[key] == value)
                     return key;
+            alert("Invalid tile value, cannot convert to string!");
             return null;
         },
 
@@ -69,36 +73,33 @@ $(function() {
             for(var key in this)
                 if(key == string)
                     return this[key];
+            alert("Invalid tile string, cannot convert to enum!");
             return null;
-        }
-    }
-/*
-    console.log(blocks.to_string(blocks.STONE));
-    console.log(blocks.from_string("STONE"));
-*/
-    // TODO: Throw inside blocks
-    function tile_to_color(block)
-    {
-        switch(block)
+        },
+
+        to_color: function(block)
         {
-            case blocks.EMPTY:
-                return vec4(0., 0., 1., 0.);
-            case blocks.STONE:
-                return vec4(0.2, 0.2, 0.2, 1.);
-            case blocks.GRASS:
-                return vec4(0., 1., 0., 1.);
-            case blocks.DIRT:
-                return vec4(0.55, 0.27, 0.07, 1.);
-            case blocks.WOOD:
-                return vec4(0.87, 0.72, 0.53, 1.);
-            case blocks.METAL:
-                return vec4(0.82, 0.82, 0.82, 1.);
-            case blocks.WATER:
-                return vec4(0., 0., 1., 1.);
-            case blocks.FIRE:
-                return vec4(1., 0., 0., 1.);
-            default:
-                alert("Invalid tile, cannot convert to color!");
+            switch(block)
+            {
+                case blocks.EMPTY:
+                    return vec4(0., 0., 1., 0.);
+                case blocks.STONE:
+                    return vec4(0.2, 0.2, 0.2, 1.);
+                case blocks.GRASS:
+                    return vec4(0., 1., 0., 1.);
+                case blocks.DIRT:
+                    return vec4(0.55, 0.27, 0.07, 1.);
+                case blocks.WOOD:
+                    return vec4(0.87, 0.72, 0.53, 1.);
+                case blocks.METAL:
+                    return vec4(0.82, 0.82, 0.82, 1.);
+                case blocks.WATER:
+                    return vec4(0., 0., 1., 1.);
+                case blocks.FIRE:
+                    return vec4(1., 0., 0., 1.);
+                default:
+                    alert("Invalid tile, cannot convert to color!");
+            }
         }
     }
 
@@ -211,7 +212,7 @@ $(function() {
                 var point = pointsArray[x][y];
                 //if(point.tile != blocks.EMPTY)
                 {
-                    var tile_color = tile_to_color(point.tile);
+                    var tile_color = blocks.to_color(point.tile);
 /*
                     world_points.push(point.pos);
                     world_colors.push(vec4(0., 0., 0., tile_color[3]));
