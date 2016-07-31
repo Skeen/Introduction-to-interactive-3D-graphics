@@ -856,7 +856,7 @@ $(function() {
         mouseCBuffer = gl.createBuffer();
         gl.bindBuffer(gl.ARRAY_BUFFER, mouseCBuffer);
         gl.bufferData(gl.ARRAY_BUFFER, sizeof['vec4'] * 5 * 2, gl.STATIC_DRAW);
-        gl.vertexAttribPointer(vColor, 2, gl.FLOAT, false, 0, 0);
+        gl.vertexAttribPointer(vColor, 4, gl.FLOAT, false, 0, 0);
         gl.enableVertexAttribArray(vColor);
         // World Center buffer
         mouseCenterBuffer = gl.createBuffer();
