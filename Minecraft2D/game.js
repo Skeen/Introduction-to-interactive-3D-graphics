@@ -209,25 +209,24 @@ $(function() {
         var tile_color = blocks.to_color(tile);
         for(var i = 0; i < 4; i ++)
         {
-            var offset = x + y * worldGrid.length;
-            world_colors[i] = tile_color;
+            // Get the start offset into world_colors
+            var offset = 4 * (y + (x * worldGrid.length));
+            world_colors[offset+i] = tile_color;
         }
     }
 
-    function flatten2dArray(pointsArray) {
+    function initialize_block_world()
+    {
         world_block_center = [];
         world_points = [];
         world_colors = [];
-        for (var x = 0; x < pointsArray.length; x++) {
-            for (var y = 0; y < pointsArray[x].length; y++) {
-                var point = pointsArray[x][y];
-                //if(point.tile != blocks.EMPTY)
-                {
+        for (var x = 0; x < worldGrid.length; x++)
+        {
+            for (var y = 0; y < worldGrid[x].length; y++)
+            {
+                var point = worldGrid[x][y];
                     var tile_color = blocks.to_color(point.tile);
-/*
-                    world_points.push(point.pos);
-                    world_colors.push(vec4(0., 0., 0., tile_color[3]));
-*/
+
                     world_points.push(vec2(point.pos[0] - 0.5, point.pos[1] - 0.5));
                     world_colors.push(tile_color);
                     world_points.push(vec2(point.pos[0] - 0.5, point.pos[1] + 0.5));
@@ -241,16 +240,11 @@ $(function() {
                     world_block_center.push(vec2(point.pos[0], point.pos[1]));
                     world_block_center.push(vec2(point.pos[0], point.pos[1]));
                     world_block_center.push(vec2(point.pos[0], point.pos[1]));
-/*                  
-                    world_points.push(vec2(point.pos[0] - 0.5, point.pos[1] - 0.5));
-                    world_colors.push(tile_color);
-*/                   
-                }
             }
         }
     }
 
-    flatten2dArray(worldGrid);
+    initialize_block_world();
 
     function update_stick_man(x, y)
     {
@@ -358,14 +352,13 @@ $(function() {
 
                             if(valid_index(x+i, y+j) && worldGrid[x+i][y+j].tile == flip_material(point))
                             {
-                                worldGrid[x+i][y+j].tile = blocks.STONE;
+                                update_block(x+i, y+j, blocks.STONE);
                             }
                         }
                     }
                 }
             }
         }
-        flatten2dArray(worldGrid);
         //render();
     }, 10);
 
