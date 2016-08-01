@@ -40,8 +40,7 @@ $(function() {
     var jump_height = 5;
     var gravity_check = 0.1;
     var stick_man_pos;
-    var stick_points = [];
-    var stick_colors = [];
+    var stick_man_num_points;
     // mouse
     var mouse_points = [];
     var mouse_colors = [];
@@ -289,8 +288,8 @@ $(function() {
 
     function initialize_stick_man()
     {
-        stick_points = [];
-        stick_colors = [];
+        var stick_points = [];
+        var stick_colors = [];
         // Legs
         stick_points.push(vec2(0,0), vec2(1,1));
         stick_points.push(vec2(2,0), vec2(1,1));
@@ -303,13 +302,22 @@ $(function() {
         stick_points.push(vec2(1,3), vec2(1.5,4));
         stick_points.push(vec2(0.5,4), vec2(1.5,4));
 
-        for(var i = 0; i < stick_points.length; i++)
+        // We need to know number of points in render
+        stick_man_num_points = stick_points.length;
+        for(var i = 0; i < stick_man_num_points; i++)
         {
             // Add color
             stick_colors.push(vec4(0., 0., 0., 1.));
         }
+
+        // Buffer Color
+        gl.bindBuffer(gl.ARRAY_BUFFER, stickCBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, flatten(stick_colors), gl.STATIC_DRAW);
+        // Buffer Verticies
+        gl.bindBuffer(gl.ARRAY_BUFFER, stickVBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, flatten(stick_points), gl.STATIC_DRAW);
     }
-    
+
     function update_stick_man(x, y)
     {
         // Set the stickman position variable
@@ -718,7 +726,7 @@ $(function() {
         gl.bindBuffer(gl.ARRAY_BUFFER, stickVBuffer);
         gl.vertexAttribPointer(vPosition, 2, gl.FLOAT, false, 0, 0);
 
-        gl.drawArrays(gl.LINES, 0, stick_points.length);
+        gl.drawArrays(gl.LINES, 0, stick_man_num_points);
 
         // -----------//
         // Draw BOXES //
@@ -758,17 +766,6 @@ $(function() {
 
         window.requestAnimFrame(render, canvas);
     }
-
-    function bufferStick()
-    {
-        // Buffer Color
-        gl.bindBuffer(gl.ARRAY_BUFFER, stickCBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, flatten(stick_colors), gl.STATIC_DRAW);
-        // Buffer Verticies
-        gl.bindBuffer(gl.ARRAY_BUFFER, stickVBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, flatten(stick_points), gl.STATIC_DRAW);
-    }
-    bufferStick();
 
     render();
 
