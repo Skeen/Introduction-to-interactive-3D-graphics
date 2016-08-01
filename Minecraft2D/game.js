@@ -33,10 +33,6 @@ $(function() {
     var worldBlocks = worldWidth * worldHeight;
     //var squareSize = canvas.clientWidth / 10;
     var worldGrid = [];
-    // world render
-    var world_points = [];
-    var world_colors = [];
-    var world_centers = [];
     // world variables
     var verts_per_block = 4;
     // stick-man variables
@@ -238,19 +234,26 @@ $(function() {
         // Get the start offset into world_colors
         var offset = 4 * (y + (x * worldGrid.length));
 
-        for(var i = 0; i < 4; i ++)
-        {
-            world_colors[offset+i] = tile_color;
-        }
-
-        rebufferColor(offset, offset+4);
+        rebufferColor(offset, offset+4, tile_color);
     }
+
+    function rebufferColor(start, end, color)
+    {
+        var replace_values = [];
+        for(var i = 0; i < (end - start); i++)
+        {
+            replace_values.push(color);
+        }
+        gl.bindBuffer(gl.ARRAY_BUFFER, worldCBuffer);
+        gl.bufferSubData(gl.ARRAY_BUFFER, start*sizeof['vec4'], flatten(replace_values));
+    }
+
 
     function initialize_block_world()
     {
-        world_centers = [];
-        world_points = [];
-        world_colors = [];
+        var world_centers = [];
+        var world_points = [];
+        var world_colors = [];
         for (var x = 0; x < worldGrid.length; x++)
         {
             for (var y = 0; y < worldGrid[x].length; y++)
@@ -270,6 +273,16 @@ $(function() {
                     }
             }
         }
+
+        // Buffer Color
+        gl.bindBuffer(gl.ARRAY_BUFFER, worldCBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, flatten(world_colors), gl.STATIC_DRAW);
+        // Buffer Verticies
+        gl.bindBuffer(gl.ARRAY_BUFFER, worldVBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, flatten(world_points), gl.STATIC_DRAW);
+        // Buffer Centers
+        gl.bindBuffer(gl.ARRAY_BUFFER, worldCenterBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, flatten(world_centers), gl.STATIC_DRAW);
     }
 
     initialize_block_world();
@@ -738,38 +751,13 @@ $(function() {
         gl.bindBuffer(gl.ARRAY_BUFFER, worldCenterBuffer);
         gl.vertexAttribPointer(vCenterPos, 2, gl.FLOAT, false, 0, 0);
 
-        for (var i = 0; i < world_points.length/verts_per_block; i+=1)
+        for (var i = 0; i < worldBlocks; i+=1)
         {
             gl.drawArrays(gl.TRIANGLE_FAN, verts_per_block*i, verts_per_block);
         }
 
         window.requestAnimFrame(render, canvas);
     }
-
-    function rebufferColor(start, end)
-    {
-        var replace_values = world_colors.slice(start, end);
-/*
-        console.log(start, end);
-        console.log(replace_values);
-*/        
-        gl.bindBuffer(gl.ARRAY_BUFFER, worldCBuffer);
-        gl.bufferSubData(gl.ARRAY_BUFFER, start*sizeof['vec4'], flatten(replace_values));
-    }
-
-    function bufferWorld()
-    {
-        // Buffer Color
-        gl.bindBuffer(gl.ARRAY_BUFFER, worldCBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, flatten(world_colors), gl.STATIC_DRAW);
-        // Buffer Verticies
-        gl.bindBuffer(gl.ARRAY_BUFFER, worldVBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, flatten(world_points), gl.STATIC_DRAW);
-        // Buffer Centers
-        gl.bindBuffer(gl.ARRAY_BUFFER, worldCenterBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, flatten(world_centers), gl.STATIC_DRAW);
-    }
-    bufferWorld();
 
     function bufferStick()
     {
