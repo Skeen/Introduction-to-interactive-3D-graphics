@@ -2,21 +2,27 @@
 <html>
 <head>
     <script id="vertex-shader" type="x-shader/x-vertex">
-        attribute vec4 vPosition;
+        attribute vec2 vPosition;
+        attribute vec4 vColor;
+
+        varying vec4 fColor;
 
         void
         main()
         {
-            gl_Position = vPosition;
+            gl_Position = vec4(vPosition.xy, 0., 1.);
+            fColor = vColor;
         }
     </script>
     <script id="fragment-shader" type="x-shader/x-fragment">
         precision mediump float;
 
+        varying vec4 fColor;
+
         void
         main()
         {
-            gl_FragColor = vec4( .5, .5, .5, 1.0 );
+            gl_FragColor = fColor;
         }
     </script>
     <script type="text/javascript" src="../Common/jquery-3.1.0.min.js"></script>
