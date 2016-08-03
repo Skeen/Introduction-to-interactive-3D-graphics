@@ -1,5 +1,7 @@
 import events = require('events');
 
+declare var vec2: any;
+
 import { Tile } from "./Tile"
 
 export class Model extends events.EventEmitter
@@ -11,6 +13,8 @@ export class Model extends events.EventEmitter
     public worldSize : number = this.worldX * this.worldY;
 
     public worldGrid : any[] = [];
+
+    private stickman_position;
 
     // Checks whether x and y are valid indicies
     // TODO: Make private
@@ -87,6 +91,17 @@ export class Model extends events.EventEmitter
         this.emit("update_tile", x, y, tile);
     }
 
+    public get_stickman_position() : any
+    {
+        return this.stickman_position;
+    }
+
+    public update_stickman_position(x : number, y : number)
+    {
+        this.stickman_position = vec2(x, y);
+        this.emit("stickman_move", this.stickman_position);
+    }
+
     private setup_world() : void
     {
         //this.worldGrid = [];
@@ -139,6 +154,8 @@ export class Model extends events.EventEmitter
     {
         super();
         this.setup_world();
+        this.update_stickman_position(0.5 + Math.floor(this.worldY/3), Math.floor(this.worldY/3)+10);
+
         this.emit('ready');
     }
 };
