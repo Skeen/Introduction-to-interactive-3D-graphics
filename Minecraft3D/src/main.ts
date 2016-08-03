@@ -14,6 +14,7 @@ declare var $: any;
 declare var WebGLUtils: any;
 
 import { Model } from "./Model";
+import { Controller } from "./Controller";
 import { Tile, TileUtil } from "./Tile"
 
 /**
@@ -21,6 +22,7 @@ import { Tile, TileUtil } from "./Tile"
  */
 $(function() {
     var model = new Model();
+    var controller = new Controller(model);
 
     // WebGL stuff.
     var canvas;
@@ -229,48 +231,6 @@ $(function() {
         return model.worldGrid[x][y];
     }
 
-    function is_sink_block(block)
-    {
-        return block == Tile.EMPTY || block == Tile.WATER;
-    }
-
-    function is_jump_block(block)
-    {
-        return block == Tile.FIRE;
-    }
-
-    function is_flow_block(block)
-    {
-        return block == Tile.FIRE || block == Tile.WATER;
-    }
-
-    // Let blocks flow onto empty blocks
-    setInterval(function block_flow()
-    {
-        var old_world = JSON.parse(JSON.stringify(model.worldGrid));
-        for (var x = 0; x < model.worldX; x++) {
-            for (var y = 0; y < model.worldY; y++) {
-                var point = old_world[x][y];
-                if(is_flow_block(point))
-                {
-                    if(model.valid_index(x-1, y) && old_world[x-1][y] == Tile.EMPTY)
-                    {
-                        model.update_tile(x-1, y, point);
-                    }
-                    if(model.valid_index(x+1, y) && old_world[x+1][y] == Tile.EMPTY)
-                    {
-                        model.update_tile(x+1, y, point);
-                    }
-                    if(model.valid_index(x, y-1) && old_world[x][y-1] == Tile.EMPTY)
-                    {
-                        model.update_tile(x, y-1, point);
-                    }
-                }
-            }
-        }
-        //render();
-    }, 300);
-
     setInterval(function stonify()
     {
         function flip_material(block)
@@ -360,7 +320,7 @@ $(function() {
         var reducedJumpHeight = 0;
         var above_sink = true;
         for(var j=0; j < blocksAbove.length; j++){
-            above_sink = above_sink && is_sink_block(blocksAbove[j]);
+            above_sink = above_sink && TileUtil.is_sink_block(blocksAbove[j]);
             if(j<2 && !above_sink){
                 reducedJumpHeight = 5;
                 break;
@@ -397,7 +357,7 @@ $(function() {
         {
             for(var x = 0; x < blocks.length; x++)
             {
-                all_sink = all_sink && is_sink_block(blocks[x]);
+                all_sink = all_sink && TileUtil.is_sink_block(blocks[x]);
             }
             if(all_sink)
             {
@@ -409,7 +369,7 @@ $(function() {
             var any_fire = false;
             for(var x = 0; x < blocks.length; x++)
             {
-                any_fire = any_fire || is_jump_block(blocks[x]);
+                any_fire = any_fire || TileUtil.is_jump_block(blocks[x]);
             }
             if(any_fire)
             {
@@ -440,7 +400,7 @@ $(function() {
             // Check if all blocks below us are sink blocks
             var all_sink = true;
             for(var i = 0; i < blocks.length; i++) {
-                all_sink = all_sink && is_sink_block(blocks[i]);
+                all_sink = all_sink && TileUtil.is_sink_block(blocks[i]);
             }
 
             if(all_sink == false) // We can jump off something and nothing is above us
@@ -461,7 +421,7 @@ $(function() {
             var block2 = block_by_pos(rounder(new_x), Math.floor(new_y)+1);
             var block3 = block_by_pos(rounder(new_x), Math.floor(new_y)+2);
             var block4 = block_by_pos(rounder(new_x), Math.floor(new_y)+3);
-            if(is_sink_block(block) && is_sink_block(block2) && is_sink_block(block3) && is_sink_block(block4))
+            if(TileUtil.is_sink_block(block) && TileUtil.is_sink_block(block2) && TileUtil.is_sink_block(block3) && TileUtil.is_sink_block(block4))
             {
                 update_stick_man(new_x, new_y);
                 //render();

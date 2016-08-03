@@ -89,7 +89,7 @@ export class Model extends events.EventEmitter
 
     private setup_world() : void
     {
-        this.worldGrid = [];
+        //this.worldGrid = [];
         // Generate empty world.
         for (var x = 0; x < this.worldX; x++) 
         {
