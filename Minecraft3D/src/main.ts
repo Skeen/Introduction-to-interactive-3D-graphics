@@ -13,10 +13,15 @@ declare var $: any;
 
 declare var WebGLUtils: any;
 
+import { Model } from "./Model";
+import { Tile, TileUtil } from "./Tile"
+
 /**
  * Created by dkchokk on 27-07-2016.
  */
 $(function() {
+    var model = new Model();
+
     // WebGL stuff.
     var canvas;
     var gl;
@@ -41,11 +46,6 @@ $(function() {
     var mouseCenterBuffer;
 
     // Game related stuff.
-    var worldWidth = 40;
-    var worldHeight = 40;
-    var worldBlocks = worldWidth * worldHeight;
-    //var squareSize = canvas.clientWidth / 10;
-    var worldGrid = [];
     // world variables
     var verts_per_block = 4;
     // stick-man variables
@@ -62,7 +62,7 @@ $(function() {
     var shockwave_duration = 1000;
     var timerId;
     // Render stuf
-    var render_scale = 2 / Math.max(worldWidth, worldHeight);
+    var render_scale = 2 / Math.max(model.worldX, model.worldY);
 
     // Shader variables
     var vPosition;
@@ -76,178 +76,51 @@ $(function() {
     // Setup buffers
     initBuffers();
 
-    var blocks = {
-        EMPTY: 0,
-        STONE: 1,
-        GRASS: 2,
-        DIRT: 3,
-        WOOD: 4,
-        METAL: 5,
-        WATER: 6,
-        FIRE: 7,
-
-        to_string: function(value)
-        {
-            for(var key in this)
-                if(this[key] == value)
-                    return key;
-            alert("Invalid tile value, cannot convert to string!");
-            return null;
-        },
-
-        from_string: function(string)
-        {
-            for(var key in this)
-                if(key == string)
-                    return this[key];
-            alert("Invalid tile string, cannot convert to enum!");
-            return null;
-        },
-
-        to_color: function(block)
-        {
-            switch(block)
-            {
-                case blocks.EMPTY:
-                    return vec4(0., 0., 1., 0.);
-                case blocks.STONE:
-                    return vec4(0.2, 0.2, 0.2, 1.);
-                case blocks.GRASS:
-                    return vec4(0., 1., 0., 1.);
-                case blocks.DIRT:
-                    return vec4(0.55, 0.27, 0.07, 1.);
-                case blocks.WOOD:
-                    return vec4(0.87, 0.72, 0.53, 1.);
-                case blocks.METAL:
-                    return vec4(0.82, 0.82, 0.82, 1.);
-                case blocks.WATER:
-                    return vec4(0., 0., 1., 1.);
-                case blocks.FIRE:
-                    return vec4(1., 0., 0., 1.);
-                default:
-                    alert("Invalid tile, cannot convert to color!");
-            }
-        }
-    }
-
-    // TODO: Add checks all-over
-    function isInt(n)
-    {
-        return n % 1 === 0;
-    }
-
-    function valid_index(x, y)
-    {
-        if(isInt(x) == false || isInt(y) == false)
-        {
-            console.log("valid_index called with non-integer arguments!", x, y);
-            alert("valid_index called with non-integer arguments!");
-        }
-
-        return (x >= 0 && x < worldWidth &&
-                y >= 0 && y < worldHeight)
-         
-    }
-
-    function can_build(x, y)
-    {
-        // Check that x and y are valid
-        if(isInt(x) == false || isInt(y) == false)
-        {
-            alert("can_build called with non-integer arguments!");
-        }
-        if(valid_index(x, y) == false)
-        {
-            return false;
-        }
-
-        // Check if stickman is blocking (i.e. if we're inside his sprite)
-        if(x >= stick_man_pos[0] - 0.5 && x < stick_man_pos[0]+2 &&
-           y >= stick_man_pos[1] - 0.5 && y < stick_man_pos[1]+4)
-            return false;
-
-        // Check if the block is free
-        if(worldGrid[x][y].tile != blocks.EMPTY)
-        {
-            return false;
-        }
-        // Check that an adjecent block exists
-        for(var i = -1; i <= 1; i++)
-            for(var j = -1; j <= 1; j++)
-                // Ensure that the indicies are valid (i.e. within array bounds)
-                if(valid_index(x+i, y+j))
-                    // If we find one adjecent, we're good
-                    if((worldGrid[x+i][y+j].tile != blocks.EMPTY))
-                        return true;
-                    //console.log(x+i, y+j, worldGrid[x+i][y+j].tile != blocks.EMPTY);
-
-        return false;
-
-    }
-
-    /*
-    worldGrid[1][0].tile = blocks.STONE;
-    worldGrid[0][0].tile = blocks.STONE;
-    console.log(can_build(0,0));
+        /*
+    model.worldGrid[1][0] = Tile.STONE;
+    model.worldGrid[0][0] = Tile.STONE;
+    console.log(model.can_build(0,0));
 */
 
-    function setup_initial_world()
+    function tile_to_color(tile : Tile)
     {
-        // Generate empty world.
-        for (var x = 0; x < worldWidth; x++) {
-            worldGrid[x] = [];
-            for (var y = 0; y < worldHeight; y++) {
-                worldGrid[x][y] = {
-                    // Tile
-                    tile: blocks.EMPTY,
-                    // Center position
-                    pos: vec2(x + 0.5, y + 0.5)
-                }
-            }
-        }
-
-        // ------------ //
-        // Update tiles //
-        // ------------ //
-        // Create ground
-        for (var x = 0; x < worldWidth; x++) {
-            for (var y = 0; y < Math.floor(worldHeight/3); y++) {
-                worldGrid[x][y].tile = blocks.DIRT;
-            }
-        }
-
-        // Create grass
-        for (var x = 0; x < worldWidth; x++) {
-            var y = Math.floor(worldHeight/3);
-            worldGrid[x][y].tile = blocks.GRASS;
-            worldGrid[x][y+1].tile = blocks.GRASS;
-        }
-
-        // Create lake
-        for (var x = Math.floor(worldWidth/4*2); x < Math.floor(worldWidth/4*3); x++) {
-            var y = Math.floor(worldHeight/3);
-            worldGrid[x][y+1].tile = blocks.WATER;
-        }
-
-        // Create fire/lava pit
-        for (var x = 0; x < Math.floor(worldWidth/4); x++) {
-            var y = Math.floor(worldHeight/3);
-            worldGrid[x][y+1].tile = blocks.FIRE;
+        switch(tile)
+        {
+            case Tile.EMPTY:
+                return vec4(0., 0., 1., 0.);
+            case Tile.STONE:
+                return vec4(0.2, 0.2, 0.2, 1.);
+            case Tile.GRASS:
+                return vec4(0., 1., 0., 1.);
+            case Tile.DIRT:
+                return vec4(0.55, 0.27, 0.07, 1.);
+            case Tile.WOOD:
+                return vec4(0.87, 0.72, 0.53, 1.);
+            case Tile.METAL:
+                return vec4(0.82, 0.82, 0.82, 1.);
+            case Tile.WATER:
+                return vec4(0., 0., 1., 1.);
+            case Tile.FIRE:
+                return vec4(1., 0., 0., 1.);
+            default:
+                alert("Invalid tile, cannot convert to color!");
         }
     }
 
-    setup_initial_world();
-
-    function update_block(x, y, tile)
+    function index_to_position(x, y)
     {
-        worldGrid[x][y].tile = tile;
-        var tile_color = blocks.to_color(tile);
+        return vec2(x + 0.5, y + 0.5);
+    }
+
+    model.on("update_tile", function(x, y, tile)
+    {
+        var tile_color = tile_to_color(tile);
 
         // Get the start offset into world_colors
-        var offset = 4 * (y + (x * worldGrid.length));
+        var offset = 4 * (y + (x * model.worldX));
 
         rebufferColor(offset, offset+4, tile_color);
-    }
+    });
 
     function rebufferColor(start, end, color)
     {
@@ -266,22 +139,24 @@ $(function() {
         var world_centers = [];
         var world_points = [];
         var world_colors = [];
-        for (var x = 0; x < worldGrid.length; x++)
+        for (var x = 0; x < model.worldGrid.length; x++)
         {
-            for (var y = 0; y < worldGrid[x].length; y++)
+            for (var y = 0; y < model.worldGrid[x].length; y++)
             {
-                var point = worldGrid[x][y];
-                    var tile_color = blocks.to_color(point.tile);
+                var point = model.worldGrid[x][y];
+                var tile_color = tile_to_color(point);
 
-                    world_points.push(vec2(point.pos[0] - 0.5, point.pos[1] - 0.5));
-                    world_points.push(vec2(point.pos[0] - 0.5, point.pos[1] + 0.5));
-                    world_points.push(vec2(point.pos[0] + 0.5, point.pos[1] + 0.5));
-                    world_points.push(vec2(point.pos[0] + 0.5, point.pos[1] - 0.5));
+                var pos = index_to_position(x, y);
+
+                    world_points.push(vec2(pos[0] - 0.5, pos[1] - 0.5));
+                    world_points.push(vec2(pos[0] - 0.5, pos[1] + 0.5));
+                    world_points.push(vec2(pos[0] + 0.5, pos[1] + 0.5));
+                    world_points.push(vec2(pos[0] + 0.5, pos[1] - 0.5));
 
                     for(var i = 0; i < 4; i++)
                     {
                         world_colors.push(tile_color);
-                        world_centers.push(vec2(point.pos[0], point.pos[1]));
+                        world_centers.push(vec2(pos[0], pos[1]));
                     }
             }
         }
@@ -340,53 +215,55 @@ $(function() {
     }
 
     initialize_stick_man();
-    update_stick_man(0.5 + Math.floor(worldHeight/3), Math.floor(worldHeight/3)+10);
+    update_stick_man(0.5 + Math.floor(model.worldY/3), Math.floor(model.worldY/3)+10);
 
     function block_by_pos(x, y)
     {
+        /*
         if(isInt(x) == false || isInt(y) == false)
         {
             alert("block_by_pos called with non-integer arguments!");
         }
+        */
 
-        return worldGrid[x][y];
+        return model.worldGrid[x][y];
     }
 
     function is_sink_block(block)
     {
-        return block.tile == blocks.EMPTY || block.tile == blocks.WATER;
+        return block == Tile.EMPTY || block == Tile.WATER;
     }
 
     function is_jump_block(block)
     {
-        return block.tile == blocks.FIRE;
+        return block == Tile.FIRE;
     }
 
     function is_flow_block(block)
     {
-        return block.tile == blocks.FIRE || block.tile == blocks.WATER;
+        return block == Tile.FIRE || block == Tile.WATER;
     }
 
     // Let blocks flow onto empty blocks
     setInterval(function block_flow()
     {
-        var old_world = JSON.parse(JSON.stringify(worldGrid));
-        for (var x = 0; x < worldWidth; x++) {
-            for (var y = 0; y < worldHeight; y++) {
+        var old_world = JSON.parse(JSON.stringify(model.worldGrid));
+        for (var x = 0; x < model.worldX; x++) {
+            for (var y = 0; y < model.worldY; y++) {
                 var point = old_world[x][y];
                 if(is_flow_block(point))
                 {
-                    if(valid_index(x-1, y) && old_world[x-1][y].tile == blocks.EMPTY)
+                    if(model.valid_index(x-1, y) && old_world[x-1][y] == Tile.EMPTY)
                     {
-                        update_block(x-1, y, point.tile);
+                        model.update_tile(x-1, y, point);
                     }
-                    if(valid_index(x+1, y) && old_world[x+1][y].tile == blocks.EMPTY)
+                    if(model.valid_index(x+1, y) && old_world[x+1][y] == Tile.EMPTY)
                     {
-                        update_block(x+1, y, point.tile);
+                        model.update_tile(x+1, y, point);
                     }
-                    if(valid_index(x, y-1) && old_world[x][y-1].tile == blocks.EMPTY)
+                    if(model.valid_index(x, y-1) && old_world[x][y-1] == Tile.EMPTY)
                     {
-                        update_block(x, y-1, point.tile);
+                        model.update_tile(x, y-1, point);
                     }
                 }
             }
@@ -398,18 +275,18 @@ $(function() {
     {
         function flip_material(block)
         {
-            if(block.tile == blocks.FIRE)
-                return blocks.WATER;
-            else if (block.tile == blocks.WATER)
-                return blocks.FIRE;
+            if(block == Tile.FIRE)
+                return Tile.WATER;
+            else if (block == Tile.WATER)
+                return Tile.FIRE;
             else
                 alert("Invalid usage!");
         }
 
-        for (var x = 0; x < worldWidth; x++) {
-            for (var y = 0; y < worldHeight; y++) {
-                var point = worldGrid[x][y];
-                if(point.tile == blocks.FIRE || point.tile == blocks.WATER)
+        for (var x = 0; x < model.worldX; x++) {
+            for (var y = 0; y < model.worldY; y++) {
+                var point = model.worldGrid[x][y];
+                if(point == Tile.FIRE || point == Tile.WATER)
                 {
                     for(var i = -1; i <= 1; i++)
                     {
@@ -417,9 +294,9 @@ $(function() {
                         {
                             if(i == j) continue;
 
-                            if(valid_index(x+i, y+j) && worldGrid[x+i][y+j].tile == flip_material(point))
+                            if(model.valid_index(x+i, y+j) && model.worldGrid[x+i][y+j] == flip_material(point))
                             {
-                                update_block(x+i, y+j, blocks.STONE);
+                                model.update_tile(x+i, y+j, Tile.STONE);
                             }
                         }
                     }
@@ -431,10 +308,10 @@ $(function() {
 
     function get_stickman_blocks(x, y)
     {
-        if( valid_index(Math.floor(x), Math.floor(y)) == false &&
-            valid_index(Math.ceil(x), Math.floor(y)) == false &&
-            valid_index(1 + Math.floor(x), Math.floor(y)) == false &&
-            valid_index(1 + Math.ceil(x), Math.floor(y)) == false)
+        if( model.valid_index(Math.floor(x), Math.floor(y)) == false &&
+            model.valid_index(Math.ceil(x), Math.floor(y)) == false &&
+            model.valid_index(1 + Math.floor(x), Math.floor(y)) == false &&
+            model.valid_index(1 + Math.ceil(x), Math.floor(y)) == false)
             return;
 
         // Get all the blocks under the stickman
@@ -576,7 +453,7 @@ $(function() {
 
         function move(new_x, new_y, rounder)
         {
-            if(valid_index(rounder(new_x), Math.floor(new_y)) == false)
+            if(model.valid_index(rounder(new_x), Math.floor(new_y)) == false)
                 return;
 
             // Check that we can stand in the new position
@@ -644,8 +521,8 @@ $(function() {
             timerId = setInterval(doClickExplosion, 1);
         }
 
-        var mousePoint = vec2((((-1 + 2 * event.clientX / canvas.width)+1)/2)*worldWidth,
-                (((-1 + 2 * ( canvas.height - event.clientY ) / canvas.height)+1)/2)*worldHeight);
+        var mousePoint = vec2((((-1 + 2 * event.clientX / canvas.width)+1)/2)*model.worldX,
+                (((-1 + 2 * ( canvas.height - event.clientY ) / canvas.height)+1)/2)*model.worldY);
         //console.log(mousePoint);
         // Get closest block position for rendering
         mousePoint = vec2(Math.round(mousePoint[0]) - 0.5, Math.round(mousePoint[1]) + 0.5);
@@ -653,22 +530,22 @@ $(function() {
         var blockX = Math.floor(mousePoint[0]);
         var blockY = Math.floor(mousePoint[1]);
         // Check if block is free
-        var placeable = can_build(blockX, blockY);
+        var placeable = model.can_build(blockX, blockY);
         if(placeable && event.shiftKey == false)
         {
             var block_picker : any = document.getElementById('block_picker');
             var block_string = block_picker.options[block_picker.selectedIndex].value;
-            var block_id = blocks.from_string(block_string);
+            var block_id = TileUtil.fromString(block_string);
             //console.log(block_string);
             //console.log(block_id);
 
-            update_block(blockX, blockY, block_id);
+            model.update_tile(blockX, blockY, block_id);
             shockwave();
             //render();
         }
-        else if(worldGrid[blockX][blockY].tile != blocks.EMPTY && event.shiftKey == true)
+        else if(model.worldGrid[blockX][blockY] != Tile.EMPTY && event.shiftKey == true)
         {
-            update_block(blockX, blockY, blocks.EMPTY);
+            model.update_tile(blockX, blockY, Tile.EMPTY);
             shockwave();
             //render();
         }
@@ -678,8 +555,8 @@ $(function() {
     //MouseListener with a point that follows the mouse
     canvas.addEventListener("mousemove", function (event)
     {
-        var mousePoint = vec2((((-1 + 2 * event.clientX / canvas.width)+1)/2)*worldWidth,
-                (((-1 + 2 * ( canvas.height - event.clientY ) / canvas.height)+1)/2)*worldHeight);
+        var mousePoint = vec2((((-1 + 2 * event.clientX / canvas.width)+1)/2)*model.worldX,
+                (((-1 + 2 * ( canvas.height - event.clientY ) / canvas.height)+1)/2)*model.worldY);
         // Get closest block position for rendering
         mousePoint = vec2(Math.round(mousePoint[0]) - 0.5, Math.round(mousePoint[1]) + 0.5);
 
@@ -700,7 +577,7 @@ $(function() {
         mouse_points.push(vec2(mousePoint[0] - 0.5, mousePoint[1] - 0.5));
         mouse_points.push(vec2(mousePoint[0] + 0.5, mousePoint[1] + 0.5));
 
-        var placeable = can_build(Math.floor(mousePoint[0]), Math.floor(mousePoint[1]));
+        var placeable = model.can_build(Math.floor(mousePoint[0]), Math.floor(mousePoint[1]));
 
         var color = (placeable ? vec4(0., 0., 0., 1.) : vec4(1., 0., 0., 1.));
 
@@ -772,7 +649,7 @@ $(function() {
         gl.bindBuffer(gl.ARRAY_BUFFER, worldCenterBuffer);
         gl.vertexAttribPointer(vCenterPos, 2, gl.FLOAT, false, 0, 0);
 
-        for (var i = 0; i < worldBlocks; i+=1)
+        for (var i = 0; i < model.worldSize; i+=1)
         {
             gl.drawArrays(gl.TRIANGLE_FAN, verts_per_block*i, verts_per_block);
         }
@@ -817,19 +694,19 @@ $(function() {
         // World Vertex buffer
         worldVBuffer = gl.createBuffer();
         gl.bindBuffer(gl.ARRAY_BUFFER, worldVBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, sizeof['vec2'] * worldBlocks * 4, gl.STATIC_DRAW);
+        gl.bufferData(gl.ARRAY_BUFFER, sizeof['vec2'] * model.worldSize * 4, gl.STATIC_DRAW);
         gl.vertexAttribPointer(vPosition, 2, gl.FLOAT, false, 0, 0);
         gl.enableVertexAttribArray(vPosition);
         // World Color buffer
         worldCBuffer = gl.createBuffer();
         gl.bindBuffer(gl.ARRAY_BUFFER, worldCBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, sizeof['vec4'] * worldBlocks * 4, gl.STATIC_DRAW);
+        gl.bufferData(gl.ARRAY_BUFFER, sizeof['vec4'] * model.worldSize * 4, gl.STATIC_DRAW);
         gl.vertexAttribPointer(vColor, 4, gl.FLOAT, false, 0, 0);
         gl.enableVertexAttribArray(vColor);
         // World Center buffer
         worldCenterBuffer = gl.createBuffer();
         gl.bindBuffer(gl.ARRAY_BUFFER, worldCenterBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, sizeof['vec2'] * worldBlocks * 4, gl.STATIC_DRAW);
+        gl.bufferData(gl.ARRAY_BUFFER, sizeof['vec2'] * model.worldSize * 4, gl.STATIC_DRAW);
         gl.vertexAttribPointer(vCenterPos, 2, gl.FLOAT, false, 0, 0);
         gl.enableVertexAttribArray(vCenterPos);
 
@@ -871,7 +748,7 @@ $(function() {
         // Stickman Color buffer
         stickCBuffer = gl.createBuffer();
         gl.bindBuffer(gl.ARRAY_BUFFER, stickCBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, sizeof['vec4'] * worldBlocks, gl.STATIC_DRAW);
+        gl.bufferData(gl.ARRAY_BUFFER, sizeof['vec4'] * model.worldSize, gl.STATIC_DRAW);
         gl.vertexAttribPointer(vColor, 4, gl.FLOAT, false, 0, 0);
         gl.enableVertexAttribArray(vColor);
 
