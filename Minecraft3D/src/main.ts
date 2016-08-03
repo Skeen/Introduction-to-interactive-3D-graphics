@@ -8,7 +8,7 @@ declare var flatten: any;
 
 declare var sizeof: any;
 
-declare var initShader: any;
+declare var initShaders: any;
 declare var $: any;
 
 declare var WebGLUtils: any;
@@ -797,20 +797,8 @@ $(function() {
         gl.clearColor(1.0, 1.0, 1.0, 1.0);
         gl.enable(gl.DEPTH_TEST);
 
-        var vertexShader = initShader(gl, 'vertex-shader', gl.VERTEX_SHADER);
-        var fragmentShader = initShader(gl, 'fragment-shader', gl.FRAGMENT_SHADER);
-        var boxShader = initShader(gl, 'block-fragment-shader', gl.FRAGMENT_SHADER);
-        var boxVShader = initShader(gl, 'block-vertex-shader', gl.VERTEX_SHADER);
-
-        program = gl.createProgram();
-        gl.attachShader(program, fragmentShader);
-        gl.attachShader(program, vertexShader);
-        gl.linkProgram(program);
-
-        boxShaderProgram = gl.createProgram();
-        gl.attachShader(boxShaderProgram, boxVShader);
-        gl.attachShader(boxShaderProgram, boxShader);
-        gl.linkProgram(boxShaderProgram);
+        program = initShaders(gl, "vertex-shader.glsl", "fragment-shader.glsl");
+        boxShaderProgram = initShaders(gl, "block-vertex-shader.glsl", "block-fragment-shader.glsl");
     }
 
     // Initialize buffers.
