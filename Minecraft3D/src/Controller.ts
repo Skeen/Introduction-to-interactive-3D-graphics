@@ -5,6 +5,48 @@ export class Controller
 {
     private model : Model;
 
+    private block_stonify() : void
+    {
+        var model = this.model;
+
+        function flip_material(tile : Tile)
+        {
+            if(tile == Tile.FIRE)
+                return Tile.WATER;
+            else if (tile == Tile.WATER)
+                return Tile.FIRE;
+            else
+                alert("Invalid usage!");
+        }
+
+        for (var x = 0; x < model.worldX; x++) 
+        {
+            for (var y = 0; y < model.worldY; y++) 
+            {
+                var tile = model.get_tile(x, y);
+                // Not fire or water? - Meh
+                if(!(tile == Tile.FIRE || tile == Tile.WATER))
+                {
+                    break;
+                }
+                // Check adjacent blocks
+                for(var i = -1; i <= 1; i++)
+                {
+                    for(var j = -1; j <= 1; j++)
+                    {
+                        if((i == j) || (model.valid_index(x+i, y+j) == false))
+                            continue;
+
+                        if(model.get_tile(x+i, y+j) == flip_material(tile))
+                        {
+                            model.update_tile(x+i, y+j, Tile.STONE);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     // Let blocks flow onto empty blocks
     private block_flow() : void
     {
@@ -173,11 +215,92 @@ export class Controller
         }
     }
 
+    private stickman_move(e)
+    {
+        var model = this.model;
+
+        var key = String.fromCharCode(e.keyCode);
+
+        var old_position = model.get_stickman_position();
+        var x = old_position[0];
+        var y = old_position[1];
+
+        function jump()
+        {
+            var new_x = x;
+            var new_y = y - this.gravity_check;
+
+            // Get blocks below stickman
+            var blocks = this.get_stickman_blocks(new_x, new_y);
+            if(blocks == undefined)
+                return;
+
+            // Check if all blocks below us are sink blocks
+            var all_sink = true;
+            for(var i = 0; i < blocks.length; i++) {
+                all_sink = all_sink && TileUtil.is_sink_block(blocks[i]);
+            }
+
+            if(all_sink == false) // We can jump off something and nothing is above us
+            {
+                new_y = old_position[1] + (this.jump_height - this.reduced_jump_height(new_x,new_y));
+                model.update_stickman_position(new_x, new_y);
+            }
+        }
+
+        function move(new_x, new_y, rounder)
+        {
+            if(model.valid_index(rounder(new_x), Math.floor(new_y)) == false)
+                return;
+
+            // Check that we can stand in the new position
+            var block1  = model.get_tile(rounder(new_x), Math.floor(new_y));
+            var block2  = model.get_tile(rounder(new_x), Math.floor(new_y)+1);
+            var block3  = model.get_tile(rounder(new_x), Math.floor(new_y)+2);
+            var block4  = model.get_tile(rounder(new_x), Math.floor(new_y)+3);
+            if(TileUtil.is_sink_block(block1) &&
+               TileUtil.is_sink_block(block2) && 
+               TileUtil.is_sink_block(block3) && 
+               TileUtil.is_sink_block(block4))
+            {
+                model.update_stickman_position(new_x, new_y);
+            }
+        }
+
+        function move_left()
+        {
+            // We only need to check the left block (i.e. floor(x))
+            move(x - this.move_length, y, Math.floor);
+        }
+
+        function move_right()
+        {
+            // We only need to check the right block (i.e. 1+ceil(x))
+            move(x + this.move_length, y, function(x) { return 1 + Math.ceil(x) });
+        }
+
+        switch(key) {
+            case "W":
+                jump.bind(this)();
+                break;
+            case "A":
+                move_left.bind(this)();
+                break;
+            case "D":
+                move_right.bind(this)();
+                break;
+        }
+    }
+
     constructor(model : Model)
     {
         this.model = model;
 
         setInterval(this.block_flow.bind(this), 300);
+        setInterval(this.block_stonify.bind(this), 10);
+
         setInterval(this.stickman_gravity.bind(this), 10);
+
+        window.addEventListener("keydown", this.stickman_move.bind(this));
     }
 };
