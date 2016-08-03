@@ -66,6 +66,8 @@ window.onload = function init()
             delta += 5;
             gl.uniform1f(timeLoc, delta);
 
+            gl.uniformMatrix2fv()
+
             gl.drawArrays( gl.TRIANGLES, 0, points.length );
 
         }, 16); // 60fps

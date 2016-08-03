@@ -5,13 +5,21 @@
         attribute vec2 vPosition;
         attribute vec4 vColor;
 
+        uniform float vRotation;
+
         varying vec4 fColor;
 
         void
         main()
         {
-            gl_Position = vec4(vPosition.xy, 0., 1.);
-            fColor = vColor;
+            float xd = vPosition.x * cos(vRotation) - vPosition.y * sin(vRotation);
+            float yd = vPosition.y * cos(vRotation) + vPosition.x * sin(vRotation);
+
+            float x = xd * sin(vRotation);
+            float y = yd * sin(vRotation);
+
+            gl_Position = vec4(vec2(x, y), 0., 1.);
+            fColor = vec4(clamp(cos(vColor.x * vRotation), .3, .8), clamp(sin(vColor.y * vRotation), .3, .8), clamp(tan(vColor.z * vRotation), .3, .8), 1.);
         }
     </script>
     <script id="fragment-shader" type="x-shader/x-fragment">
@@ -25,10 +33,29 @@
             gl_FragColor = fColor;
         }
     </script>
+    <script id="vtx-shader" type="x-shader/x-vertex">
+        attribute vec2 vPosition;
+
+        void
+        main()
+        {
+            gl_Position = vec4(vPosition.xy, 0., 1.);
+        }
+    </script>
+    <script id="frg-shader" type="x-shader/x-fragment">
+        precision mediump float;
+
+        void
+        main()
+        {
+            gl_FragColor = vec4(0.,1.,1.,1.);
+        }
+    </script>
     <script type="text/javascript" src="../Common/jquery-3.1.0.min.js"></script>
     <script type="text/javascript" src="../Common/webgl-utils.js"></script>
     <script type="text/javascript" src="../Common/initShaders.js"></script>
     <script type="text/javascript" src="../Common/MV.js"></script>
+    <script type="text/javascript" src="../Common/Utils.js"></script>
     <script type="text/javascript" src="script.js"></script>
 </head>
 
