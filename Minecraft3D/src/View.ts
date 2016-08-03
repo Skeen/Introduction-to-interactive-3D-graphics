@@ -52,11 +52,16 @@ export class View
 
     // Stickman stuff
     private stick_man_num_points : number;
-  
+
+    // Fix this
+    private mouse_lines : number = 0;
+
+    // Shockwave variables
+    private shockwave_duration : number = 1000;
+    private timerId;
+
     // Render stuf
     private render_scale : number;
-    // TODO: See if this works
-    //private render_scale : number = 2 / Math.max(model.worldX, model.worldY);
     
     private rebufferColor(start, end, color) : void
     {
@@ -239,21 +244,19 @@ export class View
         gl.useProgram(this.boxShaderProgram);
 
         // Draw the mouse block outline
-        /*
-        if(mouse_points.length != 0)
+        if(this.mouse_lines != 0)
         {
-            gl.bindBuffer(gl.ARRAY_BUFFER, mouseCBuffer);
-            gl.vertexAttribPointer(vColor, 4, gl.FLOAT, false, 0, 0);
+            gl.bindBuffer(gl.ARRAY_BUFFER, this.mouseCBuffer);
+            gl.vertexAttribPointer(this.vColor, 4, gl.FLOAT, false, 0, 0);
 
-            gl.bindBuffer(gl.ARRAY_BUFFER, mouseVBuffer);
-            gl.vertexAttribPointer(vPosition, 2, gl.FLOAT, false, 0, 0);
+            gl.bindBuffer(gl.ARRAY_BUFFER, this.mouseVBuffer);
+            gl.vertexAttribPointer(this.vPosition, 2, gl.FLOAT, false, 0, 0);
 
-            gl.bindBuffer(gl.ARRAY_BUFFER, mouseCenterBuffer);
-            gl.vertexAttribPointer(vCenterPos, 2, gl.FLOAT, false, 0, 0);
+            gl.bindBuffer(gl.ARRAY_BUFFER, this.mouseCenterBuffer);
+            gl.vertexAttribPointer(this.vCenterPos, 2, gl.FLOAT, false, 0, 0);
 
-            gl.drawArrays(gl.LINES, 0, mouse_points.length);
+            gl.drawArrays(gl.LINES, 0, this.mouse_lines);
         }
-        */
 
         // Draw the world
         gl.bindBuffer(gl.ARRAY_BUFFER, this.worldCBuffer);
@@ -347,6 +350,49 @@ export class View
         gl.uniform2fv(this.vStickPos, model.get_stickman_position());
     }
 
+    private initialize_mouse(pos, placeable : boolean) : void
+    {
+        var gl = this.gl;
+
+        var mouse_points = [];
+        // Left edge
+        mouse_points.push(vec2(pos[0] - 0.5, pos[1] - 0.5));
+        mouse_points.push(vec2(pos[0] - 0.5, pos[1] + 0.5));
+        // Right edge
+        mouse_points.push(vec2(pos[0] + 0.5, pos[1] + 0.5));
+        mouse_points.push(vec2(pos[0] + 0.5, pos[1] - 0.5));
+        // Top edge
+        mouse_points.push(vec2(pos[0] - 0.5, pos[1] + 0.5));
+        mouse_points.push(vec2(pos[0] + 0.5, pos[1] + 0.5));
+        // Bot edge
+        mouse_points.push(vec2(pos[0] - 0.5, pos[1] - 0.5));
+        mouse_points.push(vec2(pos[0] + 0.5, pos[1] - 0.5));
+        // Diagonal edge
+        mouse_points.push(vec2(pos[0] - 0.5, pos[1] - 0.5));
+        mouse_points.push(vec2(pos[0] + 0.5, pos[1] + 0.5));
+
+        var color = (placeable ? vec4(0., 0., 0., 1.) : vec4(1., 0., 0., 1.));
+
+        var mouse_colors = [];
+        var mouse_centers = [];
+        for(var i = 0; i < mouse_points.length; i++)
+        {
+            mouse_colors.push(color);
+            mouse_centers.push(vec2(pos[0], pos[1]));
+        }
+
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.mouseCBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, flatten(mouse_colors), gl.STATIC_DRAW);
+         
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.mouseVBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, flatten(mouse_points), gl.STATIC_DRAW);
+         
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.mouseCenterBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, flatten(mouse_centers), gl.STATIC_DRAW);
+
+        this.mouse_lines = mouse_points.length;
+    }
+
     constructor(model : Model)
     {
         this.model = model;
@@ -379,5 +425,37 @@ export class View
             gl.uniform2fv(this.vStickPos, pos);
         }.bind(this));
 
+        this.model.on("mouse_move", function(pos, placeable : boolean)
+        {
+            this.initialize_mouse(pos, placeable);
+        }.bind(this));
+
+        this.model.on("shockwave", function(pos)
+        {
+            var gl = this.gl;
+
+            var startTime = new Date().getTime();
+
+            function doClickExplosion()
+            {
+                var delta = new Date().getTime() - startTime;
+                if (delta > this.shockwave_duration)
+                {
+                    delta = 0;
+                    clearInterval(this.timerId);
+                }
+                gl.useProgram(this.boxShaderProgram);
+                gl.uniform1f(this.vTime, delta);
+            }
+
+            gl.useProgram(this.boxShaderProgram);
+            gl.uniform2fv(this.vClickPos, pos);
+
+            if (this.timerId)
+                clearInterval(this.timerId);
+
+            this.timerId = setInterval(doClickExplosion.bind(this), 1);
+
+        }.bind(this));
     }
 };

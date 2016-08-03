@@ -150,6 +150,17 @@ export class Model extends events.EventEmitter
         }
     }
 
+    private update_mouse_position(pos)
+    {
+        var placeable = this.can_build(Math.floor(pos[0]), Math.floor(pos[1]));
+        this.emit("mouse_move", pos, placeable); 
+    }
+
+    private update_shockwave(pos)
+    {
+        this.emit("shockwave", pos);
+    }
+
     constructor() 
     {
         super();

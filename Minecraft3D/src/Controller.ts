@@ -1,6 +1,8 @@
 import { Model } from "./Model";
 import { Tile, TileUtil } from "./Tile"
 
+declare var vec2: any;
+
 export class Controller
 {
     private model : Model;
@@ -26,9 +28,8 @@ export class Controller
                 var tile = model.get_tile(x, y);
                 // Not fire or water? - Meh
                 if(!(tile == Tile.FIRE || tile == Tile.WATER))
-                {
-                    break;
-                }
+                    continue;
+
                 // Check adjacent blocks
                 for(var i = -1; i <= 1; i++)
                 {
@@ -302,5 +303,53 @@ export class Controller
         setInterval(this.stickman_gravity.bind(this), 10);
 
         window.addEventListener("keydown", this.stickman_move.bind(this));
+
+        var canvas : any = document.getElementById("gl-canvas");
+        //MouseListener with a point that follows the mouse
+        canvas.addEventListener("mousemove", function(event)
+        {
+            var mousePoint = vec2((((-1 + 2 * event.clientX / canvas.width)+1)/2)*model.worldX,
+                    (((-1 + 2 * ( canvas.height - event.clientY ) / canvas.height)+1)/2)*model.worldY);
+            // Get closest block position for rendering
+            mousePoint = vec2(Math.round(mousePoint[0]) - 0.5, Math.round(mousePoint[1]) + 0.5);
+
+            this.model.update_mouse_position(mousePoint);
+        }.bind(this));
+
+        canvas.addEventListener("mousedown", function(event)
+        {
+            var model = this.model;
+
+            function shockwave()
+            {
+                var mouseClickPos = mousePoint;
+                model.update_shockwave(mouseClickPos);
+            }
+
+            var mousePoint = vec2((((-1 + 2 * event.clientX / canvas.width)+1)/2)*model.worldX,
+            (((-1 + 2 * ( canvas.height - event.clientY ) / canvas.height)+1)/2)*model.worldY);
+            //console.log(mousePoint);
+            // Get closest block position for rendering
+            mousePoint = vec2(Math.round(mousePoint[0]) - 0.5, Math.round(mousePoint[1]) + 0.5);
+            // Get block coordinates
+            var blockX = Math.floor(mousePoint[0]);
+            var blockY = Math.floor(mousePoint[1]);
+            // Check if block is free
+            var placeable = model.can_build(blockX, blockY);
+            if(placeable && event.shiftKey == false)
+            {
+                var block_picker : any = document.getElementById('block_picker');
+                var block_string = block_picker.options[block_picker.selectedIndex].value;
+                var block_id = TileUtil.fromString(block_string);
+
+                model.update_tile(blockX, blockY, block_id);
+                shockwave();
+            }
+            else if(model.get_tile(blockX, blockY) != Tile.EMPTY && event.shiftKey == true)
+            {
+                model.update_tile(blockX, blockY, Tile.EMPTY);
+                shockwave();
+            }
+        }.bind(this));
     }
 };
