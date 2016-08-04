@@ -27,7 +27,7 @@ export class View
     private vPosition;
     private vColor;
     private vScalePos;
-    private vCenterPos;
+    private vTranslate;
     private vClickPos;
     private vTime;
     private vStickPos;
@@ -37,14 +37,14 @@ export class View
     // Blocks
     private worldVBuffer : WebGLBuffer;
     private worldCBuffer : WebGLBuffer;
-    private worldCenterBuffer : WebGLBuffer;
+    private worldTranslateBuffer : WebGLBuffer;
     // Stick figure
     private stickVBuffer : WebGLBuffer;
     private stickCBuffer : WebGLBuffer;
     // Mouse
     private mouseVBuffer : WebGLBuffer;
     private mouseCBuffer : WebGLBuffer;
-    private mouseCenterBuffer : WebGLBuffer;
+    private mouseTranslateBuffer : WebGLBuffer;
 
     // Game related stuff.
     // world variables
@@ -108,7 +108,7 @@ export class View
         // Get Shader variable positions
         this.vPosition  = gl.getAttribLocation(this.boxShaderProgram, "vPosition");
         this.vColor     = gl.getAttribLocation(this.boxShaderProgram, "vColor");
-        this.vCenterPos = gl.getAttribLocation(this.boxShaderProgram, 'vCenterPos');
+        this.vTranslate = gl.getAttribLocation(this.boxShaderProgram, 'vTranslate');
         this.vScalePos  = gl.getUniformLocation(this.boxShaderProgram, "vScale");
         this.vClickPos  = gl.getUniformLocation(this.boxShaderProgram, "vClickPos");
         this.vTime      = gl.getUniformLocation(this.boxShaderProgram, "vTime");
@@ -125,12 +125,12 @@ export class View
         gl.bufferData(gl.ARRAY_BUFFER, sizeof['vec4'] * model.worldSize * 4, gl.STATIC_DRAW);
         gl.vertexAttribPointer(this.vColor, 4, gl.FLOAT, false, 0, 0);
         gl.enableVertexAttribArray(this.vColor);
-        // World Center buffer
-        this.worldCenterBuffer = gl.createBuffer();
-        gl.bindBuffer(gl.ARRAY_BUFFER, this.worldCenterBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, sizeof['vec2'] * model.worldSize * 4, gl.STATIC_DRAW);
-        gl.vertexAttribPointer(this.vCenterPos, 2, gl.FLOAT, false, 0, 0);
-        gl.enableVertexAttribArray(this.vCenterPos);
+        // World Color buffer
+        this.worldTranslateBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.worldTranslateBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, sizeof['vec4'] * model.worldSize * 4, gl.STATIC_DRAW);
+        gl.vertexAttribPointer(this.vTranslate, 4, gl.FLOAT, false, 0, 0);
+        gl.enableVertexAttribArray(this.vTranslate);
 
         // Mouse Vertex buffer
         this.mouseVBuffer = gl.createBuffer();
@@ -145,11 +145,11 @@ export class View
         gl.vertexAttribPointer(this.vColor, 4, gl.FLOAT, false, 0, 0);
         gl.enableVertexAttribArray(this.vColor);
         // World Center buffer
-        this.mouseCenterBuffer = gl.createBuffer();
-        gl.bindBuffer(gl.ARRAY_BUFFER, this.mouseCenterBuffer);
+        this.mouseTranslateBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.mouseTranslateBuffer);
         gl.bufferData(gl.ARRAY_BUFFER, sizeof['vec2'] * 5 * 4, gl.STATIC_DRAW);
-        gl.vertexAttribPointer(this.vCenterPos, 2, gl.FLOAT, false, 0, 0);
-        gl.enableVertexAttribArray(this.vCenterPos);
+        gl.vertexAttribPointer(this.vTranslate, 2, gl.FLOAT, false, 0, 0);
+        gl.enableVertexAttribArray(this.vTranslate);
 
         // Set the uniform scale variable
         gl.uniform1f(this.vScalePos, this.render_scale);
@@ -186,6 +186,7 @@ export class View
         var world_centers = [];
         var world_points = [];
         var world_colors = [];
+        var world_translate = [];
         for (var x = 0; x < model.worldX; x++)
         {
             for (var y = 0; y < model.worldY; y++)
@@ -195,28 +196,27 @@ export class View
 
                 var pos = this.index_to_position(x, y);
 
-                world_points.push(vec2(pos[0] - 0.5, pos[1] - 0.5));
-                world_points.push(vec2(pos[0] - 0.5, pos[1] + 0.5));
-                world_points.push(vec2(pos[0] + 0.5, pos[1] + 0.5));
-                world_points.push(vec2(pos[0] + 0.5, pos[1] - 0.5));
+                world_points.push(vec2(- 0.5, - 0.5));
+                world_points.push(vec2(- 0.5, + 0.5));
+                world_points.push(vec2(+ 0.5, + 0.5));
+                world_points.push(vec2(+ 0.5, - 0.5));
 
                 for(var i = 0; i < 4; i++)
                 {
                     world_colors.push(tile_color);
-                    world_centers.push(vec2(pos[0], pos[1]));
+                    world_translate.push(vec2(x + 0.5, y + 0.5));
                 }
             }
         }
-
+        // Buffer Color
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.worldTranslateBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, flatten(world_translate), gl.STATIC_DRAW);
         // Buffer Color
         gl.bindBuffer(gl.ARRAY_BUFFER, this.worldCBuffer);
         gl.bufferData(gl.ARRAY_BUFFER, flatten(world_colors), gl.STATIC_DRAW);
         // Buffer Verticies
         gl.bindBuffer(gl.ARRAY_BUFFER, this.worldVBuffer);
         gl.bufferData(gl.ARRAY_BUFFER, flatten(world_points), gl.STATIC_DRAW);
-        // Buffer Centers
-        gl.bindBuffer(gl.ARRAY_BUFFER, this.worldCenterBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, flatten(world_centers), gl.STATIC_DRAW);
     }
 
     private render() : void
@@ -252,8 +252,8 @@ export class View
             gl.bindBuffer(gl.ARRAY_BUFFER, this.mouseVBuffer);
             gl.vertexAttribPointer(this.vPosition, 2, gl.FLOAT, false, 0, 0);
 
-            gl.bindBuffer(gl.ARRAY_BUFFER, this.mouseCenterBuffer);
-            gl.vertexAttribPointer(this.vCenterPos, 2, gl.FLOAT, false, 0, 0);
+            gl.bindBuffer(gl.ARRAY_BUFFER, this.mouseTranslateBuffer);
+            gl.vertexAttribPointer(this.vTranslate, 2, gl.FLOAT, false, 0, 0);
 
             gl.drawArrays(gl.LINES, 0, this.mouse_lines);
         }
@@ -265,14 +265,14 @@ export class View
         gl.bindBuffer(gl.ARRAY_BUFFER, this.worldVBuffer);
         gl.vertexAttribPointer(this.vPosition, 2, gl.FLOAT, false, 0, 0);
 
-        gl.bindBuffer(gl.ARRAY_BUFFER, this.worldCenterBuffer);
-        gl.vertexAttribPointer(this.vCenterPos, 2, gl.FLOAT, false, 0, 0);
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.worldTranslateBuffer);
+        gl.vertexAttribPointer(this.vTranslate, 2, gl.FLOAT, false, 0, 0);
 
         for (var i = 0; i < this.model.worldSize; i+=1)
         {
-            gl.drawArrays(gl.TRIANGLE_FAN, this.verts_per_block*i, this.verts_per_block);
+            //gl.drawElements(gl.TRIANGLES, this.verts_per_block, gl.UNSIGNED_SHORT, this.verts_per_block*i);
+            gl.drawArrays(gl.TRIANGLE_FAN, this.verts_per_block * i, this.verts_per_block);
         }
-
 
         (<any>window).requestAnimFrame(this.render.bind(this), this.canvas);
     }
@@ -356,29 +356,29 @@ export class View
 
         var mouse_points = [];
         // Left edge
-        mouse_points.push(vec2(pos[0] - 0.5, pos[1] - 0.5));
-        mouse_points.push(vec2(pos[0] - 0.5, pos[1] + 0.5));
+        mouse_points.push(vec2(- 0.5, - 0.5));
+        mouse_points.push(vec2(- 0.5, + 0.5));
         // Right edge
-        mouse_points.push(vec2(pos[0] + 0.5, pos[1] + 0.5));
-        mouse_points.push(vec2(pos[0] + 0.5, pos[1] - 0.5));
+        mouse_points.push(vec2(+ 0.5, + 0.5));
+        mouse_points.push(vec2(+ 0.5, - 0.5));
         // Top edge
-        mouse_points.push(vec2(pos[0] - 0.5, pos[1] + 0.5));
-        mouse_points.push(vec2(pos[0] + 0.5, pos[1] + 0.5));
+        mouse_points.push(vec2(- 0.5, + 0.5));
+        mouse_points.push(vec2(+ 0.5, + 0.5));
         // Bot edge
-        mouse_points.push(vec2(pos[0] - 0.5, pos[1] - 0.5));
-        mouse_points.push(vec2(pos[0] + 0.5, pos[1] - 0.5));
+        mouse_points.push(vec2(- 0.5, - 0.5));
+        mouse_points.push(vec2(+ 0.5, - 0.5));
         // Diagonal edge
-        mouse_points.push(vec2(pos[0] - 0.5, pos[1] - 0.5));
-        mouse_points.push(vec2(pos[0] + 0.5, pos[1] + 0.5));
+        mouse_points.push(vec2(- 0.5, - 0.5));
+        mouse_points.push(vec2(+ 0.5, + 0.5));
 
         var color = (placeable ? vec4(0., 0., 0., 1.) : vec4(1., 0., 0., 1.));
 
         var mouse_colors = [];
-        var mouse_centers = [];
+        var mouse_translate = [];
         for(var i = 0; i < mouse_points.length; i++)
         {
             mouse_colors.push(color);
-            mouse_centers.push(vec2(pos[0], pos[1]));
+            mouse_translate.push(vec2(pos[0], pos[1]));
         }
 
         gl.bindBuffer(gl.ARRAY_BUFFER, this.mouseCBuffer);
@@ -387,8 +387,8 @@ export class View
         gl.bindBuffer(gl.ARRAY_BUFFER, this.mouseVBuffer);
         gl.bufferData(gl.ARRAY_BUFFER, flatten(mouse_points), gl.STATIC_DRAW);
          
-        gl.bindBuffer(gl.ARRAY_BUFFER, this.mouseCenterBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, flatten(mouse_centers), gl.STATIC_DRAW);
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.mouseTranslateBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, flatten(mouse_translate), gl.STATIC_DRAW);
 
         this.mouse_lines = mouse_points.length;
     }
