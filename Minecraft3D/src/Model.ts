@@ -1,4 +1,4 @@
-/// <reference path="../typings/index.d.ts"/>
+///<reference path="../typings/globals/node/index.d.ts" />
 import events = require('events');
 
 declare var vec2: any;
@@ -14,7 +14,7 @@ export class Model extends events.EventEmitter
 
     public worldSize : number = this.worldX * this.worldY * this.worldZ;
 
-    public worldGrid : any[] = [];
+    private worldGrid : any[] = [];
 
     private stickman_position;
 

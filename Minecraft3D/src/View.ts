@@ -1,4 +1,3 @@
-/// <reference path="../typings/index.d.ts"/>
 import { Model } from "./Model";
 import { Tile, TileUtil } from "./Tile"
 
@@ -28,7 +27,7 @@ export class View
     private vPosition;
     private vColor;
     private vScalePos;
-    private vCenterPos;
+    private vTranslate;
     private vClickPos;
     private vTime;
     private vStickPos;
@@ -38,18 +37,20 @@ export class View
     // Blocks
     private worldVBuffer : WebGLBuffer;
     private worldCBuffer : WebGLBuffer;
-    private worldCenterBuffer : WebGLBuffer;
+    private worldTranslateBuffer : WebGLBuffer;
+    private worldIndexBuffer : WebGLBuffer;
     // Stick figure
     private stickVBuffer : WebGLBuffer;
     private stickCBuffer : WebGLBuffer;
     // Mouse
     private mouseVBuffer : WebGLBuffer;
     private mouseCBuffer : WebGLBuffer;
-    private mouseCenterBuffer : WebGLBuffer;
+    private mouseTranslateBuffer : WebGLBuffer;
 
     // Game related stuff.
     // world variables
     private verts_per_block : number = 4;
+    private indicies_per_block : number = 6;
 
     // Stickman stuff
     private stick_man_num_points : number;
@@ -109,7 +110,7 @@ export class View
         // Get Shader variable positions
         this.vPosition  = gl.getAttribLocation(this.boxShaderProgram, "vPosition");
         this.vColor     = gl.getAttribLocation(this.boxShaderProgram, "vColor");
-        this.vCenterPos = gl.getAttribLocation(this.boxShaderProgram, 'vCenterPos');
+        this.vTranslate = gl.getAttribLocation(this.boxShaderProgram, 'vTranslate');
         this.vScalePos  = gl.getUniformLocation(this.boxShaderProgram, "vScale");
         this.vClickPos  = gl.getUniformLocation(this.boxShaderProgram, "vClickPos");
         this.vTime      = gl.getUniformLocation(this.boxShaderProgram, "vTime");
@@ -117,21 +118,25 @@ export class View
         // World Vertex buffer
         this.worldVBuffer = gl.createBuffer();
         gl.bindBuffer(gl.ARRAY_BUFFER, this.worldVBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, sizeof['vec2'] * model.worldSize * 4, gl.STATIC_DRAW);
+        gl.bufferData(gl.ARRAY_BUFFER, sizeof['vec2'] * model.worldSize * this.verts_per_block, gl.STATIC_DRAW);
         gl.vertexAttribPointer(this.vPosition, 2, gl.FLOAT, false, 0, 0);
         gl.enableVertexAttribArray(this.vPosition);
         // World Color buffer
         this.worldCBuffer = gl.createBuffer();
         gl.bindBuffer(gl.ARRAY_BUFFER, this.worldCBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, sizeof['vec4'] * model.worldSize * 4, gl.STATIC_DRAW);
+        gl.bufferData(gl.ARRAY_BUFFER, sizeof['vec4'] * model.worldSize * this.verts_per_block, gl.STATIC_DRAW);
         gl.vertexAttribPointer(this.vColor, 4, gl.FLOAT, false, 0, 0);
         gl.enableVertexAttribArray(this.vColor);
-        // World Center buffer
-        this.worldCenterBuffer = gl.createBuffer();
-        gl.bindBuffer(gl.ARRAY_BUFFER, this.worldCenterBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, sizeof['vec2'] * model.worldSize * 4, gl.STATIC_DRAW);
-        gl.vertexAttribPointer(this.vCenterPos, 2, gl.FLOAT, false, 0, 0);
-        gl.enableVertexAttribArray(this.vCenterPos);
+        // World Translate buffer
+        this.worldTranslateBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.worldTranslateBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, sizeof['vec4'] * model.worldSize * this.verts_per_block, gl.STATIC_DRAW);
+        gl.vertexAttribPointer(this.vTranslate, 4, gl.FLOAT, false, 0, 0);
+        gl.enableVertexAttribArray(this.vTranslate);
+        // World Index buffer
+        this.worldIndexBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.worldIndexBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, Uint16Array.BYTES_PER_ELEMENT * model.worldSize * this.indicies_per_block, gl.STATIC_DRAW);
 
         // Mouse Vertex buffer
         this.mouseVBuffer = gl.createBuffer();
@@ -145,12 +150,12 @@ export class View
         gl.bufferData(gl.ARRAY_BUFFER, sizeof['vec4'] * 5 * 2, gl.STATIC_DRAW);
         gl.vertexAttribPointer(this.vColor, 4, gl.FLOAT, false, 0, 0);
         gl.enableVertexAttribArray(this.vColor);
-        // World Center buffer
-        this.mouseCenterBuffer = gl.createBuffer();
-        gl.bindBuffer(gl.ARRAY_BUFFER, this.mouseCenterBuffer);
+        // World Translate buffer
+        this.mouseTranslateBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.mouseTranslateBuffer);
         gl.bufferData(gl.ARRAY_BUFFER, sizeof['vec2'] * 5 * 4, gl.STATIC_DRAW);
-        gl.vertexAttribPointer(this.vCenterPos, 2, gl.FLOAT, false, 0, 0);
-        gl.enableVertexAttribArray(this.vCenterPos);
+        gl.vertexAttribPointer(this.vTranslate, 2, gl.FLOAT, false, 0, 0);
+        gl.enableVertexAttribArray(this.vTranslate);
 
         // Set the uniform scale variable
         gl.uniform1f(this.vScalePos, this.render_scale);
@@ -184,17 +189,20 @@ export class View
         var gl = this.gl;
         var model = this.model;
 
-        var world_centers = [];
         var world_points = [];
         var world_colors = [];
-        for (var x = 0; x < model.worldGrid.length; x++)
+        var world_translate = [];
+        var world_indicies = [];
+        for (var x = 0; x < model.worldX; x++)
         {
-            for (var y = 0; y < model.worldGrid[x].length; y++)
+            for (var y = 0; y < model.worldY; y++)
             {
                 for (var z = 0; z < model.worldGrid[y].length; z++)
                 {
-                    var point = model.worldGrid[x][y][z];
-                    var tile_color = this.tile_to_color(point);
+                   // var point = model.worldGrid[x][y][z];
+                   // var tile_color = this.tile_to_color(point);
+                var tile = model.get_tile(x, y,z);
+                var tile_color = this.tile_to_color(tile);
 
                     var pos = this.index_to_position(x, y, z);
 
@@ -203,6 +211,20 @@ export class View
                     world_points.push(vec3(pos[0] + 0.5, pos[1] + 0.5, pos[2] - 0.5));
                     world_points.push(vec3(pos[0] + 0.5, pos[1] - 0.5, pos[2] - 0.5));
 
+                // Get the start offset into world_colors
+                var offset = this.verts_per_block * (y + (x * model.worldX));
+
+                world_indicies.push(0 + offset);
+                world_indicies.push(1 + offset);
+                world_indicies.push(2 + offset);
+                world_indicies.push(1 + offset);
+                world_indicies.push(2 + offset);
+                world_indicies.push(3 + offset);
+
+                for(var i = 0; i < this.verts_per_block; i++)
+                {
+                    world_colors.push(tile_color);
+                    world_translate.push(vec2(x + 0.5, y + 0.5));
                     for(var i = 0; i < 4; i++)
                     {
                         world_colors.push(tile_color);
@@ -212,16 +234,18 @@ export class View
 
             }
         }
-
+        // Buffer Color
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.worldTranslateBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, flatten(world_translate), gl.STATIC_DRAW);
         // Buffer Color
         gl.bindBuffer(gl.ARRAY_BUFFER, this.worldCBuffer);
         gl.bufferData(gl.ARRAY_BUFFER, flatten(world_colors), gl.STATIC_DRAW);
         // Buffer Verticies
         gl.bindBuffer(gl.ARRAY_BUFFER, this.worldVBuffer);
         gl.bufferData(gl.ARRAY_BUFFER, flatten(world_points), gl.STATIC_DRAW);
-        // Buffer Centers
-        gl.bindBuffer(gl.ARRAY_BUFFER, this.worldCenterBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, flatten(world_centers), gl.STATIC_DRAW);
+        // Buffer Indicies
+        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.worldIndexBuffer);
+        gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(world_indicies), gl.STATIC_DRAW);
     }
 
     private render() : void
@@ -257,8 +281,8 @@ export class View
             gl.bindBuffer(gl.ARRAY_BUFFER, this.mouseVBuffer);
             gl.vertexAttribPointer(this.vPosition, 2, gl.FLOAT, false, 0, 0);
 
-            gl.bindBuffer(gl.ARRAY_BUFFER, this.mouseCenterBuffer);
-            gl.vertexAttribPointer(this.vCenterPos, 2, gl.FLOAT, false, 0, 0);
+            gl.bindBuffer(gl.ARRAY_BUFFER, this.mouseTranslateBuffer);
+            gl.vertexAttribPointer(this.vTranslate, 2, gl.FLOAT, false, 0, 0);
 
             gl.drawArrays(gl.LINES, 0, this.mouse_lines);
         }
@@ -270,14 +294,10 @@ export class View
         gl.bindBuffer(gl.ARRAY_BUFFER, this.worldVBuffer);
         gl.vertexAttribPointer(this.vPosition, 2, gl.FLOAT, false, 0, 0);
 
-        gl.bindBuffer(gl.ARRAY_BUFFER, this.worldCenterBuffer);
-        gl.vertexAttribPointer(this.vCenterPos, 2, gl.FLOAT, false, 0, 0);
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.worldTranslateBuffer);
+        gl.vertexAttribPointer(this.vTranslate, 2, gl.FLOAT, false, 0, 0);
 
-        for (var i = 0; i < this.model.worldSize; i+=1)
-        {
-            gl.drawArrays(gl.TRIANGLE_FAN, this.verts_per_block*i, this.verts_per_block);
-        }
-
+        gl.drawElements(gl.TRIANGLES, this.indicies_per_block*this.model.worldSize, gl.UNSIGNED_SHORT, 0);
 
         (<any>window).requestAnimFrame(this.render.bind(this), this.canvas);
     }
@@ -361,29 +381,29 @@ export class View
 
         var mouse_points = [];
         // Left edge
-        mouse_points.push(vec3(pos[0] - 0.5, pos[1] - 0.5, pos[2]));
-        mouse_points.push(vec3(pos[0] - 0.5, pos[1] + 0.5, pos[2]));
+        mouse_points.push(vec3(- 0.5, - 0.5, ,0.5));
+        mouse_points.push(vec3( - 0.5, 0.5, 0.5));
         // Right edge
-        mouse_points.push(vec3(pos[0] + 0.5, pos[1] + 0.5, pos[2]));
-        mouse_points.push(vec3(pos[0] + 0.5, pos[1] - 0.5, pos[2]));
+        mouse_points.push(vec3(0.5, + 0.5,0));
+        mouse_points.push(vec3(0.5, - 0.5, 0));
         // Top edge
-        mouse_points.push(vec3(pos[0] - 0.5, pos[1] + 0.5, pos[2]));
-        mouse_points.push(vec3(pos[0] + 0.5, pos[1] + 0.5, pos[2]));
+        mouse_points.push(vec3( - 0.5, + 0.5, 0));
+        mouse_points.push(vec3(0 + 0.5, 0 + 0.5, 0));
         // Bot edge
-        mouse_points.push(vec3(pos[0] - 0.5, pos[1] - 0.5, pos[2]));
-        mouse_points.push(vec3(pos[0] + 0.5, pos[1] - 0.5, pos[2]));
+        mouse_points.push(vec3(0 - 0.5, 0 - 0.5, 0));
+        mouse_points.push(vec3(0 + 0.5, 0 - 0.5, 0));
         // Diagonal edge
-        mouse_points.push(vec3(pos[0] - 0.5, pos[1] - 0.5, pos[2]));
-        mouse_points.push(vec3(pos[0] + 0.5, pos[1] + 0.5, pos[2]));
+        mouse_points.push(vec3(0 - 0.5, 0 - 0.5, 0));
+        mouse_points.push(vec3(0 + 0.5, 0 + 0.5, 0));
 
         var color = (placeable ? vec4(0., 0., 0., 1.) : vec4(1., 0., 0., 1.));
 
         var mouse_colors = [];
-        var mouse_centers = [];
+        var mouse_translate = [];
         for(var i = 0; i < mouse_points.length; i++)
         {
             mouse_colors.push(color);
-            mouse_centers.push(vec3(pos[0], pos[1], pos[2]));
+            mouse_translate.push(vec2(pos[0], pos[1],pos[2]));
         }
 
         gl.bindBuffer(gl.ARRAY_BUFFER, this.mouseCBuffer);
@@ -392,8 +412,8 @@ export class View
         gl.bindBuffer(gl.ARRAY_BUFFER, this.mouseVBuffer);
         gl.bufferData(gl.ARRAY_BUFFER, flatten(mouse_points), gl.STATIC_DRAW);
          
-        gl.bindBuffer(gl.ARRAY_BUFFER, this.mouseCenterBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, flatten(mouse_centers), gl.STATIC_DRAW);
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.mouseTranslateBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, flatten(mouse_translate), gl.STATIC_DRAW);
 
         this.mouse_lines = mouse_points.length;
     }
@@ -417,9 +437,9 @@ export class View
             var tile_color = this.tile_to_color(tile);
 
             // Get the start offset into world_colors
-            var offset = 4 * (y + (x * model.worldX),z);
+            var offset = this.verts_per_block * (y + (x * model.worldX),z);
 
-            this.rebufferColor(offset, offset+4, tile_color);
+            this.rebufferColor(offset, offset+this.verts_per_block, tile_color);
         }.bind(this));
 
         this.model.on("stickman_move", function(pos)

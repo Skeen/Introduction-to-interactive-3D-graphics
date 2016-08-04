@@ -2,6 +2,7 @@ import { Model } from "./Model";
 import { Tile, TileUtil } from "./Tile"
 
 declare var vec2: any;
+declare var $: any;
 declare var vec3: any;
 
 export class Controller
@@ -332,37 +333,20 @@ export class Controller
         window.addEventListener("keydown", this.stickman_move.bind(this));
 
         var canvas : any = document.getElementById("gl-canvas");
-        //MouseListener with a point that follows the mouse
-        canvas.addEventListener("mousemove", function(event)
-        {
-            var mousePoint = vec3((((-1 + 2 * event.clientX / canvas.width)+1)/2)*model.worldX,
-                    (((-1 + 2 * ( canvas.height - event.clientY ) / canvas.height)+1)/2)*model.worldY,
-                (((-1 + 2 * ( canvas.height - event.clientZ ) / canvas.height)+1)/2)*model.worldZ);
-            // Get closest block position for rendering
-            mousePoint = vec3(Math.round(mousePoint[0]) - 0.5, Math.round(mousePoint[1]) + 0.5, Math.round(mousePoint[2]));
 
-            this.model.update_mouse_position(mousePoint);
-        }.bind(this));
-
-        canvas.addEventListener("mousedown", function(event)
+        var place_block = function(event)
         {
             var model = this.model;
 
             function shockwave()
             {
-                var mouseClickPos = mousePoint;
-                model.update_shockwave(mouseClickPos);
+                model.update_shockwave(vec2(x, y));
             }
 
-            var mousePoint = vec3((((-1 + 2 * event.clientX / canvas.width)+1)/2)*model.worldX,
-            (((-1 + 2 * ( canvas.height - event.clientY ) / canvas.height)+1)/2)*model.worldY,
-                (((-1 + 2 * ( canvas.height - event.clientZ ) / canvas.height)+1)/2)*model.worldZ);
-            //console.log(mousePoint);
-            // Get closest block position for rendering
-            mousePoint = vec3(Math.round(mousePoint[0]) - 0.5, Math.round(mousePoint[1]) + 0.5, Math.round(mousePoint[2]) + 0.5);
             // Get block coordinates
-            var blockX = Math.floor(mousePoint[0]);
-            var blockY = Math.floor(mousePoint[1]);
+            var blockX = Math.floor(x);
+            var blockY = Math.floor(y);
+
             // Check if block is free
             var placeable = model.can_build(blockX, blockY);
             if(placeable && event.shiftKey == false)
@@ -379,6 +363,67 @@ export class Controller
                 model.update_tile(blockX, blockY, Tile.EMPTY);
                 shockwave();
             }
-        }.bind(this));
+        }.bind(this);
+
+        // Setup Printer Lock
+        canvas.requestPointerLock = canvas.requestPointerLock;
+        document.exitPointerLock = document.exitPointerLock;
+
+        var capture_mouse = function()
+        {
+            canvas.requestPointerLock();
+        };
+
+        // When we click on the canvas, lock the mouse
+        $(canvas).on("click", capture_mouse);
+        // Hook pointer lock state change events for different browsers
+        document.addEventListener('pointerlockchange', lockChangeAlert.bind(this), false);
+        document.addEventListener('mozpointerlockchange', lockChangeAlert.bind(this), false);
+
+        var handler = canvasLoop.bind(this);
+
+        function lockChangeAlert() {
+            if(document.pointerLockElement === canvas)
+            {
+                console.log('The pointer lock status is now locked');
+                $(canvas).off("click", capture_mouse);
+                $(document).on("mousemove", handler);
+                $(canvas).on("click", place_block);
+            }
+            else
+            {
+                console.log('The pointer lock status is now unlocked');
+                $(canvas).on("click", capture_mouse);
+                $(document).off("mousemove", handler);
+                $(canvas).off("click", place_block);
+            }
+        }
+
+        var x = 20, y = 20;
+        var mouse_speed = 0.1;
+        function canvasLoop(e)
+        {
+            e = e.originalEvent;
+            var movementX = e.movementX ||
+                            e.mozMovementX          ||
+                            0;
+
+            var movementY = e.movementY ||
+                            e.mozMovementY      ||
+                            0;
+
+            x += movementX * mouse_speed;
+            y -= movementY * mouse_speed;
+
+            if(y < 0) y = 0;
+            if(y > 39) y = 39;
+
+            if(x < 0) x = 0;
+            if(x > 39) x = 39;
+
+            //console.log(x, y);
+
+            this.model.update_mouse_position(vec2(Math.floor(x) + 0.5, Math.floor(y) + 0.5));
+        }
     }
 }

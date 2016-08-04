@@ -7,9 +7,10 @@ import { View } from "./View";
 import { Controller } from "./Controller";
 import { Tile, TileUtil } from "./Tile"
 
-$(function() {
+$(function() 
+{
     var model = new Model();
-    var controller = new Controller(model);
     var view = new View(model);
+    var controller = new Controller(model);
     view.run();
 });
