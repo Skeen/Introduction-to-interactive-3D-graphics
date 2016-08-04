@@ -13,7 +13,7 @@ export class Model extends events.EventEmitter
 
     public worldSize : number = this.worldX * this.worldY;
 
-    public worldGrid : any[] = [];
+    private worldGrid : any[] = [];
 
     private stickman_position;
 
