@@ -489,7 +489,7 @@ export class View
         var canvas = this.canvas;
         var gl = this.gl;
         
-        var perspectiveMatrix = perspective(45, canvas.clientWidth / canvas.clientHeight, 0.1, 100.0);
+        var perspectiveMatrix = perspective(60, canvas.clientWidth / canvas.clientHeight, 0.1, 100.0);
         gl.uniformMatrix4fv(this.uPMatrix, false, flatten(perspectiveMatrix));
 
 /*
