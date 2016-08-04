@@ -186,12 +186,12 @@ export class View
         var world_centers = [];
         var world_points = [];
         var world_colors = [];
-        for (var x = 0; x < model.worldGrid.length; x++)
+        for (var x = 0; x < model.worldX; x++)
         {
-            for (var y = 0; y < model.worldGrid[x].length; y++)
+            for (var y = 0; y < model.worldY; y++)
             {
-                var point = model.worldGrid[x][y];
-                var tile_color = this.tile_to_color(point);
+                var tile = model.get_tile(x, y);
+                var tile_color = this.tile_to_color(tile);
 
                 var pos = this.index_to_position(x, y);
 

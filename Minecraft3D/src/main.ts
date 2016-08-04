@@ -9,7 +9,7 @@ import { Tile, TileUtil } from "./Tile"
 
 $(function() {
     var model = new Model();
-    var controller = new Controller(model);
     var view = new View(model);
+    var controller = new Controller(model);
     view.run();
 });
