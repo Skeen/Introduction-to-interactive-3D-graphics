@@ -197,12 +197,11 @@ export class View
         {
             for (var y = 0; y < model.worldY; y++)
             {
-                for (var z = 0; z < model.worldGrid[y].length; z++)
-                {
-                   // var point = model.worldGrid[x][y][z];
-                   // var tile_color = this.tile_to_color(point);
-                var tile = model.get_tile(x, y,z);
-                var tile_color = this.tile_to_color(tile);
+                for (var z = 0; z < model.worldZ; z++) {
+                    // var point = model.worldGrid[x][y][z];
+                    // var tile_color = this.tile_to_color(point);
+                    var tile = model.get_tile(x, y, z);
+                    var tile_color = this.tile_to_color(tile);
 
                     var pos = this.index_to_position(x, y, z);
 
@@ -211,27 +210,25 @@ export class View
                     world_points.push(vec3(pos[0] + 0.5, pos[1] + 0.5, pos[2] - 0.5));
                     world_points.push(vec3(pos[0] + 0.5, pos[1] - 0.5, pos[2] - 0.5));
 
-                // Get the start offset into world_colors
-                var offset = this.verts_per_block * (y + (x * model.worldX));
+                    // Get the start offset into world_colors
+                    var offset = this.verts_per_block * (y + (x * model.worldX));
 
-                world_indicies.push(0 + offset);
-                world_indicies.push(1 + offset);
-                world_indicies.push(2 + offset);
-                world_indicies.push(1 + offset);
-                world_indicies.push(2 + offset);
-                world_indicies.push(3 + offset);
+                    world_indicies.push(offset);
+                    world_indicies.push(1 + offset);
+                    world_indicies.push(2 + offset);
+                    world_indicies.push(1 + offset);
+                    world_indicies.push(2 + offset);
+                    world_indicies.push(3 + offset);
 
-                for(var i = 0; i < this.verts_per_block; i++)
-                {
-                    world_colors.push(tile_color);
-                    world_translate.push(vec2(x + 0.5, y + 0.5));
-                    for(var i = 0; i < 4; i++)
-                    {
+                    for (var i = 0; i < this.verts_per_block; i++) {
                         world_colors.push(tile_color);
-                        world_centers.push(vec3(pos[0], pos[1], pos[2]));
+                        world_translate.push(vec2(x + 0.5, y + 0.5));
+                        for (var i = 0; i < 4; i++) {
+                            world_colors.push(tile_color);
+                            world_translate.push(vec3(x + 0.5, y + 0.5, z + 0.5));
+                        }
                     }
                 }
-
             }
         }
         // Buffer Color
@@ -372,7 +369,7 @@ export class View
         gl.bufferData(gl.ARRAY_BUFFER, flatten(stick_points), gl.STATIC_DRAW);
 
         gl.useProgram(this.program);
-        gl.uniform2fv(this.vStickPos, model.get_stickman_position());
+        gl.uniform3fv(this.vStickPos, flatten(model.get_stickman_position()));
     }
 
     private initialize_mouse(pos, placeable : boolean) : void
@@ -381,20 +378,20 @@ export class View
 
         var mouse_points = [];
         // Left edge
-        mouse_points.push(vec3(- 0.5, - 0.5, ,0.5));
+        mouse_points.push(vec3(- 0.5, - 0.5 ,0.5));
         mouse_points.push(vec3( - 0.5, 0.5, 0.5));
         // Right edge
         mouse_points.push(vec3(0.5, + 0.5,0));
         mouse_points.push(vec3(0.5, - 0.5, 0));
         // Top edge
         mouse_points.push(vec3( - 0.5, + 0.5, 0));
-        mouse_points.push(vec3(0 + 0.5, 0 + 0.5, 0));
+        mouse_points.push(vec3(0.5, 0.5, 0));
         // Bot edge
         mouse_points.push(vec3(0 - 0.5, 0 - 0.5, 0));
-        mouse_points.push(vec3(0 + 0.5, 0 - 0.5, 0));
+        mouse_points.push(vec3(0.5, 0 - 0.5, 0));
         // Diagonal edge
         mouse_points.push(vec3(0 - 0.5, 0 - 0.5, 0));
-        mouse_points.push(vec3(0 + 0.5, 0 + 0.5, 0));
+        mouse_points.push(vec3(0.5, 0.5, 0));
 
         var color = (placeable ? vec4(0., 0., 0., 1.) : vec4(1., 0., 0., 1.));
 
@@ -447,7 +444,7 @@ export class View
             var gl = this.gl;
 
             gl.useProgram(this.program);
-            gl.uniform2fv(this.vStickPos, pos);
+            gl.uniform3fv(this.vStickPos, flatten(pos));
         }.bind(this));
 
         this.model.on("mouse_move", function(pos, placeable : boolean)
@@ -474,7 +471,7 @@ export class View
             }
 
             gl.useProgram(this.boxShaderProgram);
-            gl.uniform2fv(this.vClickPos, pos);
+            gl.uniform3fv(this.vClickPos, flatten(pos));
 
             if (this.timerId)
                 clearInterval(this.timerId);

@@ -61,12 +61,12 @@ export class Controller
     // Let blocks flow onto empty blocks
     private block_flow() : void
     {
+        /*
         var model = this.model;
 
         // Array to buffer changes
         // (We cannot change the world while processing it)
         var changes = [];
-
         // Loop through the world
         for (var x = 0; x < model.worldX; x++) 
         {
@@ -74,11 +74,14 @@ export class Controller
             {
                 for (var z = 0; y < model.worldZ; z++)
                 {
+                    /*
                     var tile = model.get_tile(x, y, z);
 
                     if(TileUtil.is_flow_block(tile) == false)
                         continue;
+                        */
                     //x-1
+                    /*
                     if(model.valid_index(x-1, y,z) && model.get_tile(x-1, y, z) == Tile.EMPTY)
                     {
                         changes.push({'x': x-1, 'y': y, 'z': z, 'tile': tile});
@@ -93,6 +96,8 @@ export class Controller
                     {
                         changes.push({'x': x, 'y': y-1, 'z': z, 'tile': tile});
                     }
+                    */
+                    /*
                     if(model.valid_index(x, y,z-1) && model.get_tile(x+1,y,z-1) == Tile.EMPTY)
                     {
                         changes.push({'x': x, 'y': y, 'z': z-1, 'tile': tile});
@@ -101,16 +106,18 @@ export class Controller
                     {
                         changes.push({'x': x, 'y': y-1, 'z': z, 'tile': tile});
                     }
+
                 }
 
             }
-        }
 
+        }
         // Apply any changes required
         for(var change of changes)
         {
             model.update_tile(change.x, change.y, change.z, change.tile);
         }
+        */
     }
 
     // stick-man variables  
@@ -340,12 +347,13 @@ export class Controller
 
             function shockwave()
             {
-                model.update_shockwave(vec2(x, y));
+                model.update_shockwave(vec3(x, y,z));
             }
 
             // Get block coordinates
             var blockX = Math.floor(x);
             var blockY = Math.floor(y);
+            var blockZ = Math.floor(z);
 
             // Check if block is free
             var placeable = model.can_build(blockX, blockY);
@@ -399,7 +407,7 @@ export class Controller
             }
         }
 
-        var x = 20, y = 20;
+        var x = 20, y = 20, z = 20;
         var mouse_speed = 0.1;
         function canvasLoop(e)
         {
@@ -423,7 +431,7 @@ export class Controller
 
             //console.log(x, y);
 
-            this.model.update_mouse_position(vec2(Math.floor(x) + 0.5, Math.floor(y) + 0.5));
+            this.model.update_mouse_position(vec3(Math.floor(x) + 0.5, Math.floor(y) + 0.5, Math.floor(z)+0.5));
         }
     }
 }
