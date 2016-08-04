@@ -12,6 +12,9 @@ declare var sizeof: any;
 declare var WebGLUtils: any;
 declare var initShaders: any;
 
+declare var perspective: any;
+declare var lookAt: any;
+
 export class View
 {
     private model : Model;
@@ -20,17 +23,19 @@ export class View
     private canvas : any;
     private gl : any;
 
-    private program : any;
+    //private program : any;
     private boxShaderProgram : any;
 
     // Shader variables
     private vPosition;
     private vColor;
-    private vScalePos;
+    //private vScalePos;
     private vTranslate;
-    private vClickPos;
-    private vTime;
-    private vStickPos;
+    //private vClickPos;
+    //private vTime;
+    //private vStickPos;
+    private uPMatrix;
+    private uMVMatrix;
 
     // Buffers
     //--------
@@ -40,31 +45,28 @@ export class View
     private worldTranslateBuffer : WebGLBuffer;
     private worldIndexBuffer : WebGLBuffer;
     // Stick figure
-    private stickVBuffer : WebGLBuffer;
-    private stickCBuffer : WebGLBuffer;
+    //private stickVBuffer : WebGLBuffer;
+    //private stickCBuffer : WebGLBuffer;
     // Mouse
-    private mouseVBuffer : WebGLBuffer;
-    private mouseCBuffer : WebGLBuffer;
-    private mouseTranslateBuffer : WebGLBuffer;
+    //private mouseVBuffer : WebGLBuffer;
+    //private mouseCBuffer : WebGLBuffer;
+    //private mouseTranslateBuffer : WebGLBuffer;
 
     // Game related stuff.
     // world variables
-    private verts_per_block : number = 4;
-    private indicies_per_block : number = 6;
+    private verts_per_block : number = 24;
+    private indicies_per_block : number = 36;
 
     // Stickman stuff
-    private stick_man_num_points : number;
+    //private stick_man_num_points : number;
 
     // Fix this
-    private mouse_lines : number = 0;
+    //private mouse_lines : number = 0;
 
     // Shockwave variables
-    private shockwave_duration : number = 1000;
-    private timerId;
+    //private shockwave_duration : number = 1000;
+    //private timerId;
 
-    // Render stuf
-    private render_scale : number;
-    
     private rebufferColor(start, end, color) : void
     {
         var gl = this.gl;
@@ -91,9 +93,15 @@ export class View
         }
         gl.viewport(0, 0, canvas.clientWidth, canvas.clientHeight);
         gl.clearColor(1.0, 1.0, 1.0, 1.0);
+        gl.clearDepth(1.0);
         gl.enable(gl.DEPTH_TEST);
+        gl.depthFunc(gl.LEQUAL);            // Near things obscure far things
+        /*
+        gl.enable(gl.BLEND);
+        gl.blendFunc(gl.SRC_ALPHA, gl.ONE);
+        */
 
-        this.program = initShaders(gl, "vertex-shader.glsl", "fragment-shader.glsl");
+        //this.program = initShaders(gl, "vertex-shader.glsl", "fragment-shader.glsl");
         this.boxShaderProgram = initShaders(gl, "block-vertex-shader.glsl", "block-fragment-shader.glsl");
         this.canvas = canvas;
         this.gl = gl;
@@ -111,15 +119,17 @@ export class View
         this.vPosition  = gl.getAttribLocation(this.boxShaderProgram, "vPosition");
         this.vColor     = gl.getAttribLocation(this.boxShaderProgram, "vColor");
         this.vTranslate = gl.getAttribLocation(this.boxShaderProgram, 'vTranslate');
-        this.vScalePos  = gl.getUniformLocation(this.boxShaderProgram, "vScale");
-        this.vClickPos  = gl.getUniformLocation(this.boxShaderProgram, "vClickPos");
-        this.vTime      = gl.getUniformLocation(this.boxShaderProgram, "vTime");
+        //this.vScalePos  = gl.getUniformLocation(this.boxShaderProgram, "vScale");
+        //this.vClickPos  = gl.getUniformLocation(this.boxShaderProgram, "vClickPos");
+        //this.vTime      = gl.getUniformLocation(this.boxShaderProgram, "vTime");
+        this.uPMatrix = gl.getUniformLocation(this.boxShaderProgram, "uPMatrix");
+        this.uMVMatrix = gl.getUniformLocation(this.boxShaderProgram, "uMVMatrix");
 
         // World Vertex buffer
         this.worldVBuffer = gl.createBuffer();
         gl.bindBuffer(gl.ARRAY_BUFFER, this.worldVBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, sizeof['vec2'] * model.worldSize * this.verts_per_block, gl.STATIC_DRAW);
-        gl.vertexAttribPointer(this.vPosition, 2, gl.FLOAT, false, 0, 0);
+        gl.bufferData(gl.ARRAY_BUFFER, sizeof['vec3'] * model.worldSize * this.verts_per_block, gl.STATIC_DRAW);
+        gl.vertexAttribPointer(this.vPosition, 3, gl.FLOAT, false, 0, 0);
         gl.enableVertexAttribArray(this.vPosition);
         // World Color buffer
         this.worldCBuffer = gl.createBuffer();
@@ -130,14 +140,14 @@ export class View
         // World Translate buffer
         this.worldTranslateBuffer = gl.createBuffer();
         gl.bindBuffer(gl.ARRAY_BUFFER, this.worldTranslateBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, sizeof['vec4'] * model.worldSize * this.verts_per_block, gl.STATIC_DRAW);
-        gl.vertexAttribPointer(this.vTranslate, 4, gl.FLOAT, false, 0, 0);
+        gl.bufferData(gl.ARRAY_BUFFER, sizeof['vec3'] * model.worldSize * this.verts_per_block, gl.STATIC_DRAW);
+        gl.vertexAttribPointer(this.vTranslate, 3, gl.FLOAT, false, 0, 0);
         gl.enableVertexAttribArray(this.vTranslate);
         // World Index buffer
         this.worldIndexBuffer = gl.createBuffer();
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.worldIndexBuffer);
         gl.bufferData(gl.ARRAY_BUFFER, Uint16Array.BYTES_PER_ELEMENT * model.worldSize * this.indicies_per_block, gl.STATIC_DRAW);
-
+ /*
         // Mouse Vertex buffer
         this.mouseVBuffer = gl.createBuffer();
         gl.bindBuffer(gl.ARRAY_BUFFER, this.mouseVBuffer);
@@ -182,17 +192,21 @@ export class View
 
         // Set the uniform scale variable
         gl.uniform1f(this.vScalePos, this.render_scale);
+        */
     }
 
     private initialize_block_world() : void
     {
         var gl = this.gl;
         var model = this.model;
-
         var world_points = [];
         var world_colors = [];
         var world_translate = [];
         var world_indicies = [];
+
+        var x = 0;
+        var y = 0;
+        var z = 0;
         for (var x = 0; x < model.worldX; x++)
         {
             for (var y = 0; y < model.worldY; y++)
@@ -203,32 +217,109 @@ export class View
                     var tile = model.get_tile(x, y, z);
                     var tile_color = this.tile_to_color(tile);
 
-                    var pos = this.index_to_position(x, y, z);
+                //var pos = this.index_to_position(x, y);
 
-                    world_points.push(vec3(pos[0] - 0.5, pos[1] - 0.5, pos[2] - 0.5));
-                    world_points.push(vec3(pos[0] - 0.5, pos[1] + 0.5, pos[2] - 0.5));
-                    world_points.push(vec3(pos[0] + 0.5, pos[1] + 0.5, pos[2] - 0.5));
-                    world_points.push(vec3(pos[0] + 0.5, pos[1] - 0.5, pos[2] - 0.5));
+                var vertices = [
+                    // Front face
+                    [-0.5, -0.5,  0.5],
+                    [ 0.5, -0.5,  0.5],
+                    [ 0.5,  0.5,  0.5],
+                    [-0.5,  0.5,  0.5],
+
+                    // Back face
+                    [-0.5, -0.5, -0.5],
+                    [-0.5,  0.5, -0.5],
+                    [ 0.5,  0.5, -0.5],
+                    [ 0.5, -0.5, -0.5],
+
+                    // Top face
+                    [-0.5,  0.5, -0.5],
+                    [-0.5,  0.5,  0.5],
+                    [ 0.5,  0.5,  0.5],
+                    [ 0.5,  0.5, -0.5],
+
+                    // Bottom face
+                    [-0.5, -0.5, -0.5],
+                    [ 0.5, -0.5, -0.5],
+                    [ 0.5, -0.5,  0.5],
+                    [-0.5, -0.5,  0.5],
+
+                    // Right face
+                    [ 0.5, -0.5, -0.5],
+                    [ 0.5,  0.5, -0.5],
+                    [ 0.5,  0.5,  0.5],
+                    [ 0.5, -0.5,  0.5],
+
+                    // Left face
+                    [-0.5, -0.5, -0.5],
+                    [-0.5, -0.5,  0.5],
+                    [-0.5,  0.5,  0.5],
+                    [-0.5,  0.5, -0.5]
+                ];
 
                     // Get the start offset into world_colors
                     var offset = this.verts_per_block * (y + (x * model.worldX));
 
-                    world_indicies.push(offset);
-                    world_indicies.push(1 + offset);
-                    world_indicies.push(2 + offset);
-                    world_indicies.push(1 + offset);
-                    world_indicies.push(2 + offset);
-                    world_indicies.push(3 + offset);
+                var cubeVertexIndices = [
+                    0,  1,  2,      0,  2,  3,    // front
+                    4,  5,  6,      4,  6,  7,    // back
+                    8,  9,  10,     8,  10, 11,   // top
+                    12, 13, 14,     12, 14, 15,   // bottom
+                    16, 17, 18,     16, 18, 19,   // right
+                    20, 21, 22,     20, 22, 23    // left
+                ]
 
-                    for (var i = 0; i < this.verts_per_block; i++) {
-                        world_colors.push(tile_color);
-                        world_translate.push(vec2(x + 0.5, y + 0.5));
-                        for (var i = 0; i < 4; i++) {
-                            world_colors.push(tile_color);
-                            world_translate.push(vec3(x + 0.5, y + 0.5, z + 0.5));
-                        }
-                    }
+                var colors = [
+                    [0.0,  1.0,  1.0,  1.0],    // Front face: cyan
+                    [0.0,  1.0,  1.0,  1.0],    // Front face: cyan
+                    [0.0,  1.0,  1.0,  1.0],    // Front face: cyan
+                    [0.0,  1.0,  1.0,  1.0],    // Front face: cyan
+                    [1.0,  0.0,  0.0,  1.0],    // Back face: red
+                    [1.0,  0.0,  0.0,  1.0],    // Back face: red
+                    [1.0,  0.0,  0.0,  1.0],    // Back face: red
+                    [1.0,  0.0,  0.0,  1.0],    // Back face: red
+                    [0.0,  1.0,  0.0,  1.0],    // Top face: green
+                    [0.0,  1.0,  0.0,  1.0],    // Top face: green
+                    [0.0,  1.0,  0.0,  1.0],    // Top face: green
+                    [0.0,  1.0,  0.0,  1.0],    // Top face: green
+                    [0.0,  0.0,  1.0,  1.0],    // Bottom face: blue
+                    [0.0,  0.0,  1.0,  1.0],    // Bottom face: blue
+                    [0.0,  0.0,  1.0,  1.0],    // Bottom face: blue
+                    [0.0,  0.0,  1.0,  1.0],    // Bottom face: blue
+                    [1.0,  1.0,  0.0,  1.0],    // Right face: yellow
+                    [1.0,  1.0,  0.0,  1.0],    // Right face: yellow
+                    [1.0,  1.0,  0.0,  1.0],    // Right face: yellow
+                    [1.0,  1.0,  0.0,  1.0],    // Right face: yellow
+                    [1.0,  0.0,  1.0,  1.0],    // Left face: purple
+                    [1.0,  0.0,  1.0,  1.0],    // Left face: purple
+                    [1.0,  0.0,  1.0,  1.0],    // Left face: purple
+                    [1.0,  0.0,  1.0,  1.0]     // Left face: purple
+                ];
+
+                for(var i = 0; i < this.indicies_per_block; i++)
+                {
+                    world_indicies.push(cubeVertexIndices[i] + offset);
                 }
+
+                for(var i = 0; i < this.verts_per_block; i++)
+                {
+                    world_points.push(vec3(vertices[i]));
+                        //world_colors.push(vec4(1., 1., 1., 0.));
+                    //else
+                    world_colors.push(tile_color);
+
+                    if(tile == Tile.EMPTY)
+                    world_translate.push(vec3(x+1000, y, z));
+                    else
+                    world_translate.push(vec3(x, y, z));
+                }
+/*
+                for(var i = 8; i < 12; i++)
+                {
+                    //console.log(tile_color);
+                    world_colors[world_colors.length - this.verts_per_block + i] = vec4(0., 0., 0., 1.);
+                }
+                */
             }
         }
         // Buffer Color
@@ -248,53 +339,23 @@ export class View
     private render() : void
     {
         var gl = this.gl;
+        var canvas = this.canvas;
 
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-
-        // ---------------/
-        // Draw STICKMAN -/
-        // ---------------/
-        gl.useProgram(this.program);
-        // Draw the stick figure
-        gl.bindBuffer(gl.ARRAY_BUFFER, this.stickCBuffer);
-        gl.vertexAttribPointer(this.vColor, 4, gl.FLOAT, false, 0, 0);
-
-        gl.bindBuffer(gl.ARRAY_BUFFER, this.stickVBuffer);
-        gl.vertexAttribPointer(this.vPosition, 2, gl.FLOAT, false, 0, 0);
-
-        gl.drawArrays(gl.LINES, 0, this.stick_man_num_points);
-
-        // -----------//
-        // Draw BOXES //
-        // -----------//
-        gl.useProgram(this.boxShaderProgram);
-
-        // Draw the mouse block outline
-        if(this.mouse_lines != 0)
-        {
-            gl.bindBuffer(gl.ARRAY_BUFFER, this.mouseCBuffer);
-            gl.vertexAttribPointer(this.vColor, 4, gl.FLOAT, false, 0, 0);
-
-            gl.bindBuffer(gl.ARRAY_BUFFER, this.mouseVBuffer);
-            gl.vertexAttribPointer(this.vPosition, 2, gl.FLOAT, false, 0, 0);
-
-            gl.bindBuffer(gl.ARRAY_BUFFER, this.mouseTranslateBuffer);
-            gl.vertexAttribPointer(this.vTranslate, 2, gl.FLOAT, false, 0, 0);
-
-            gl.drawArrays(gl.LINES, 0, this.mouse_lines);
-        }
 
         // Draw the world
         gl.bindBuffer(gl.ARRAY_BUFFER, this.worldCBuffer);
         gl.vertexAttribPointer(this.vColor, 4, gl.FLOAT, false, 0, 0);
 
         gl.bindBuffer(gl.ARRAY_BUFFER, this.worldVBuffer);
-        gl.vertexAttribPointer(this.vPosition, 2, gl.FLOAT, false, 0, 0);
+        gl.vertexAttribPointer(this.vPosition, 3, gl.FLOAT, false, 0, 0);
 
         gl.bindBuffer(gl.ARRAY_BUFFER, this.worldTranslateBuffer);
-        gl.vertexAttribPointer(this.vTranslate, 2, gl.FLOAT, false, 0, 0);
+        gl.vertexAttribPointer(this.vTranslate, 3, gl.FLOAT, false, 0, 0);
 
-        gl.drawElements(gl.TRIANGLES, this.indicies_per_block*this.model.worldSize, gl.UNSIGNED_SHORT, 0);
+        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.worldIndexBuffer);
+        gl.drawElements(gl.TRIANGLES, this.indicies_per_block * this.model.worldSize, gl.UNSIGNED_SHORT, 0);
+        //gl.drawElements(gl.TRIANGLES, this.indicies_per_block * 2, gl.UNSIGNED_SHORT, 0);
 
         (<any>window).requestAnimFrame(this.render.bind(this), this.canvas);
     }
@@ -333,7 +394,7 @@ export class View
     {
         this.render();
     }
-
+/*
     private initialize_stick_man() : void
     {
         var gl = this.gl;
@@ -414,12 +475,10 @@ export class View
 
         this.mouse_lines = mouse_points.length;
     }
-
+*/
     constructor(model : Model)
     {
         this.model = model;
-        this.render_scale = 2 / Math.max(model.worldX, model.worldY);
-
         // Setup WebGL context
         this.initWebGl();
         // Setup buffers
@@ -427,9 +486,16 @@ export class View
         // Setup world
         this.initialize_block_world();
         // Setup stickman
-        this.initialize_stick_man();
+        //this.initialize_stick_man();
 
-        this.model.on("update_tile", function(x, y,z, tile)
+        var canvas = this.canvas;
+        var gl = this.gl;
+
+        var perspectiveMatrix = perspective(45, canvas.clientWidth / canvas.clientHeight, 0.1, 100.0);
+        gl.uniformMatrix4fv(this.uPMatrix, false, flatten(perspectiveMatrix));
+
+/*
+        this.model.on("update_tile", function(x, y, tile)
         {
             var tile_color = this.tile_to_color(tile);
 
@@ -438,20 +504,27 @@ export class View
 
             this.rebufferColor(offset, offset+this.verts_per_block, tile_color);
         }.bind(this));
+        */
+
+        var update_camera = function(stick_pos, cam_pos)
+        {
+            var modelMatrix = lookAt(vec3(stick_pos[0], stick_pos[1], 0),
+                                     vec3(stick_pos[0] + cam_pos[0], stick_pos[1] + cam_pos[1], 0 + cam_pos[2]),
+                                     vec3(0,1,0));
+            gl.uniformMatrix4fv(this.uMVMatrix, false, flatten(modelMatrix));
+
+        }.bind(this);
 
         this.model.on("stickman_move", function(pos)
         {
-            var gl = this.gl;
-
-            gl.useProgram(this.program);
-            gl.uniform3fv(this.vStickPos, flatten(pos));
+            update_camera(pos, model.get_mouse_position());
         }.bind(this));
 
-        this.model.on("mouse_move", function(pos, placeable : boolean)
+        this.model.on("mouse_move", function(pos)
         {
-            this.initialize_mouse(pos, placeable);
+            update_camera(model.get_stickman_position(), pos);
         }.bind(this));
-
+/*
         this.model.on("shockwave", function(pos)
         {
             var gl = this.gl;
@@ -479,5 +552,6 @@ export class View
             this.timerId = setInterval(doClickExplosion.bind(this), 1);
 
         }.bind(this));
+        */
     }
 }

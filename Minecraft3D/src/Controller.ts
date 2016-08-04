@@ -2,6 +2,7 @@ import { Model } from "./Model";
 import { Tile, TileUtil } from "./Tile"
 
 declare var vec2: any;
+declare var vec3: any;
 declare var $: any;
 declare var vec3: any;
 
@@ -340,7 +341,7 @@ export class Controller
         window.addEventListener("keydown", this.stickman_move.bind(this));
 
         var canvas : any = document.getElementById("gl-canvas");
-
+/*
         var place_block = function(event)
         {
             var model = this.model;
@@ -372,7 +373,7 @@ export class Controller
                 shockwave();
             }
         }.bind(this);
-
+*/
         // Setup Printer Lock
         canvas.requestPointerLock = canvas.requestPointerLock;
         document.exitPointerLock = document.exitPointerLock;
@@ -396,20 +397,23 @@ export class Controller
                 console.log('The pointer lock status is now locked');
                 $(canvas).off("click", capture_mouse);
                 $(document).on("mousemove", handler);
-                $(canvas).on("click", place_block);
+                //$(canvas).on("click", place_block);
             }
             else
             {
                 console.log('The pointer lock status is now unlocked');
                 $(canvas).on("click", capture_mouse);
                 $(document).off("mousemove", handler);
-                $(canvas).off("click", place_block);
+                //$(canvas).off("click", place_block);
             }
         }
 
-        var x = 20, y = 20, z = 20;
-        var mouse_speed = 0.1;
-        function canvasLoop(e)
+        var yaw = 0;
+        var pitch = 0;
+
+        var mouse_speed = 0.001;
+
+        function canvasLoop(e) 
         {
             e = e.originalEvent;
             var movementX = e.movementX ||
@@ -420,18 +424,14 @@ export class Controller
                             e.mozMovementY      ||
                             0;
 
-            x += movementX * mouse_speed;
-            y -= movementY * mouse_speed;
+            yaw += movementX * mouse_speed;
+            pitch -= movementY * mouse_speed;
 
-            if(y < 0) y = 0;
-            if(y > 39) y = 39;
+            var x = Math.cos(yaw) * Math.cos(pitch)
+            var y = Math.sin(pitch)
+            var z = Math.sin(yaw) * Math.cos(pitch)
 
-            if(x < 0) x = 0;
-            if(x > 39) x = 39;
-
-            //console.log(x, y);
-
-            this.model.update_mouse_position(vec3(Math.floor(x) + 0.5, Math.floor(y) + 0.5, Math.floor(z)+0.5));
+            this.model.update_mouse_position(vec3(x, y, z));
         }
     }
-}
+};
