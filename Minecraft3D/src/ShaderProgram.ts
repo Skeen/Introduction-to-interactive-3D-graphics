@@ -4,6 +4,7 @@
 
 declare var sizeof: any;
 declare var flatten: any;
+declare var initShaders: any;
 
 export class ShaderProgram {
 
@@ -12,10 +13,10 @@ export class ShaderProgram {
     private _attributes: Array<Attribute>;
     private _uniforms: Array<Uniform>;
 
-    public constructor (gl: any, program: any) {
+    public constructor (gl: any, vertexShaderPath: string, fragmentShaderPath: string) {
 
         this._gl = gl;
-        this._program = program;
+        this._program = initShaders(gl, vertexShaderPath, fragmentShaderPath);
 
         if (!(<any>window)._activeShader) {
             (<any>window)._activeShader = this;
@@ -39,13 +40,13 @@ export class ShaderProgram {
         this._gl.useProgram(this._program);
     }
 
-    public setBindings() {
+    public setBindings(grouping: string) {
         this.setActive();
 
         // Bind attributes.
         for (var i = 0; i < this._attributes.length; i++) {
             var attribute : Attribute = this._attributes[i];
-            this._gl.bindBuffer(this._gl.ARRAY_BUFFER, attribute.buffer);
+            this._gl.bindBuffer(this._gl.ARRAY_BUFFER, attribute.getBuffer(grouping));
             this._gl.vertexAttribPointer(attribute.index, attribute.numComponents, this._gl.FLOAT, false, 0, 0);
             this._gl.enableVertexAttribArray(attribute.index);
         }
@@ -53,28 +54,33 @@ export class ShaderProgram {
 
     // Attributes.
 
-    public createAttribute(name: string, type: string) {
+    public createAttribute(name: string, group: string, type: string) {
         this.setActive();
-        var attribute = new Attribute(name, type);
-        attribute.buffer = this._gl.createBuffer();
-        attribute.index = this._gl.getAttribLocation(this._program, attribute.name);
-        this._attributes.push(attribute);
+        var attribute;
+        try {
+            attribute = this.getAttribute(name);
+        } catch (err) {
+            attribute = new Attribute(name, type);
+            attribute.setIndex(this._gl.getAttribLocation(this._program, name));
+            this._attributes.push(attribute);
+        }
+        attribute.addBuffer(group, this._gl.createBuffer());
     }
 
-    public setAttributeData(name: string, sizeOrData : any) {
+    public setAttributeData(name: string, group: string, sizeOrData : any) {
         this.setActive();
         var attribute = this.getAttribute(name);
-        this._gl.bindBuffer(this._gl.ARRAY_BUFFER, attribute.buffer);
+        this._gl.bindBuffer(this._gl.ARRAY_BUFFER, attribute.getBuffer(group));
         if (typeof sizeOrData === 'number')
             this._gl.bufferData(this._gl.ARRAY_BUFFER, attribute.byteSize * sizeOrData, this._gl.STATIC_DRAW);
         else
             this._gl.bufferData(this._gl.ARRAY_BUFFER, flatten(sizeOrData), this._gl.STATIC_DRAW);
     }
 
-    public setAttributeSubData(name: string, data: Array<any>, offset: number) {
+    public setAttributeSubData(name: string, group: string, data: Array<any>, offset: number) {
         this.setActive();
         var attribute = this.getAttribute(name);
-        this._gl.bindBuffer(this._gl.ARRAY_BUFFER, attribute.buffer);
+        this._gl.bindBuffer(this._gl.ARRAY_BUFFER, attribute.getBuffer(group));
         this._gl.bufferSubData(this._gl.ARRAY_BUFFER, offset * attribute.byteSize, flatten(data));
     }
 
@@ -109,37 +115,37 @@ export class ShaderProgram {
     public uniform2fv(name: string, value: any) {
         this.setActive();
         var uniform = this.getUniform(name);
-        this._gl.uniform2fv(uniform.index, value);
+        this._gl.uniform2fv(uniform.index, flatten(value));
     }
 
     public uniform3fv(name: string, value: any) {
         this.setActive();
         var uniform = this.getUniform(name);
-        this._gl.uniform3fv(uniform.index, value);
+        this._gl.uniform3fv(uniform.index, flatten(value));
     }
 
     public uniform4fv(name: string, value: any) {
         this.setActive();
         var uniform = this.getUniform(name);
-        this._gl.uniform4fv(uniform.index, value);
+        this._gl.uniform4fv(uniform.index, flatten(value));
     }
 
     public uniformMatrix2fv(name: string, value: any) {
         this.setActive();
         var uniform = this.getUniform(name);
-        this._gl.uniformMatrix2fv(uniform.index, false, value);
+        this._gl.uniformMatrix2fv(uniform.index, false, flatten(value));
     }
 
     public uniformMatrix3fv(name: string, value: any) {
         this.setActive();
         var uniform = this.getUniform(name);
-        this._gl.uniformMatrix3fv(uniform.index, false, value);
+        this._gl.uniformMatrix3fv(uniform.index, false, flatten(value));
     }
 
     public uniformMatrix4fv(name: string, value: any) {
         this.setActive();
         var uniform = this.getUniform(name);
-        this._gl.uniformMatrix4fv(uniform.index, false, value);
+        this._gl.uniformMatrix4fv(uniform.index, false, flatten(value));
     }
 
     private getUniform(name: string) : Uniform {
@@ -158,17 +164,37 @@ export class ShaderProgram {
 
 export class Attribute {
     public name: string;
-    public index: number;
-    public buffer: number;
     public type: string;
     public numComponents: number;
     public byteSize: number;
+    public group: string;
+    public buffers: Array<any>;
+    public index: number;
 
     public constructor(name: string, type: string) {
         this.name = name;
         this.type = type;
         this.numComponents = this.getNumComponents();
         this.byteSize = this.getByteSize();
+        this.buffers = [];
+    }
+
+    public setIndex(index: number) {
+        this.index = index;
+    }
+
+    public addBuffer(group: string, buffer: number) {
+        var b = this.buffers[group];
+        if (!!b)
+            throw new Error('Cannot overwrite existing buffer in "' + group + '".');
+        this.buffers[group] = buffer;
+    }
+
+    public getBuffer(group: string) {
+        var b = this.buffers[group];
+        if (!b)
+            throw new Error('Buffer in group "' + group + '" does not exist.');
+        return b;
     }
 
     private getNumComponents() : number {

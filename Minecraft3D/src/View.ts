@@ -1,16 +1,12 @@
 import { Model } from "./Model";
 import { Tile, TileUtil } from "./Tile"
+import {ShaderProgram} from "./ShaderProgram";
 
 declare var vec2: any;
 declare var vec3: any;
 declare var vec4: any;
 
-declare var flatten: any;
-
-declare var sizeof: any;
-
 declare var WebGLUtils: any;
-declare var initShaders: any;
 
 export class View
 {
@@ -20,38 +16,16 @@ export class View
     private canvas : any;
     private gl : any;
 
-    private program : any;
-    private boxShaderProgram : any;
-
-    // Shader variables
-    private vPosition;
-    private vColor;
-    private vScalePos;
-    private vCenterPos;
-    private vClickPos;
-    private vTime;
-    private vStickPos;
-
-    // Buffers
-    //--------
-    // Blocks
-    private worldVBuffer : WebGLBuffer;
-    private worldCBuffer : WebGLBuffer;
-    private worldCenterBuffer : WebGLBuffer;
-    // Stick figure
-    private stickVBuffer : WebGLBuffer;
-    private stickCBuffer : WebGLBuffer;
-    // Mouse
-    private mouseVBuffer : WebGLBuffer;
-    private mouseCBuffer : WebGLBuffer;
-    private mouseCenterBuffer : WebGLBuffer;
+    // Shader programs.
+    private stickProgram : ShaderProgram;
+    private boxProgram : ShaderProgram;
 
     // Game related stuff.
     // world variables
-    private verts_per_block : number = 4;
+    private vertsPerBlock : number = 4;
 
     // Stickman stuff
-    private stick_man_num_points : number;
+    private stick_man_num_points : number = 7;
 
     // Fix this
     private mouse_lines : number = 0;
@@ -61,7 +35,7 @@ export class View
     private timerId;
 
     // Render stuf
-    private render_scale : number;
+    private renderScale: number;
     
     private rebufferColor(start, end, color) : void
     {
@@ -72,8 +46,7 @@ export class View
         {
             replace_values.push(color);
         }
-        gl.bindBuffer(gl.ARRAY_BUFFER, this.worldCBuffer);
-        gl.bufferSubData(gl.ARRAY_BUFFER, start*sizeof['vec4'], flatten(replace_values));
+        this.boxProgram.setAttributeSubData('vColor', 'world', replace_values, start);
     }
 
     // Initialize WebGL render context.
@@ -91,8 +64,9 @@ export class View
         gl.clearColor(1.0, 1.0, 1.0, 1.0);
         gl.enable(gl.DEPTH_TEST);
 
-        this.program = initShaders(gl, "vertex-shader.glsl", "fragment-shader.glsl");
-        this.boxShaderProgram = initShaders(gl, "block-vertex-shader.glsl", "block-fragment-shader.glsl");
+        this.stickProgram = new ShaderProgram(gl, "vertex-shader.glsl", "fragment-shader.glsl");
+        this.boxProgram = new ShaderProgram(gl, "block-vertex-shader.glsl", "block-fragment-shader.glsl");
+
         this.canvas = canvas;
         this.gl = gl;
     }
@@ -100,82 +74,46 @@ export class View
     // Initialize buffers.
     private initBuffers() : void
     {
-        var gl = this.gl;
-        var model = this.model;
+        // World.
+        this.boxProgram.createAttribute('vPosition', 'world', 'vec2');
+        this.boxProgram.createAttribute('vColor', 'world', 'vec4');
+        this.boxProgram.createAttribute('vCenterPos', 'world', 'vec2');
 
-        gl.useProgram(this.boxShaderProgram);
+        this.boxProgram.setAttributeData('vPosition', 'world', this.model.worldSize * this.vertsPerBlock);
+        this.boxProgram.setAttributeData('vColor', 'world', this.model.worldSize * this.vertsPerBlock);
+        this.boxProgram.setAttributeData('vCenterPos', 'world', this.model.worldSize * this.vertsPerBlock);
 
-        // Get Shader variable positions
-        this.vPosition  = gl.getAttribLocation(this.boxShaderProgram, "vPosition");
-        this.vColor     = gl.getAttribLocation(this.boxShaderProgram, "vColor");
-        this.vCenterPos = gl.getAttribLocation(this.boxShaderProgram, 'vCenterPos');
-        this.vScalePos  = gl.getUniformLocation(this.boxShaderProgram, "vScale");
-        this.vClickPos  = gl.getUniformLocation(this.boxShaderProgram, "vClickPos");
-        this.vTime      = gl.getUniformLocation(this.boxShaderProgram, "vTime");
+        // Mouse.
+        this.boxProgram.createAttribute('vPosition', 'mouse', 'vec2');
+        this.boxProgram.createAttribute('vColor', 'mouse', 'vec4');
+        this.boxProgram.createAttribute('vCenterPos', 'mouse', 'vec2');
 
-        // World Vertex buffer
-        this.worldVBuffer = gl.createBuffer();
-        gl.bindBuffer(gl.ARRAY_BUFFER, this.worldVBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, sizeof['vec2'] * model.worldSize * 4, gl.STATIC_DRAW);
-        gl.vertexAttribPointer(this.vPosition, 2, gl.FLOAT, false, 0, 0);
-        gl.enableVertexAttribArray(this.vPosition);
-        // World Color buffer
-        this.worldCBuffer = gl.createBuffer();
-        gl.bindBuffer(gl.ARRAY_BUFFER, this.worldCBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, sizeof['vec4'] * model.worldSize * 4, gl.STATIC_DRAW);
-        gl.vertexAttribPointer(this.vColor, 4, gl.FLOAT, false, 0, 0);
-        gl.enableVertexAttribArray(this.vColor);
-        // World Center buffer
-        this.worldCenterBuffer = gl.createBuffer();
-        gl.bindBuffer(gl.ARRAY_BUFFER, this.worldCenterBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, sizeof['vec2'] * model.worldSize * 4, gl.STATIC_DRAW);
-        gl.vertexAttribPointer(this.vCenterPos, 2, gl.FLOAT, false, 0, 0);
-        gl.enableVertexAttribArray(this.vCenterPos);
+        this.boxProgram.setAttributeData('vPosition', 'mouse', 5 * 2);
+        this.boxProgram.setAttributeData('vColor', 'mouse', 5 * 2);
+        this.boxProgram.setAttributeData('vCenterPos', 'mouse', 4 * 5);
 
-        // Mouse Vertex buffer
-        this.mouseVBuffer = gl.createBuffer();
-        gl.bindBuffer(gl.ARRAY_BUFFER, this.mouseVBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, sizeof['vec2'] * 5 * 2, gl.STATIC_DRAW);
-        gl.vertexAttribPointer(this.vPosition, 2, gl.FLOAT, false, 0, 0);
-        gl.enableVertexAttribArray(this.vPosition);
-        // Mouse Color buffer
-        this.mouseCBuffer = gl.createBuffer();
-        gl.bindBuffer(gl.ARRAY_BUFFER, this.mouseCBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, sizeof['vec4'] * 5 * 2, gl.STATIC_DRAW);
-        gl.vertexAttribPointer(this.vColor, 4, gl.FLOAT, false, 0, 0);
-        gl.enableVertexAttribArray(this.vColor);
-        // World Center buffer
-        this.mouseCenterBuffer = gl.createBuffer();
-        gl.bindBuffer(gl.ARRAY_BUFFER, this.mouseCenterBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, sizeof['vec2'] * 5 * 4, gl.STATIC_DRAW);
-        gl.vertexAttribPointer(this.vCenterPos, 2, gl.FLOAT, false, 0, 0);
-        gl.enableVertexAttribArray(this.vCenterPos);
+        // Uniforms.
+        this.boxProgram.createUniform('vScale');
+        this.boxProgram.createUniform('vClickPos');
+        this.boxProgram.createUniform('vTime');
+
+        this.boxProgram.uniform1f('vScale', this.renderScale);
+
+
+        // Stickman program.
+
+        this.stickProgram.createAttribute('vPosition', 'default', 'vec2');
+        this.stickProgram.createAttribute('vColor', 'default', 'vec4');
+
+        this.stickProgram.setAttributeData('vPosition', 'default', this.stick_man_num_points * 2);
+        this.stickProgram.setAttributeData('vColor', 'default', this.stick_man_num_points * 2);
+
+        this.stickProgram.createUniform('vScale');
+        this.stickProgram.createUniform('vStickPos');
+
 
         // Set the uniform scale variable
-        gl.uniform1f(this.vScalePos, this.render_scale);
-
-        gl.useProgram(this.program);
-
-        this.vPosition  = gl.getAttribLocation(this.program, "vPosition");
-        this.vColor     = gl.getAttribLocation(this.program, "vColor");
-        this.vScalePos  = gl.getUniformLocation(this.program, "vScale");
-        this.vStickPos  = gl.getUniformLocation(this.program, "vStickPos");
-
-        // Stickman Vertex buffer
-        this.stickVBuffer = gl.createBuffer();
-        gl.bindBuffer(gl.ARRAY_BUFFER, this.stickVBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, sizeof['vec2'] * 7 * 2, gl.STATIC_DRAW);
-        gl.vertexAttribPointer(this.vPosition, 2, gl.FLOAT, false, 0, 0);
-        gl.enableVertexAttribArray(this.vPosition);
-        // Stickman Color buffer
-        this.stickCBuffer = gl.createBuffer();
-        gl.bindBuffer(gl.ARRAY_BUFFER, this.stickCBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, sizeof['vec4'] * model.worldSize, gl.STATIC_DRAW);
-        gl.vertexAttribPointer(this.vColor, 4, gl.FLOAT, false, 0, 0);
-        gl.enableVertexAttribArray(this.vColor);
-
-        // Set the uniform scale variable
-        gl.uniform1f(this.vScalePos, this.render_scale);
+        this.stickProgram.uniform1f('vScale', this.renderScale);
     }
 
     private initialize_block_world() : void
@@ -208,71 +146,32 @@ export class View
             }
         }
 
-        // Buffer Color
-        gl.bindBuffer(gl.ARRAY_BUFFER, this.worldCBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, flatten(world_colors), gl.STATIC_DRAW);
-        // Buffer Verticies
-        gl.bindBuffer(gl.ARRAY_BUFFER, this.worldVBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, flatten(world_points), gl.STATIC_DRAW);
-        // Buffer Centers
-        gl.bindBuffer(gl.ARRAY_BUFFER, this.worldCenterBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, flatten(world_centers), gl.STATIC_DRAW);
+        this.boxProgram.setAttributeData('vPosition', 'world', world_points);
+        this.boxProgram.setAttributeData('vColor', 'world', world_colors);
+        this.boxProgram.setAttributeData('vCenterPos', 'world', world_centers);
     }
 
     private render() : void
     {
-        var gl = this.gl;
+        this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT);
 
-        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-
-        // ---------------/
-        // Draw STICKMAN -/
-        // ---------------/
-        gl.useProgram(this.program);
-        // Draw the stick figure
-        gl.bindBuffer(gl.ARRAY_BUFFER, this.stickCBuffer);
-        gl.vertexAttribPointer(this.vColor, 4, gl.FLOAT, false, 0, 0);
-
-        gl.bindBuffer(gl.ARRAY_BUFFER, this.stickVBuffer);
-        gl.vertexAttribPointer(this.vPosition, 2, gl.FLOAT, false, 0, 0);
-
-        gl.drawArrays(gl.LINES, 0, this.stick_man_num_points);
-
-        // -----------//
-        // Draw BOXES //
-        // -----------//
-        gl.useProgram(this.boxShaderProgram);
+        this.stickProgram.setBindings('default');
+        this.gl.drawArrays(this.gl.LINES, 0, this.stick_man_num_points);
 
         // Draw the mouse block outline
         if(this.mouse_lines != 0)
         {
-            gl.bindBuffer(gl.ARRAY_BUFFER, this.mouseCBuffer);
-            gl.vertexAttribPointer(this.vColor, 4, gl.FLOAT, false, 0, 0);
-
-            gl.bindBuffer(gl.ARRAY_BUFFER, this.mouseVBuffer);
-            gl.vertexAttribPointer(this.vPosition, 2, gl.FLOAT, false, 0, 0);
-
-            gl.bindBuffer(gl.ARRAY_BUFFER, this.mouseCenterBuffer);
-            gl.vertexAttribPointer(this.vCenterPos, 2, gl.FLOAT, false, 0, 0);
-
-            gl.drawArrays(gl.LINES, 0, this.mouse_lines);
+            this.boxProgram.setBindings('mouse');
+            this.gl.drawArrays(this.gl.LINES, 0, this.mouse_lines);
         }
 
         // Draw the world
-        gl.bindBuffer(gl.ARRAY_BUFFER, this.worldCBuffer);
-        gl.vertexAttribPointer(this.vColor, 4, gl.FLOAT, false, 0, 0);
-
-        gl.bindBuffer(gl.ARRAY_BUFFER, this.worldVBuffer);
-        gl.vertexAttribPointer(this.vPosition, 2, gl.FLOAT, false, 0, 0);
-
-        gl.bindBuffer(gl.ARRAY_BUFFER, this.worldCenterBuffer);
-        gl.vertexAttribPointer(this.vCenterPos, 2, gl.FLOAT, false, 0, 0);
+        this.boxProgram.setBindings('world');
 
         for (var i = 0; i < this.model.worldSize; i+=1)
         {
-            gl.drawArrays(gl.TRIANGLE_FAN, this.verts_per_block*i, this.verts_per_block);
+            this.gl.drawArrays(this.gl.TRIANGLE_FAN, this.vertsPerBlock*i, this.vertsPerBlock);
         }
-
 
         (<any>window).requestAnimFrame(this.render.bind(this), this.canvas);
     }
@@ -282,7 +181,7 @@ export class View
         switch(tile)
         {
             case Tile.EMPTY:
-                return vec4(0., 0., 1., 0.);
+                return vec4(0., 0., 0., 0.);
             case Tile.STONE:
                 return vec4(0.2, 0.2, 0.2, 1.);
             case Tile.GRASS:
@@ -314,9 +213,6 @@ export class View
 
     private initialize_stick_man() : void
     {
-        var gl = this.gl;
-        var model = this.model;
-
         var stick_points = [];
         var stick_colors = [];
         // Legs
@@ -340,20 +236,16 @@ export class View
         }
 
         // Buffer Color
-        gl.bindBuffer(gl.ARRAY_BUFFER, this.stickCBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, flatten(stick_colors), gl.STATIC_DRAW);
-        // Buffer Verticies
-        gl.bindBuffer(gl.ARRAY_BUFFER, this.stickVBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, flatten(stick_points), gl.STATIC_DRAW);
+        this.stickProgram.setAttributeData('vColor', 'default', stick_colors);
 
-        gl.useProgram(this.program);
-        gl.uniform2fv(this.vStickPos, model.get_stickman_position());
+        // Buffer Vertices.
+        this.stickProgram.setAttributeData('vPosition', 'default', stick_points);
+
+        this.stickProgram.uniform2fv('vStickPos', this.model.get_stickman_position());
     }
 
     private initialize_mouse(pos, placeable : boolean) : void
     {
-        var gl = this.gl;
-
         var mouse_points = [];
         // Left edge
         mouse_points.push(vec2(pos[0] - 0.5, pos[1] - 0.5));
@@ -381,14 +273,9 @@ export class View
             mouse_centers.push(vec2(pos[0], pos[1]));
         }
 
-        gl.bindBuffer(gl.ARRAY_BUFFER, this.mouseCBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, flatten(mouse_colors), gl.STATIC_DRAW);
-         
-        gl.bindBuffer(gl.ARRAY_BUFFER, this.mouseVBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, flatten(mouse_points), gl.STATIC_DRAW);
-         
-        gl.bindBuffer(gl.ARRAY_BUFFER, this.mouseCenterBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, flatten(mouse_centers), gl.STATIC_DRAW);
+        this.boxProgram.setAttributeData('vColor', 'mouse', mouse_colors);
+        this.boxProgram.setAttributeData('vPosition', 'mouse', mouse_points);
+        this.boxProgram.setAttributeData('vCenterPos', 'mouse', mouse_centers);
 
         this.mouse_lines = mouse_points.length;
     }
@@ -396,7 +283,7 @@ export class View
     constructor(model : Model)
     {
         this.model = model;
-        this.render_scale = 2 / Math.max(model.worldX, model.worldY);
+        this.renderScale = 2 / Math.max(model.worldX, model.worldY);
 
         // Setup WebGL context
         this.initWebGl();
@@ -404,7 +291,7 @@ export class View
         this.initBuffers();
         // Setup world
         this.initialize_block_world();
-        // Setup stickman
+        // // Setup stickman
         this.initialize_stick_man();
 
         this.model.on("update_tile", function(x, y, tile)
@@ -419,10 +306,7 @@ export class View
 
         this.model.on("stickman_move", function(pos)
         {
-            var gl = this.gl;
-
-            gl.useProgram(this.program);
-            gl.uniform2fv(this.vStickPos, pos);
+            this.stickProgram.uniform2fv('vStickPos', pos);
         }.bind(this));
 
         this.model.on("mouse_move", function(pos, placeable : boolean)
@@ -433,6 +317,7 @@ export class View
         this.model.on("shockwave", function(pos)
         {
             var gl = this.gl;
+            var that = this;
 
             var startTime = new Date().getTime();
 
@@ -444,12 +329,9 @@ export class View
                     delta = 0;
                     clearInterval(this.timerId);
                 }
-                gl.useProgram(this.boxShaderProgram);
-                gl.uniform1f(this.vTime, delta);
+                that.boxProgram.uniform1f('vTime', delta);
             }
-
-            gl.useProgram(this.boxShaderProgram);
-            gl.uniform2fv(this.vClickPos, pos);
+            that.boxProgram.uniform2fv('vClickPos', pos);
 
             if (this.timerId)
                 clearInterval(this.timerId);
@@ -457,5 +339,6 @@ export class View
             this.timerId = setInterval(doClickExplosion.bind(this), 1);
 
         }.bind(this));
+
     }
-};
+}
