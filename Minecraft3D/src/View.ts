@@ -38,6 +38,7 @@ export class View
     private worldVBuffer : WebGLBuffer;
     private worldCBuffer : WebGLBuffer;
     private worldTranslateBuffer : WebGLBuffer;
+    private worldIndexBuffer : WebGLBuffer;
     // Stick figure
     private stickVBuffer : WebGLBuffer;
     private stickCBuffer : WebGLBuffer;
@@ -116,22 +117,26 @@ export class View
         // World Vertex buffer
         this.worldVBuffer = gl.createBuffer();
         gl.bindBuffer(gl.ARRAY_BUFFER, this.worldVBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, sizeof['vec2'] * model.worldSize * 4, gl.STATIC_DRAW);
+        gl.bufferData(gl.ARRAY_BUFFER, sizeof['vec2'] * model.worldSize * this.verts_per_block, gl.STATIC_DRAW);
         gl.vertexAttribPointer(this.vPosition, 2, gl.FLOAT, false, 0, 0);
         gl.enableVertexAttribArray(this.vPosition);
         // World Color buffer
         this.worldCBuffer = gl.createBuffer();
         gl.bindBuffer(gl.ARRAY_BUFFER, this.worldCBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, sizeof['vec4'] * model.worldSize * 4, gl.STATIC_DRAW);
+        gl.bufferData(gl.ARRAY_BUFFER, sizeof['vec4'] * model.worldSize * this.verts_per_block, gl.STATIC_DRAW);
         gl.vertexAttribPointer(this.vColor, 4, gl.FLOAT, false, 0, 0);
         gl.enableVertexAttribArray(this.vColor);
-        // World Color buffer
+        // World Translate buffer
         this.worldTranslateBuffer = gl.createBuffer();
         gl.bindBuffer(gl.ARRAY_BUFFER, this.worldTranslateBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, sizeof['vec4'] * model.worldSize * 4, gl.STATIC_DRAW);
+        gl.bufferData(gl.ARRAY_BUFFER, sizeof['vec4'] * model.worldSize * this.verts_per_block, gl.STATIC_DRAW);
         gl.vertexAttribPointer(this.vTranslate, 4, gl.FLOAT, false, 0, 0);
         gl.enableVertexAttribArray(this.vTranslate);
-
+        // World Index buffer
+        this.worldIndexBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.worldIndexBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, Uint16Array.BYTES_PER_ELEMENT * model.worldSize * this.verts_per_block, gl.STATIC_DRAW);
+ 
         // Mouse Vertex buffer
         this.mouseVBuffer = gl.createBuffer();
         gl.bindBuffer(gl.ARRAY_BUFFER, this.mouseVBuffer);
@@ -144,7 +149,7 @@ export class View
         gl.bufferData(gl.ARRAY_BUFFER, sizeof['vec4'] * 5 * 2, gl.STATIC_DRAW);
         gl.vertexAttribPointer(this.vColor, 4, gl.FLOAT, false, 0, 0);
         gl.enableVertexAttribArray(this.vColor);
-        // World Center buffer
+        // World Translate buffer
         this.mouseTranslateBuffer = gl.createBuffer();
         gl.bindBuffer(gl.ARRAY_BUFFER, this.mouseTranslateBuffer);
         gl.bufferData(gl.ARRAY_BUFFER, sizeof['vec2'] * 5 * 4, gl.STATIC_DRAW);
@@ -186,6 +191,7 @@ export class View
         var world_points = [];
         var world_colors = [];
         var world_translate = [];
+        var world_indicies = [];
         for (var x = 0; x < model.worldX; x++)
         {
             for (var y = 0; y < model.worldY; y++)
@@ -199,11 +205,20 @@ export class View
                 world_points.push(vec2(- 0.5, + 0.5));
                 world_points.push(vec2(+ 0.5, - 0.5));
 
+                /*
                 world_points.push(vec2(- 0.5, + 0.5));
                 world_points.push(vec2(+ 0.5, - 0.5));
+                */
                 world_points.push(vec2(+ 0.5, + 0.5));
 
-                for(var i = 0; i < this.verts_per_block; i++)
+                world_indicies.push(0);
+                world_indicies.push(1);
+                world_indicies.push(2);
+                world_indicies.push(1);
+                world_indicies.push(2);
+                world_indicies.push(3);
+
+                for(var i = 0; i < 4; i++)
                 {
                     world_colors.push(tile_color);
                     world_translate.push(vec2(x + 0.5, y + 0.5));
@@ -219,6 +234,9 @@ export class View
         // Buffer Verticies
         gl.bindBuffer(gl.ARRAY_BUFFER, this.worldVBuffer);
         gl.bufferData(gl.ARRAY_BUFFER, flatten(world_points), gl.STATIC_DRAW);
+
+        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.worldIndexBuffer);
+        gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(world_indicies), gl.STATIC_DRAW);
     }
 
     private render() : void
@@ -270,7 +288,8 @@ export class View
         gl.bindBuffer(gl.ARRAY_BUFFER, this.worldTranslateBuffer);
         gl.vertexAttribPointer(this.vTranslate, 2, gl.FLOAT, false, 0, 0);
 
-        gl.drawArrays(gl.TRIANGLES, 0, this.verts_per_block*this.model.worldSize);
+        //gl.drawArrays(gl.TRIANGLES, 0, this.verts_per_block*this.model.worldSize);
+        gl.drawElements(gl.TRIANGLES, this.verts_per_block*this.model.worldSize, gl.UNSIGNED_SHORT, 0);
 
         (<any>window).requestAnimFrame(this.render.bind(this), this.canvas);
     }
