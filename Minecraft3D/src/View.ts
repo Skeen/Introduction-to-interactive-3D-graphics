@@ -211,115 +211,117 @@ export class View
         {
             for (var y = 0; y < model.worldY; y++)
             {
-                for (var z = 0; z < model.worldZ; z++) {
+                for (var z = 0; z < model.worldZ; z++)
+                {
                     // var point = model.worldGrid[x][y][z];
                     // var tile_color = this.tile_to_color(point);
                     var tile = model.get_tile(x, y, z);
                     var tile_color = this.tile_to_color(tile);
 
-                //var pos = this.index_to_position(x, y);
+                    //var pos = this.index_to_position(x, y);
 
-                var vertices = [
-                    // Front face
-                    [-0.5, -0.5,  0.5],
-                    [ 0.5, -0.5,  0.5],
-                    [ 0.5,  0.5,  0.5],
-                    [-0.5,  0.5,  0.5],
+                    var vertices = [
+                        // Front face
+                        [-0.5, -0.5,  0.5],
+                        [ 0.5, -0.5,  0.5],
+                        [ 0.5,  0.5,  0.5],
+                        [-0.5,  0.5,  0.5],
 
-                    // Back face
-                    [-0.5, -0.5, -0.5],
-                    [-0.5,  0.5, -0.5],
-                    [ 0.5,  0.5, -0.5],
-                    [ 0.5, -0.5, -0.5],
+                        // Back face
+                        [-0.5, -0.5, -0.5],
+                        [-0.5,  0.5, -0.5],
+                        [ 0.5,  0.5, -0.5],
+                        [ 0.5, -0.5, -0.5],
 
-                    // Top face
-                    [-0.5,  0.5, -0.5],
-                    [-0.5,  0.5,  0.5],
-                    [ 0.5,  0.5,  0.5],
-                    [ 0.5,  0.5, -0.5],
+                        // Top face
+                        [-0.5,  0.5, -0.5],
+                        [-0.5,  0.5,  0.5],
+                        [ 0.5,  0.5,  0.5],
+                        [ 0.5,  0.5, -0.5],
 
-                    // Bottom face
-                    [-0.5, -0.5, -0.5],
-                    [ 0.5, -0.5, -0.5],
-                    [ 0.5, -0.5,  0.5],
-                    [-0.5, -0.5,  0.5],
+                        // Bottom face
+                        [-0.5, -0.5, -0.5],
+                        [ 0.5, -0.5, -0.5],
+                        [ 0.5, -0.5,  0.5],
+                        [-0.5, -0.5,  0.5],
 
-                    // Right face
-                    [ 0.5, -0.5, -0.5],
-                    [ 0.5,  0.5, -0.5],
-                    [ 0.5,  0.5,  0.5],
-                    [ 0.5, -0.5,  0.5],
+                        // Right face
+                        [ 0.5, -0.5, -0.5],
+                        [ 0.5,  0.5, -0.5],
+                        [ 0.5,  0.5,  0.5],
+                        [ 0.5, -0.5,  0.5],
 
-                    // Left face
-                    [-0.5, -0.5, -0.5],
-                    [-0.5, -0.5,  0.5],
-                    [-0.5,  0.5,  0.5],
-                    [-0.5,  0.5, -0.5]
-                ];
+                        // Left face
+                        [-0.5, -0.5, -0.5],
+                        [-0.5, -0.5,  0.5],
+                        [-0.5,  0.5,  0.5],
+                        [-0.5,  0.5, -0.5]
+                    ];
 
                     // Get the start offset into world_colors
                     var offset = this.verts_per_block * (y + (x * model.worldX));
 
-                var cubeVertexIndices = [
-                    0,  1,  2,      0,  2,  3,    // front
-                    4,  5,  6,      4,  6,  7,    // back
-                    8,  9,  10,     8,  10, 11,   // top
-                    12, 13, 14,     12, 14, 15,   // bottom
-                    16, 17, 18,     16, 18, 19,   // right
-                    20, 21, 22,     20, 22, 23    // left
-                ]
+                    var cubeVertexIndices = [
+                        0,  1,  2,      0,  2,  3,    // front
+                        4,  5,  6,      4,  6,  7,    // back
+                        8,  9,  10,     8,  10, 11,   // top
+                        12, 13, 14,     12, 14, 15,   // bottom
+                        16, 17, 18,     16, 18, 19,   // right
+                        20, 21, 22,     20, 22, 23    // left
+                    ]
 
-                var colors = [
-                    [0.0,  1.0,  1.0,  1.0],    // Front face: cyan
-                    [0.0,  1.0,  1.0,  1.0],    // Front face: cyan
-                    [0.0,  1.0,  1.0,  1.0],    // Front face: cyan
-                    [0.0,  1.0,  1.0,  1.0],    // Front face: cyan
-                    [1.0,  0.0,  0.0,  1.0],    // Back face: red
-                    [1.0,  0.0,  0.0,  1.0],    // Back face: red
-                    [1.0,  0.0,  0.0,  1.0],    // Back face: red
-                    [1.0,  0.0,  0.0,  1.0],    // Back face: red
-                    [0.0,  1.0,  0.0,  1.0],    // Top face: green
-                    [0.0,  1.0,  0.0,  1.0],    // Top face: green
-                    [0.0,  1.0,  0.0,  1.0],    // Top face: green
-                    [0.0,  1.0,  0.0,  1.0],    // Top face: green
-                    [0.0,  0.0,  1.0,  1.0],    // Bottom face: blue
-                    [0.0,  0.0,  1.0,  1.0],    // Bottom face: blue
-                    [0.0,  0.0,  1.0,  1.0],    // Bottom face: blue
-                    [0.0,  0.0,  1.0,  1.0],    // Bottom face: blue
-                    [1.0,  1.0,  0.0,  1.0],    // Right face: yellow
-                    [1.0,  1.0,  0.0,  1.0],    // Right face: yellow
-                    [1.0,  1.0,  0.0,  1.0],    // Right face: yellow
-                    [1.0,  1.0,  0.0,  1.0],    // Right face: yellow
-                    [1.0,  0.0,  1.0,  1.0],    // Left face: purple
-                    [1.0,  0.0,  1.0,  1.0],    // Left face: purple
-                    [1.0,  0.0,  1.0,  1.0],    // Left face: purple
-                    [1.0,  0.0,  1.0,  1.0]     // Left face: purple
-                ];
+                    var colors = [
+                        [0.0,  1.0,  1.0,  1.0],    // Front face: cyan
+                        [0.0,  1.0,  1.0,  1.0],    // Front face: cyan
+                        [0.0,  1.0,  1.0,  1.0],    // Front face: cyan
+                        [0.0,  1.0,  1.0,  1.0],    // Front face: cyan
+                        [1.0,  0.0,  0.0,  1.0],    // Back face: red
+                        [1.0,  0.0,  0.0,  1.0],    // Back face: red
+                        [1.0,  0.0,  0.0,  1.0],    // Back face: red
+                        [1.0,  0.0,  0.0,  1.0],    // Back face: red
+                        [0.0,  1.0,  0.0,  1.0],    // Top face: green
+                        [0.0,  1.0,  0.0,  1.0],    // Top face: green
+                        [0.0,  1.0,  0.0,  1.0],    // Top face: green
+                        [0.0,  1.0,  0.0,  1.0],    // Top face: green
+                        [0.0,  0.0,  1.0,  1.0],    // Bottom face: blue
+                        [0.0,  0.0,  1.0,  1.0],    // Bottom face: blue
+                        [0.0,  0.0,  1.0,  1.0],    // Bottom face: blue
+                        [0.0,  0.0,  1.0,  1.0],    // Bottom face: blue
+                        [1.0,  1.0,  0.0,  1.0],    // Right face: yellow
+                        [1.0,  1.0,  0.0,  1.0],    // Right face: yellow
+                        [1.0,  1.0,  0.0,  1.0],    // Right face: yellow
+                        [1.0,  1.0,  0.0,  1.0],    // Right face: yellow
+                        [1.0,  0.0,  1.0,  1.0],    // Left face: purple
+                        [1.0,  0.0,  1.0,  1.0],    // Left face: purple
+                        [1.0,  0.0,  1.0,  1.0],    // Left face: purple
+                        [1.0,  0.0,  1.0,  1.0]     // Left face: purple
+                    ];
 
-                for(var i = 0; i < this.indicies_per_block; i++)
-                {
-                    world_indicies.push(cubeVertexIndices[i] + offset);
-                }
+                    for(var i = 0; i < this.indicies_per_block; i++)
+                    {
+                        world_indicies.push(cubeVertexIndices[i] + offset);
+                    }
 
-                for(var i = 0; i < this.verts_per_block; i++)
-                {
-                    world_points.push(vec3(vertices[i]));
+                    for(var i = 0; i < this.verts_per_block; i++)
+                    {
+                        world_points.push(vec3(vertices[i]));
                         //world_colors.push(vec4(1., 1., 1., 0.));
-                    //else
-                    world_colors.push(tile_color);
+                        //else
+                        world_colors.push(tile_color);
 
-                    if(tile == Tile.EMPTY)
-                    world_translate.push(vec3(x+1000, y, z));
-                    else
-                    world_translate.push(vec3(x, y, z));
+                        if(tile == Tile.EMPTY)
+                            world_translate.push(vec3(x+1000, y, z));
+                        else
+                            world_translate.push(vec3(x, y, z));
+                    }
+                    /*
+                     for(var i = 8; i < 12; i++)
+                     {
+                     //console.log(tile_color);
+                     world_colors[world_colors.length - this.verts_per_block + i] = vec4(0., 0., 0., 1.);
+                     }
+                     */
                 }
-/*
-                for(var i = 8; i < 12; i++)
-                {
-                    //console.log(tile_color);
-                    world_colors[world_colors.length - this.verts_per_block + i] = vec4(0., 0., 0., 1.);
-                }
-                */
             }
         }
         // Buffer Color
@@ -517,7 +519,7 @@ export class View
 
         this.model.on("stickman_move", function(pos)
         {
-            update_camera(pos, model.get_mouse_position());
+            update_camera(pos, model.get_mouse_position(pos));
         }.bind(this));
 
         this.model.on("mouse_move", function(pos)

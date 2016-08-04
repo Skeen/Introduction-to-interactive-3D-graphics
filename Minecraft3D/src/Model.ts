@@ -28,14 +28,15 @@ export class Model extends events.EventEmitter
             return n % 1 === 0;
         }
 
-        if(isInt(x) == false || isInt(y) == false)
+        if(isInt(x) == false || isInt(y) == false || isInt(z) == false)
         {
-            console.log("valid_index called with non-integer arguments!", x, y);
+            console.log("valid_index called with non-integer arguments!", x, y, z);
             alert("valid_index called with non-integer arguments!");
         }
 
         return (x >= 0 && x < this.worldX &&
-                y >= 0 && y < this.worldY)
+                y >= 0 && y < this.worldY &&
+                z >= 0 && z < this.worldZ);
     }
 
     public get_tile(x : number, y : number, z : number) : Tile
@@ -141,6 +142,7 @@ export class Model extends events.EventEmitter
         for (var x = 0; x < this.worldX; x++) 
         {
             var y = Math.floor(this.worldY/3);
+            var z = Math.floor(this.worldZ/3);
             this.set_tile(x, y, z, Tile.GRASS);
             this.set_tile(x, y+1,z, Tile.GRASS);
         }
@@ -149,6 +151,7 @@ export class Model extends events.EventEmitter
         for (var x = Math.floor(this.worldX/4*2); x < Math.floor(this.worldX/4*3); x++)
         {
             var y = Math.floor(this.worldY/3);
+            var z = Math.floor(this.worldZ/3);
             this.set_tile(x, y+1,z, Tile.WATER);
         }
 
@@ -156,6 +159,7 @@ export class Model extends events.EventEmitter
         for (var x = 0; x < Math.floor(this.worldX/4); x++) 
         {
             var y = Math.floor(this.worldY/3);
+            var z = Math.floor(this.worldZ/3);
             this.set_tile(x, y+1,z, Tile.FIRE);
         }
     }

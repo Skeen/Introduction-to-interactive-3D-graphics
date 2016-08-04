@@ -16,12 +16,16 @@ export class Controller
 
         function flip_material(tile : Tile)
         {
-            if(tile == Tile.FIRE)
-                return Tile.WATER;
-            else if (tile == Tile.WATER)
-                return Tile.FIRE;
-            else
-                alert("Invalid usage!");
+            if(tile != undefined)
+            {
+                if(tile == Tile.FIRE)
+                    return Tile.WATER;
+                else if (tile == Tile.WATER)
+                    return Tile.FIRE;
+                else
+                    alert("Invalid usage!");
+            }
+            else console.log("tile undefined in flip_material")
         }
 
         for (var x = 0; x < model.worldX; x++) 
@@ -36,6 +40,7 @@ export class Controller
                         continue;
 
                     // Check adjacent blocks
+                    //console.log("check blocks")
                     for(var i = -1; i <= 1; i++)
                     {
                         for(var j = -1; j <= 1; j++)
@@ -220,11 +225,12 @@ export class Controller
         var new_z = old_position[2];
 
         // Get blocks below stickman
-        var blocks = this.get_stickman_blocks(new_x, new_y, new_z);
+        //var blocks = this.get_stickman_blocks(new_x, new_y, new_z);
 
         // Check if all blocks below us are sink blocks
         var all_sink = true;
         //TODO can't jump if blocks are undefined
+        /*
         if(blocks != undefined)
         {
             for(var x = 0; x < blocks.length; x++)
@@ -248,6 +254,7 @@ export class Controller
                 model.update_stickman_position(new_x, new_y, new_z);
             }
         }
+        */
     }
 
     private stickman_move(e)
