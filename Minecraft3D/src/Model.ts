@@ -9,7 +9,7 @@ import { Tile } from "./Tile"
 export class Model extends events.EventEmitter
 {
     public worldX : number = 40;
-    public worldY : number = 40;
+    public worldY : number = 3;
     public worldZ : number = 40;
 
     public worldSize : number = this.worldX * this.worldY * this.worldZ;
