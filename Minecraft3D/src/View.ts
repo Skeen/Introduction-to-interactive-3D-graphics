@@ -48,7 +48,7 @@ export class View
 
     // Game related stuff.
     // world variables
-    private verts_per_block : number = 4;
+    private verts_per_block : number = 6;
 
     // Stickman stuff
     private stick_man_num_points : number;
@@ -183,7 +183,6 @@ export class View
         var gl = this.gl;
         var model = this.model;
 
-        var world_centers = [];
         var world_points = [];
         var world_colors = [];
         var world_translate = [];
@@ -198,10 +197,13 @@ export class View
 
                 world_points.push(vec2(- 0.5, - 0.5));
                 world_points.push(vec2(- 0.5, + 0.5));
-                world_points.push(vec2(+ 0.5, + 0.5));
                 world_points.push(vec2(+ 0.5, - 0.5));
 
-                for(var i = 0; i < 4; i++)
+                world_points.push(vec2(- 0.5, + 0.5));
+                world_points.push(vec2(+ 0.5, - 0.5));
+                world_points.push(vec2(+ 0.5, + 0.5));
+
+                for(var i = 0; i < this.verts_per_block; i++)
                 {
                     world_colors.push(tile_color);
                     world_translate.push(vec2(x + 0.5, y + 0.5));
@@ -268,11 +270,7 @@ export class View
         gl.bindBuffer(gl.ARRAY_BUFFER, this.worldTranslateBuffer);
         gl.vertexAttribPointer(this.vTranslate, 2, gl.FLOAT, false, 0, 0);
 
-        for (var i = 0; i < this.model.worldSize; i+=1)
-        {
-            //gl.drawElements(gl.TRIANGLES, this.verts_per_block, gl.UNSIGNED_SHORT, this.verts_per_block*i);
-            gl.drawArrays(gl.TRIANGLE_FAN, this.verts_per_block * i, this.verts_per_block);
-        }
+        gl.drawArrays(gl.TRIANGLES, 0, this.verts_per_block*this.model.worldSize);
 
         (<any>window).requestAnimFrame(this.render.bind(this), this.canvas);
     }
@@ -412,9 +410,9 @@ export class View
             var tile_color = this.tile_to_color(tile);
 
             // Get the start offset into world_colors
-            var offset = 4 * (y + (x * model.worldX));
+            var offset = this.verts_per_block * (y + (x * model.worldX));
 
-            this.rebufferColor(offset, offset+4, tile_color);
+            this.rebufferColor(offset, offset+this.verts_per_block, tile_color);
         }.bind(this));
 
         this.model.on("stickman_move", function(pos)
