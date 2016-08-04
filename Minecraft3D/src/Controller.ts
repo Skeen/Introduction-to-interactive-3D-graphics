@@ -307,7 +307,7 @@ export class Controller
 
         var canvas : any = document.getElementById("gl-canvas");
 
-        var place_block = function(e)
+        var place_block = function(event)
         {
             var model = this.model;
 
