@@ -12,5 +12,7 @@ $(function()
     var model = new Model();
     var view = new View(model);
     var controller = new Controller(model);
+
+    console.log("LOADED: Running!");
     view.run();
 });
