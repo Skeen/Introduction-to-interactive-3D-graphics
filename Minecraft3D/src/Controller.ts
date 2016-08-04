@@ -240,6 +240,7 @@ export class Controller
         window.addEventListener('keyup',function(e)
         {
             var id = e.keyCode || e.which;
+            keyState[id] = keyState[id] || {};
             keyState[id].state = false;
         },true);
 
@@ -283,7 +284,7 @@ export class Controller
         var jump_force = 0.2;
         // Blocks / time-interval
         var gravity_force = 0.005;
-        var friction_force = 0.005;
+        var friction_force = 0.5;
         // Blocks / time-interval
         var terminal_velocity = 0.1;
 
@@ -325,17 +326,19 @@ export class Controller
                 // Friction velocity X
                 if(Math.abs(velocity[0]) < move_force/2)
                     velocity[0] = 0;
-                if(velocity[0] > 0)
-                    velocity[0] -= friction_force;
-                if(velocity[0] < 0)
-                    velocity[0] += friction_force;
+                else
+                    velocity[0] *= friction_force;
                 // Friction velocity Z
                 if(Math.abs(velocity[2]) < move_force/2)
                     velocity[2] = 0;
+                else
+                    velocity[2] *= friction_force;
+                /*
                 if(velocity[2] > 0)
                     velocity[2] -= friction_force;
                 if(velocity[2] < 0)
                     velocity[2] += friction_force;
+                    */
             }
 
             function move_straight(direction : number)
@@ -510,28 +513,40 @@ export class Controller
 
         var yaw = 0;
         var pitch = 0;
-
         var mouse_speed = 0.001;
 
         function canvasLoop(e) 
         {
             e = e.originalEvent;
-            var movementX = e.movementX ||
-                            e.mozMovementX          ||
-                            0;
-
-            var movementY = e.movementY ||
-                            e.mozMovementY      ||
-                            0;
-
+            // Get relative mouse movements
+            var movementX = e.movementX || 0;
+            var movementY = e.movementY || 0;
+            // Append to our movement variables
             yaw += movementX * mouse_speed;
             pitch -= movementY * mouse_speed;
 
+            // Clamp us from looking directly up
+            if(pitch > Math.PI / 2 * 0.9)
+                pitch = Math.PI / 2 * 0.9;
+            // Clamp us from looking directly down
+            if(pitch < -Math.PI / 2 * 0.9)
+                pitch = -Math.PI / 2 * 0.9;
+
+            // Normalize our yaw
+            if(yaw > Math.PI * 2)
+                yaw -= Math.PI * 2;
+            if(yaw < -Math.PI * 2)
+                yaw += Math.PI * 2;
+
+            // Calculate view vector [-1,1] on all axis
             var x = Math.cos(yaw) * Math.cos(pitch)
             var y = Math.sin(pitch)
             var z = Math.sin(yaw) * Math.cos(pitch)
 
+            // Let everyone know
             this.model.update_mouse_position(vec3(x, y, z));
+
+            //console.log(vec3(x,y,z));
         }
     }
 };
