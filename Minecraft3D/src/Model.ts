@@ -1,3 +1,4 @@
+///<reference path="../typings/globals/node/index.d.ts" />
 import events = require('events');
 
 declare var vec2: any;
