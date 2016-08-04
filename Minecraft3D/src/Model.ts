@@ -16,6 +16,7 @@ export class Model extends events.EventEmitter
     private worldGrid : any[] = [];
 
     private stickman_position;
+    private mouse_position;
 
     // Checks whether x and y are valid indicies
     // TODO: Make private
@@ -151,10 +152,15 @@ export class Model extends events.EventEmitter
         }
     }
 
+    public get_mouse_position(pos)
+    {
+        return this.mouse_position;
+    }
+
     private update_mouse_position(pos)
     {
-        var placeable = this.can_build(Math.floor(pos[0]), Math.floor(pos[1]));
-        this.emit("mouse_move", pos, placeable); 
+        this.mouse_position = pos;
+        this.emit("mouse_move", pos);
     }
 
     private update_shockwave(pos)
@@ -167,6 +173,7 @@ export class Model extends events.EventEmitter
         super();
         this.setup_world();
         this.update_stickman_position(0.5 + Math.floor(this.worldY/3), Math.floor(this.worldY/3)+10);
+        this.update_mouse_position(vec3(1, 0, 0));
 
         this.emit('ready');
     }
