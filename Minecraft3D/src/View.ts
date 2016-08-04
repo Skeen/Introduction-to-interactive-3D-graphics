@@ -93,14 +93,26 @@ export class View
         }
         gl.viewport(0, 0, canvas.clientWidth, canvas.clientHeight);
         gl.clearColor(1.0, 1.0, 1.0, 1.0);
+
         gl.clearDepth(1.0);
         gl.enable(gl.DEPTH_TEST);
         gl.depthFunc(gl.LEQUAL);            // Near things obscure far things
-        /*
-        gl.enable(gl.BLEND);
-        gl.blendFunc(gl.SRC_ALPHA, gl.ONE);
-        */
 
+        gl.enable(gl.CULL_FACE);
+        gl.cullFace(gl.BACK);
+/*
+        gl.disable(gl.DEPTH_TEST);
+        gl.enable( gl.BLEND );
+        //gl.blendFunc(gl.DST_COLOR, gl.ZERO);
+        //gl.blendFunc(gl.ZERO, gl.DST_COLOR);
+        //gl.blendEquation( gl.FUNC_ADD );
+        //gl.blendFunc( gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA );
+        //gl.blendFunc( gl.DST_COLOR, gl.ONE_MINUS_SRC_ALPHA );
+        gl.blendFunc( gl.DST_COLOR, gl.SRC_ALPHA );
+        //gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+        //gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+        //gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+*/
         //this.program = initShaders(gl, "vertex-shader.glsl", "fragment-shader.glsl");
         this.boxShaderProgram = initShaders(gl, "block-vertex-shader.glsl", "block-fragment-shader.glsl");
         this.canvas = canvas;
@@ -146,7 +158,7 @@ export class View
         // World Index buffer
         this.worldIndexBuffer = gl.createBuffer();
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.worldIndexBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, Uint32Array.BYTES_PER_ELEMENT * model.worldSize * this.indicies_per_block, gl.STATIC_DRAW);
+        gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, Uint32Array.BYTES_PER_ELEMENT * model.worldSize * this.indicies_per_block, gl.STATIC_DRAW);
  /*
         // Mouse Vertex buffer
         this.mouseVBuffer = gl.createBuffer();
@@ -322,11 +334,8 @@ export class View
                     {
                         world_points.push(vec3(vertices[i]));
                         world_colors.push(tile_color);
-
-                        if(tile == Tile.EMPTY)
-                            world_translate.push(vec3(x+1000, y, z));
-                        else
-                            world_translate.push(vec3(x, y, z));
+                        //world_colors.push(colors[i]);
+                        world_translate.push(vec3(x, y, z));
                     }
                 }
             }
@@ -389,9 +398,9 @@ export class View
             case Tile.METAL:
                 return vec4(0.82, 0.82, 0.82, 1.);
             case Tile.WATER:
-                return vec4(0., 0., 1., 1.);
+                return vec4(0., 0., 1., 0.4);
             case Tile.FIRE:
-                return vec4(1., 0., 0., 1.);
+                return vec4(1., 0., 0., 0.4);
             default:
                 alert("Invalid tile, cannot convert to color!");
         }
@@ -554,7 +563,7 @@ export class View
 
         this.model.on("stickman_move", function(pos)
         {
-            this.model.update_tile(vec3(Math.floor(pos[0]), Math.floor(pos[1])-1, Math.floor(pos[2])), Tile.STONE);
+            this.model.update_tile(vec3(Math.round(pos[0]), Math.round(pos[1])-1, Math.round(pos[2])), Tile.STONE);
         }.bind(this));
 
         update_camera();
