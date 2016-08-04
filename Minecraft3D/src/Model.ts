@@ -111,9 +111,12 @@ export class Model extends events.EventEmitter
 
     public update_tile(pos, tile : Tile)
     {
-        this.valid_index(pos);
+        if(this.valid_index(pos) == false)
+            return false;
+
         this.set_tile(pos, tile);
         this.emit("update_tile", pos, tile);
+        return true;
     }
 
     public get_stickman_position() : any

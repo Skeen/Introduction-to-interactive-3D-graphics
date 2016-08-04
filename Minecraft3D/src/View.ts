@@ -195,6 +195,22 @@ export class View
         */
     }
 
+    private idx_to_offset(pos) : number
+    {
+        var model = this.model;
+
+        var x = pos[0];
+        var y = pos[1];
+        var z = pos[2];
+
+        // Column major
+        var offset = ((x*model.worldY+y) * model.worldZ + z) * this.verts_per_block;
+        // Row major
+        //var offset = ((z*model.worldY+y) * model.worldX + x) * this.verts_per_block;
+        
+        return offset;
+    }
+
     private initialize_block_world() : void
     {
         var gl = this.gl;
@@ -258,9 +274,7 @@ export class View
                     ];
 
                     // Get the start offset into world_colors
-                    //var offset = ((x*model.worldY+y) * model.worldZ + z) * this.verts_per_block;
-                    var offset = ((z*model.worldY+y) * model.worldX + x) * this.verts_per_block;
-                    //var offset = this.verts_per_block * (y + (x * model.worldX));
+                    var offset = this.idx_to_offset(vec3(x,y,z));
                     //console.log(offset);
 
                     var cubeVertexIndices = [
@@ -492,17 +506,17 @@ export class View
         var perspectiveMatrix = perspective(60, canvas.clientWidth / canvas.clientHeight, 0.1, 100.0);
         gl.uniformMatrix4fv(this.uPMatrix, false, flatten(perspectiveMatrix));
 
-/*
-        this.model.on("update_tile", function(x, y, tile)
+        this.model.on("update_tile", function(pos, tile)
         {
+            console.log("update tile!");
             var tile_color = this.tile_to_color(tile);
 
             // Get the start offset into world_colors
-            var offset = this.verts_per_block * (y + (x * model.worldX));
+            var offset = this.idx_to_offset(pos);
+            console.log(offset);
 
             this.rebufferColor(offset, offset+this.verts_per_block, tile_color);
         }.bind(this));
-        */
 
         var height = 1;
         var update_camera = function() : void
@@ -520,7 +534,6 @@ export class View
                                               stick_pos[2]),
                                          vec3(1,0,0));
                 gl.uniformMatrix4fv(this.uMVMatrix, false, flatten(modelMatrix));
-
             }
             else
             {
@@ -538,6 +551,11 @@ export class View
         this.model.on("stickman_move", update_camera);
         this.model.on("mouse_move", update_camera);
         this.model.on("map_active", update_camera);
+
+        this.model.on("stickman_move", function(pos)
+        {
+            this.model.update_tile(vec3(Math.floor(pos[0]), Math.floor(pos[1])-1, Math.floor(pos[2])), Tile.STONE);
+        }.bind(this));
 
         update_camera();
 

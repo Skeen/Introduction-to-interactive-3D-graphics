@@ -334,7 +334,7 @@ export class Controller
                 velocity[0] = mouse_pos[0] * move_force * direction;
                 velocity[2] = mouse_pos[2] * move_force * direction;
 
-                console.log(velocity);
+                //console.log(velocity);
             }
 
             function move_strafe(direction : number)
@@ -534,7 +534,7 @@ export class Controller
             // Let everyone know
             this.model.update_mouse_position(vec3(x, y, z));
 
-            console.log(vec3(x,y,z));
+            //console.log(vec3(x,y,z));
         }
     }
 };
