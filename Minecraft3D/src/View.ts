@@ -22,7 +22,8 @@ export class View
 
     // Game related stuff.
     // world variables
-    private vertsPerBlock : number = 4;
+    private verts_per_block : number = 4;
+    private indicies_per_block : number = 6;
 
     // Stickman stuff
     private stick_man_num_points : number = 7;
@@ -86,7 +87,7 @@ export class View
         // Mouse.
         this.boxProgram.createAttribute('vPosition', 'mouse', 'vec2');
         this.boxProgram.createAttribute('vColor', 'mouse', 'vec4');
-        this.boxProgram.createAttribute('vCenterPos', 'mouse', 'vec2');
+        this.boxProgram.createAttribute('vTranslate', 'mouse', 'vec2');
 
         this.boxProgram.setAttributeData('vPosition', 'mouse', 5 * 2);
         this.boxProgram.setAttributeData('vColor', 'mouse', 5 * 2);
@@ -124,6 +125,8 @@ export class View
         var world_centers = [];
         var world_points = [];
         var world_colors = [];
+        var world_translate = [];
+        var world_indicies = [];
         for (var x = 0; x < model.worldX; x++)
         {
             for (var y = 0; y < model.worldY; y++)
@@ -133,15 +136,25 @@ export class View
 
                 var pos = this.index_to_position(x, y);
 
-                world_points.push(vec2(pos[0] - 0.5, pos[1] - 0.5));
-                world_points.push(vec2(pos[0] - 0.5, pos[1] + 0.5));
-                world_points.push(vec2(pos[0] + 0.5, pos[1] + 0.5));
-                world_points.push(vec2(pos[0] + 0.5, pos[1] - 0.5));
+                world_points.push(vec2(- 0.5, - 0.5));
+                world_points.push(vec2(- 0.5, + 0.5));
+                world_points.push(vec2(+ 0.5, - 0.5));
+                world_points.push(vec2(+ 0.5, + 0.5));
 
-                for(var i = 0; i < 4; i++)
+                // Get the start offset into world_colors
+                var offset = this.verts_per_block * (y + (x * model.worldX));
+
+                world_indicies.push(0 + offset);
+                world_indicies.push(1 + offset);
+                world_indicies.push(2 + offset);
+                world_indicies.push(1 + offset);
+                world_indicies.push(2 + offset);
+                world_indicies.push(3 + offset);
+
+                for(var i = 0; i < this.verts_per_block; i++)
                 {
                     world_colors.push(tile_color);
-                    world_centers.push(vec2(pos[0], pos[1]));
+                    world_translate.push(vec2(x + 0.5, y + 0.5));
                 }
             }
         }
@@ -181,7 +194,7 @@ export class View
         switch(tile)
         {
             case Tile.EMPTY:
-                return vec4(0., 0., 0., 0.);
+                return vec4(0., 0., 1., 0.);
             case Tile.STONE:
                 return vec4(0.2, 0.2, 0.2, 1.);
             case Tile.GRASS:
@@ -266,11 +279,11 @@ export class View
         var color = (placeable ? vec4(0., 0., 0., 1.) : vec4(1., 0., 0., 1.));
 
         var mouse_colors = [];
-        var mouse_centers = [];
+        var mouse_translate = [];
         for(var i = 0; i < mouse_points.length; i++)
         {
             mouse_colors.push(color);
-            mouse_centers.push(vec2(pos[0], pos[1]));
+            mouse_translate.push(vec2(pos[0], pos[1]));
         }
 
         this.boxProgram.setAttributeData('vColor', 'mouse', mouse_colors);
@@ -291,7 +304,7 @@ export class View
         this.initBuffers();
         // Setup world
         this.initialize_block_world();
-        // // Setup stickman
+        // Setup stickman
         this.initialize_stick_man();
 
         this.model.on("update_tile", function(x, y, tile)
@@ -299,9 +312,9 @@ export class View
             var tile_color = this.tile_to_color(tile);
 
             // Get the start offset into world_colors
-            var offset = 4 * (y + (x * model.worldX));
+            var offset = this.verts_per_block * (y + (x * model.worldX));
 
-            this.rebufferColor(offset, offset+4, tile_color);
+            this.rebufferColor(offset, offset+this.verts_per_block, tile_color);
         }.bind(this));
 
         this.model.on("stickman_move", function(pos)

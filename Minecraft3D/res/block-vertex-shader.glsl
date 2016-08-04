@@ -1,6 +1,6 @@
 attribute vec4 vPosition;
 attribute vec4 vColor;
-attribute vec2 vCenterPos;
+attribute vec2 vTranslate;
 
 uniform float vScale;
 uniform float vTime;
@@ -26,11 +26,11 @@ main()
     gl_PointSize = 100. * vScale;
 
     fColor      = vColor;
-    fCenter     = vec4(vCenterPos.xy * vScale - 1.0, 0., 1.);
-    fPosition   = vec4(vPosition.xy  * vScale - 1.0, 0., 1.);
+    fCenter     = vec4(vTranslate * vScale - 1.0, 0., 1.);
+    fPosition   = vec4((vPosition.xy + vTranslate)  * vScale - 1.0, 0., 1.);
 
     float tTime = vTime / speed;
-    float dist = distance(vPosition.xy, vClickPos);
+    float dist = distance((vPosition.xy + vTranslate), vClickPos);
     // Amplified sinc function with decay
     float t = dist * tTime;
     float wave = amptitude * (sin(angular_frequency * t) / (angular_frequency * t * decay));
