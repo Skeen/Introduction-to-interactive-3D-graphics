@@ -293,8 +293,7 @@ export class Controller
             function jump()
             {
                 var stick_pos = model.get_stickman_position();
-                stick_pos[1] -= 0.1;
-                if(can_jump(stick_pos))
+                if(can_jump(vec3(stick_pos[0], stick_pos[1] - 0.1, stick_pos[2])))
                 {
                     console.log("JUMP");
                     velocity[1] = jump_force;
@@ -323,38 +322,27 @@ export class Controller
 
             function friction()
             {
-                // Friction velocity X
-                if(Math.abs(velocity[0]) < move_force/2)
-                    velocity[0] = 0;
-                else
-                    velocity[0] *= friction_force;
-                // Friction velocity Z
-                if(Math.abs(velocity[2]) < move_force/2)
-                    velocity[2] = 0;
-                else
-                    velocity[2] *= friction_force;
-                /*
-                if(velocity[2] > 0)
-                    velocity[2] -= friction_force;
-                if(velocity[2] < 0)
-                    velocity[2] += friction_force;
-                    */
+                var old_y = velocity[1];
+                velocity = scale(friction_force, velocity);
+                velocity[1] = old_y;
             }
 
             function move_straight(direction : number)
             {
-                var mouse_pos = normalize(model.get_mouse_position());
+                var mouse_pos = model.get_mouse_position();
 
                 velocity[0] = mouse_pos[0] * move_force * direction;
                 velocity[2] = mouse_pos[2] * move_force * direction;
+
+                console.log(velocity);
             }
 
             function move_strafe(direction : number)
             {
                 var mouse_pos = normalize(model.get_mouse_position());
 
+                velocity[0] = -mouse_pos[2] / 10 * direction;
                 velocity[2] = mouse_pos[0] / 10 * direction;
-                velocity[0] = mouse_pos[2] / 10 * direction;
             }
 
             function update_position()
@@ -546,7 +534,7 @@ export class Controller
             // Let everyone know
             this.model.update_mouse_position(vec3(x, y, z));
 
-            //console.log(vec3(x,y,z));
+            console.log(vec3(x,y,z));
         }
     }
 };
