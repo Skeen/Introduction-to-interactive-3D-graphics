@@ -1,6 +1,8 @@
+/// <reference path="../typings/index.d.ts"/>
 import events = require('events');
 
 declare var vec2: any;
+declare var vec3: any;
 
 import { Tile } from "./Tile"
 
@@ -8,9 +10,9 @@ export class Model extends events.EventEmitter
 {
     public worldX : number = 40;
     public worldY : number = 40;
-    //public worldZ : number = 40;
+    public worldZ : number = 40;
 
-    public worldSize : number = this.worldX * this.worldY;
+    public worldSize : number = this.worldX * this.worldY * this.worldZ;
 
     public worldGrid : any[] = [];
 
@@ -18,7 +20,7 @@ export class Model extends events.EventEmitter
 
     // Checks whether x and y are valid indicies
     // TODO: Make private
-    public valid_index(x : number, y : number) : boolean
+    public valid_index(x : number, y : number, z : number) : boolean
     {
         function isInt(n : number)
         {
@@ -35,22 +37,22 @@ export class Model extends events.EventEmitter
                 y >= 0 && y < this.worldY)
     }
 
-    public get_tile(x : number, y : number) : Tile
+    public get_tile(x : number, y : number, z : number) : Tile
     {
-        this.valid_index(x,y);
-        return this.worldGrid[x][y];
+        this.valid_index(x,y,z);
+        return this.worldGrid[x][y][z];
     }
 
-    private set_tile(x : number, y : number, tile : Tile) : void
+    private set_tile(x : number, y : number, z : number, tile : Tile) : void
     {
-        this.worldGrid[x][y] = tile;
+        this.worldGrid[x][y][z] = tile;
     }
 
     // Checks whether a block can be built at x,y
-    public can_build(x : number, y : number) : boolean
+    public can_build(x : number, y : number, z : number) : boolean
     {
         // Check that x and y are valid
-        if(this.valid_index(x, y) == false)
+        if(this.valid_index(x, y, z) == false)
         {
             return false;
         }
@@ -63,7 +65,7 @@ export class Model extends events.EventEmitter
         */
 
         // Check if the block is free
-        if(this.get_tile(x,y) != Tile.EMPTY)
+        if(this.get_tile(x,y,z) != Tile.EMPTY)
         {
             return false;
         }
@@ -73,22 +75,22 @@ export class Model extends events.EventEmitter
             for(var j = -1; j <= 1; j++)
             {
                 // Ensure that the indicies are valid (i.e. within array bounds)
-                if(this.valid_index(x+i, y+j) == false)
+                if(this.valid_index(x+i, y+j,z+j) == false)
                     continue;
 
                 // If we find one adjecent, we're good
-                if(this.get_tile(x+i, y+j) != Tile.EMPTY)
+                if(this.get_tile(x+i, y+j,z+j) != Tile.EMPTY)
                     return true;
             }
         }
         return false;
     }
 
-    public update_tile(x : number, y : number, tile : Tile)
+    public update_tile(x : number, y : number, z : number, tile : Tile)
     {
-        this.valid_index(x,y);
-        this.set_tile(x, y, tile);
-        this.emit("update_tile", x, y, tile);
+        this.valid_index(x,y,z);
+        this.set_tile(x, y, z, tile);
+        this.emit("update_tile", x, y, z, tile);
     }
 
     public get_stickman_position() : any
@@ -96,9 +98,9 @@ export class Model extends events.EventEmitter
         return this.stickman_position;
     }
 
-    public update_stickman_position(x : number, y : number)
+    public update_stickman_position(x : number, y : number, z : number)
     {
-        this.stickman_position = vec2(x, y);
+        this.stickman_position = vec3(x, y, z);
         this.emit("stickman_move", this.stickman_position);
     }
 
@@ -111,7 +113,11 @@ export class Model extends events.EventEmitter
             this.worldGrid[x] = [];
             for (var y = 0; y < this.worldY; y++) 
             {
-                this.worldGrid[x][y] = Tile.EMPTY;
+                this.worldGrid[x][y] = [];
+                for (var z = 0; z < this.worldZ; z++)
+                {
+                    this.worldGrid[x][y][z] = Tile.EMPTY;
+                }
             }
         }
 
@@ -123,7 +129,10 @@ export class Model extends events.EventEmitter
         {
             for (var y = 0; y < Math.floor(this.worldY/3); y++) 
             {
-                this.set_tile(x, y, Tile.DIRT);
+                for (var z=0; z< Math.floor(this.worldZ); z++)
+                {
+                    this.set_tile(x, y, z, Tile.DIRT);
+                }
             }
         }
 
@@ -131,28 +140,28 @@ export class Model extends events.EventEmitter
         for (var x = 0; x < this.worldX; x++) 
         {
             var y = Math.floor(this.worldY/3);
-            this.set_tile(x, y, Tile.GRASS);
-            this.set_tile(x, y+1, Tile.GRASS);
+            this.set_tile(x, y, z, Tile.GRASS);
+            this.set_tile(x, y+1,z, Tile.GRASS);
         }
 
         // Create lake
         for (var x = Math.floor(this.worldX/4*2); x < Math.floor(this.worldX/4*3); x++)
         {
             var y = Math.floor(this.worldY/3);
-            this.set_tile(x, y+1, Tile.WATER);
+            this.set_tile(x, y+1,z, Tile.WATER);
         }
 
         // Create fire/lava pit
         for (var x = 0; x < Math.floor(this.worldX/4); x++) 
         {
             var y = Math.floor(this.worldY/3);
-            this.set_tile(x, y+1, Tile.FIRE);
+            this.set_tile(x, y+1,z, Tile.FIRE);
         }
     }
 
     private update_mouse_position(pos)
     {
-        var placeable = this.can_build(Math.floor(pos[0]), Math.floor(pos[1]));
+        var placeable = this.can_build(Math.floor(pos[0]), Math.floor(pos[1]), Math.floor(pos[2]));
         this.emit("mouse_move", pos, placeable); 
     }
 
@@ -165,8 +174,8 @@ export class Model extends events.EventEmitter
     {
         super();
         this.setup_world();
-        this.update_stickman_position(0.5 + Math.floor(this.worldY/3), Math.floor(this.worldY/3)+10);
+        this.update_stickman_position(0.5 + Math.floor(this.worldY/3), Math.floor(this.worldY/3)+10, Math.floor(this.worldY/3)+5);
 
         this.emit('ready');
     }
-};
+}

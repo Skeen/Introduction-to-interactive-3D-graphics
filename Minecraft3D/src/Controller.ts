@@ -2,6 +2,7 @@ import { Model } from "./Model";
 import { Tile, TileUtil } from "./Tile"
 
 declare var vec2: any;
+declare var vec3: any;
 
 export class Controller
 {
@@ -25,25 +26,33 @@ export class Controller
         {
             for (var y = 0; y < model.worldY; y++) 
             {
-                var tile = model.get_tile(x, y);
-                // Not fire or water? - Meh
-                if(!(tile == Tile.FIRE || tile == Tile.WATER))
-                    continue;
-
-                // Check adjacent blocks
-                for(var i = -1; i <= 1; i++)
+                for (var z = 0; z < model.worldZ; z++)
                 {
-                    for(var j = -1; j <= 1; j++)
-                    {
-                        if((i == j) || (model.valid_index(x+i, y+j) == false))
-                            continue;
+                    var tile = model.get_tile(x, y, z);
+                    // Not fire or water? - Meh
+                    if(!(tile == Tile.FIRE || tile == Tile.WATER))
+                        continue;
 
-                        if(model.get_tile(x+i, y+j) == flip_material(tile))
+                    // Check adjacent blocks
+                    for(var i = -1; i <= 1; i++)
+                    {
+                        for(var j = -1; j <= 1; j++)
                         {
-                            model.update_tile(x+i, y+j, Tile.STONE);
+                            for(var k = -1; k <= 1; k++)
+                            {
+                                if((i == j) || (model.valid_index(x+i, y+j, z+k) == false))
+                                    continue;
+
+                                if(model.get_tile(x+i, y+j, z+k) == flip_material(tile))
+                                {
+                                    model.update_tile(x+i, y+j, z+k, Tile.STONE);
+                                }
+                            }
+
                         }
                     }
                 }
+
             }
         }
     }
@@ -60,32 +69,46 @@ export class Controller
         // Loop through the world
         for (var x = 0; x < model.worldX; x++) 
         {
-            for (var y = 0; y < model.worldY; y++) 
+            for (var y = 0; y < model.worldY; y++)
             {
-                var tile = model.get_tile(x, y);
+                for (var z = 0; y < model.worldZ; z++)
+                {
+                    var tile = model.get_tile(x, y, z);
 
-                if(TileUtil.is_flow_block(tile) == false)
-                    continue;
+                    if(TileUtil.is_flow_block(tile) == false)
+                        continue;
+                    //x-1
+                    if(model.valid_index(x-1, y,z) && model.get_tile(x-1, y, z) == Tile.EMPTY)
+                    {
+                        changes.push({'x': x-1, 'y': y, 'z': z, 'tile': tile});
+                    }
+                    //x+1
+                    if(model.valid_index(x+1, y,z) && model.get_tile(x+1,y,z) == Tile.EMPTY)
+                    {
+                        changes.push({'x': x+1, 'y': y, 'z': z, 'tile': tile});
+                    }
+                    //y-1
+                    if(model.valid_index(x, y-1, z) && model.get_tile(x, y-1, z) == Tile.EMPTY)
+                    {
+                        changes.push({'x': x, 'y': y-1, 'z': z, 'tile': tile});
+                    }
+                    if(model.valid_index(x, y,z-1) && model.get_tile(x+1,y,z-1) == Tile.EMPTY)
+                    {
+                        changes.push({'x': x, 'y': y, 'z': z-1, 'tile': tile});
+                    }
+                    if(model.valid_index(x, y-1, z) && model.get_tile(x, y-1, z) == Tile.EMPTY)
+                    {
+                        changes.push({'x': x, 'y': y-1, 'z': z, 'tile': tile});
+                    }
+                }
 
-                if(model.valid_index(x-1, y) && model.get_tile(x-1, y) == Tile.EMPTY)
-                {
-                    changes.push({'x': x-1, 'y': y, 'tile': tile});
-                }
-                if(model.valid_index(x+1, y) && model.get_tile(x+1,y) == Tile.EMPTY)
-                {
-                    changes.push({'x': x+1, 'y': y, 'tile': tile});
-                }
-                if(model.valid_index(x, y-1) && model.get_tile(x, y-1) == Tile.EMPTY)
-                {
-                    changes.push({'x': x, 'y': y-1, 'tile': tile});
-                }
             }
         }
 
         // Apply any changes required
         for(var change of changes)
         {
-            model.update_tile(change.x, change.y, change.tile);
+            model.update_tile(change.x, change.y, change.z, change.tile);
         }
     }
 
@@ -94,22 +117,22 @@ export class Controller
     private jump_height : number = 5;
     private gravity_check : number = 0.1;
 
-    private get_stickman_blocks(x, y)
+    private get_stickman_blocks(x, y, z)
     {
         var model = this.model;
 
-        if( model.valid_index(Math.floor(x), Math.floor(y))     == false &&
-            model.valid_index(Math.ceil(x), Math.floor(y))      == false &&
-            model.valid_index(1 + Math.floor(x), Math.floor(y)) == false &&
-            model.valid_index(1 + Math.ceil(x), Math.floor(y))  == false)
+        if( model.valid_index(Math.floor(x), Math.floor(y), Math.floor(z))     == false &&
+            model.valid_index(Math.ceil(x), Math.floor(y) , Math.floor(z))     == false &&
+            model.valid_index(1 + Math.floor(x), Math.floor(y), Math.floor(z)) == false &&
+            model.valid_index(1 + Math.ceil(x), Math.floor(y), Math.floor(z))  == false)
             return;
 
         // Get all the blocks under the stickman
         // Only ever 3 unique points
-        var block_left          = model.get_tile(Math.floor(x), Math.floor(y));
-        var block_center_left   = model.get_tile(Math.ceil(x), Math.floor(y));
+        var block_left          = model.get_tile(Math.floor(x), Math.floor(y), Math.floor(z));
+        var block_center_left   = model.get_tile(Math.ceil(x), Math.floor(y), Math.floor(z));
         //var block_center_right = model.get_tile(1 + Math.floor(x), Math.floor(y));
-        var block_right         = model.get_tile(1 + Math.ceil(x), Math.floor(y));
+        var block_right         = model.get_tile(1 + Math.ceil(x), Math.floor(y), Math.floor(z));
 
         return [block_left,
                 block_center_left,
@@ -117,25 +140,26 @@ export class Controller
                 block_right];
     }
 
-    private reduced_jump_height(xPos, yPos)
+    private reduced_jump_height(xPos, yPos, zPos)
     {
         var model = this.model;
 
         var new_x = xPos;
         var new_y = yPos;
+        var new_z = zPos;
 
         //row 1 one above
-        var col11 = model.get_tile(Math.round(new_x), Math.floor(new_y)+5);
-        var col12 = model.get_tile(Math.floor(new_x)+1, Math.floor(new_y)+5);
+        var col11 = model.get_tile(Math.round(new_x), Math.floor(new_y)+5, Math.floor(new_z));
+        var col12 = model.get_tile(Math.floor(new_x)+1, Math.floor(new_y)+5, Math.floor(new_z));
         //row 2
-        var col21 = model.get_tile(Math.round(new_x), Math.floor(new_y)+6);
-        var col22 = model.get_tile(Math.floor(new_x)+1, Math.floor(new_y)+6);
+        var col21 = model.get_tile(Math.round(new_x), Math.floor(new_y)+6, Math.floor(new_z));
+        var col22 = model.get_tile(Math.floor(new_x)+1, Math.floor(new_y)+6, Math.floor(new_z));
         //row 3
-        var col31 = model.get_tile(Math.round(new_x), Math.floor(new_y)+7);
-        var col32 = model.get_tile(Math.floor(new_x)+1, Math.floor(new_y)+7);
+        var col31 = model.get_tile(Math.round(new_x), Math.floor(new_y)+7, Math.floor(new_z));
+        var col32 = model.get_tile(Math.floor(new_x)+1, Math.floor(new_y)+7, Math.floor(new_z));
         //row 4
-        var col41 = model.get_tile(Math.round(new_x), Math.floor(new_y)+8);
-        var col42 = model.get_tile(Math.floor(new_x)+1, Math.floor(new_y)+8);
+        var col41 = model.get_tile(Math.round(new_x), Math.floor(new_y)+8, Math.floor(new_z));
+        var col42 = model.get_tile(Math.floor(new_x)+1, Math.floor(new_y)+8, Math.floor(new_z));
 
         //var col51 = model.get_tile(Math.round(new_x), Math.floor(new_y)+9);
         //var col52 = model.get_tile(Math.floor(new_x)+1, Math.floor(new_y)+9);
@@ -184,9 +208,10 @@ export class Controller
         var old_position = model.get_stickman_position();
         var new_x = old_position[0];
         var new_y = old_position[1] - this.gravity_check;
+        var new_z = old_position[2];
 
         // Get blocks below stickman
-        var blocks = this.get_stickman_blocks(new_x, new_y);
+        var blocks = this.get_stickman_blocks(new_x, new_y, new_z);
 
         // Check if all blocks below us are sink blocks
         var all_sink = true;
@@ -199,7 +224,7 @@ export class Controller
             }
             if(all_sink)
             {
-                model.update_stickman_position(new_x, new_y);
+                model.update_stickman_position(new_x, new_y, new_z);
             }
 
             // Check if any blocks below us are fire blocks
@@ -210,8 +235,8 @@ export class Controller
             }
             if(any_fire)
             {
-                new_y = old_position[1] + (this.jump_height - this.reduced_jump_height(new_x, new_y));
-                model.update_stickman_position(new_x, new_y);
+                new_y = old_position[1] + (this.jump_height - this.reduced_jump_height(new_x, new_y, new_z));
+                model.update_stickman_position(new_x, new_y, new_z);
             }
         }
     }
@@ -225,11 +250,13 @@ export class Controller
         var old_position = model.get_stickman_position();
         var x = old_position[0];
         var y = old_position[1];
+        var z = old_position[2];
 
         function jump()
         {
             var new_x = x;
             var new_y = y - this.gravity_check;
+            var new_z = z;
 
             // Get blocks below stickman
             var blocks = this.get_stickman_blocks(new_x, new_y);
@@ -244,40 +271,40 @@ export class Controller
 
             if(all_sink == false) // We can jump off something and nothing is above us
             {
-                new_y = old_position[1] + (this.jump_height - this.reduced_jump_height(new_x,new_y));
-                model.update_stickman_position(new_x, new_y);
+                new_y = old_position[1] + (this.jump_height - this.reduced_jump_height(new_x,new_y, new_z));
+                model.update_stickman_position(new_x, new_y, new_z);
             }
         }
 
-        function move(new_x, new_y, rounder)
+        function move(new_x, new_y, new_z, rounder)
         {
-            if(model.valid_index(rounder(new_x), Math.floor(new_y)) == false)
+            if(model.valid_index(rounder(new_x), Math.floor(new_y), Math.floor(new_z)) == false)
                 return;
 
             // Check that we can stand in the new position
-            var block1  = model.get_tile(rounder(new_x), Math.floor(new_y));
-            var block2  = model.get_tile(rounder(new_x), Math.floor(new_y)+1);
-            var block3  = model.get_tile(rounder(new_x), Math.floor(new_y)+2);
-            var block4  = model.get_tile(rounder(new_x), Math.floor(new_y)+3);
+            var block1  = model.get_tile(rounder(new_x), Math.floor(new_y), Math.floor(new_z));
+            var block2  = model.get_tile(rounder(new_x), Math.floor(new_y)+1, Math.floor(new_z));
+            var block3  = model.get_tile(rounder(new_x), Math.floor(new_y)+2, Math.floor(new_z));
+            var block4  = model.get_tile(rounder(new_x), Math.floor(new_y)+3, Math.floor(new_z));
             if(TileUtil.is_sink_block(block1) &&
                TileUtil.is_sink_block(block2) && 
                TileUtil.is_sink_block(block3) && 
                TileUtil.is_sink_block(block4))
             {
-                model.update_stickman_position(new_x, new_y);
+                model.update_stickman_position(new_x, new_y, new_z);
             }
         }
 
         function move_left()
         {
             // We only need to check the left block (i.e. floor(x))
-            move(x - this.move_length, y, Math.floor);
+            move(x - this.move_length, y, z, Math.floor);
         }
 
         function move_right()
         {
             // We only need to check the right block (i.e. 1+ceil(x))
-            move(x + this.move_length, y, function(x) { return 1 + Math.ceil(x) });
+            move(x + this.move_length, y,z, function(x) { return 1 + Math.ceil(x) });
         }
 
         switch(key) {
@@ -308,10 +335,11 @@ export class Controller
         //MouseListener with a point that follows the mouse
         canvas.addEventListener("mousemove", function(event)
         {
-            var mousePoint = vec2((((-1 + 2 * event.clientX / canvas.width)+1)/2)*model.worldX,
-                    (((-1 + 2 * ( canvas.height - event.clientY ) / canvas.height)+1)/2)*model.worldY);
+            var mousePoint = vec3((((-1 + 2 * event.clientX / canvas.width)+1)/2)*model.worldX,
+                    (((-1 + 2 * ( canvas.height - event.clientY ) / canvas.height)+1)/2)*model.worldY,
+                (((-1 + 2 * ( canvas.height - event.clientZ ) / canvas.height)+1)/2)*model.worldZ);
             // Get closest block position for rendering
-            mousePoint = vec2(Math.round(mousePoint[0]) - 0.5, Math.round(mousePoint[1]) + 0.5);
+            mousePoint = vec3(Math.round(mousePoint[0]) - 0.5, Math.round(mousePoint[1]) + 0.5, Math.round(mousePoint[2]));
 
             this.model.update_mouse_position(mousePoint);
         }.bind(this));
@@ -326,11 +354,12 @@ export class Controller
                 model.update_shockwave(mouseClickPos);
             }
 
-            var mousePoint = vec2((((-1 + 2 * event.clientX / canvas.width)+1)/2)*model.worldX,
-            (((-1 + 2 * ( canvas.height - event.clientY ) / canvas.height)+1)/2)*model.worldY);
+            var mousePoint = vec3((((-1 + 2 * event.clientX / canvas.width)+1)/2)*model.worldX,
+            (((-1 + 2 * ( canvas.height - event.clientY ) / canvas.height)+1)/2)*model.worldY,
+                (((-1 + 2 * ( canvas.height - event.clientZ ) / canvas.height)+1)/2)*model.worldZ);
             //console.log(mousePoint);
             // Get closest block position for rendering
-            mousePoint = vec2(Math.round(mousePoint[0]) - 0.5, Math.round(mousePoint[1]) + 0.5);
+            mousePoint = vec3(Math.round(mousePoint[0]) - 0.5, Math.round(mousePoint[1]) + 0.5, Math.round(mousePoint[2]) + 0.5);
             // Get block coordinates
             var blockX = Math.floor(mousePoint[0]);
             var blockY = Math.floor(mousePoint[1]);
@@ -352,4 +381,4 @@ export class Controller
             }
         }.bind(this));
     }
-};
+}

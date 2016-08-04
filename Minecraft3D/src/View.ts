@@ -1,3 +1,4 @@
+/// <reference path="../typings/index.d.ts"/>
 import { Model } from "./Model";
 import { Tile, TileUtil } from "./Tile"
 
@@ -190,21 +191,25 @@ export class View
         {
             for (var y = 0; y < model.worldGrid[x].length; y++)
             {
-                var point = model.worldGrid[x][y];
-                var tile_color = this.tile_to_color(point);
-
-                var pos = this.index_to_position(x, y);
-
-                world_points.push(vec2(pos[0] - 0.5, pos[1] - 0.5));
-                world_points.push(vec2(pos[0] - 0.5, pos[1] + 0.5));
-                world_points.push(vec2(pos[0] + 0.5, pos[1] + 0.5));
-                world_points.push(vec2(pos[0] + 0.5, pos[1] - 0.5));
-
-                for(var i = 0; i < 4; i++)
+                for (var z = 0; z < model.worldGrid[y].length; z++)
                 {
-                    world_colors.push(tile_color);
-                    world_centers.push(vec2(pos[0], pos[1]));
+                    var point = model.worldGrid[x][y][z];
+                    var tile_color = this.tile_to_color(point);
+
+                    var pos = this.index_to_position(x, y, z);
+
+                    world_points.push(vec3(pos[0] - 0.5, pos[1] - 0.5, pos[2] - 0.5));
+                    world_points.push(vec3(pos[0] - 0.5, pos[1] + 0.5, pos[2] - 0.5));
+                    world_points.push(vec3(pos[0] + 0.5, pos[1] + 0.5, pos[2] - 0.5));
+                    world_points.push(vec3(pos[0] + 0.5, pos[1] - 0.5, pos[2] - 0.5));
+
+                    for(var i = 0; i < 4; i++)
+                    {
+                        world_colors.push(tile_color);
+                        world_centers.push(vec3(pos[0], pos[1], pos[2]));
+                    }
                 }
+
             }
         }
 
@@ -302,9 +307,9 @@ export class View
         }
     }
 
-    private index_to_position(x, y) : any
+    private index_to_position(x, y, z) : any
     {
-        return vec2(x + 0.5, y + 0.5);
+        return vec3(x + 0.5, y + 0.5, z+ 0.5);
     }
 
     public run() : void
@@ -320,16 +325,16 @@ export class View
         var stick_points = [];
         var stick_colors = [];
         // Legs
-        stick_points.push(vec2(0,0), vec2(1,1));
-        stick_points.push(vec2(2,0), vec2(1,1));
+        stick_points.push(vec3(0,0,0), vec3(1,1,0));
+        stick_points.push(vec3(2,0,0), vec3(1,1,0));
         // Body
-        stick_points.push(vec2(1,1), vec2(1,3));
+        stick_points.push(vec3(1,1,0), vec3(1,3,0));
         // Arms
-        stick_points.push(vec2(0,2.5), vec2(2,2.5));
+        stick_points.push(vec3(0,2.5,0), vec3(2,2.5,0));
         // Face
-        stick_points.push(vec2(1,3), vec2(0.5,4));
-        stick_points.push(vec2(1,3), vec2(1.5,4));
-        stick_points.push(vec2(0.5,4), vec2(1.5,4));
+        stick_points.push(vec3(1,3,0), vec3(0.5,4,0));
+        stick_points.push(vec3(1,3,0), vec3(1.5,4,0));
+        stick_points.push(vec3(0.5,4,0), vec3(1.5,4,0));
 
         // We need to know number of points in render
         this.stick_man_num_points = stick_points.length;
@@ -356,20 +361,20 @@ export class View
 
         var mouse_points = [];
         // Left edge
-        mouse_points.push(vec2(pos[0] - 0.5, pos[1] - 0.5));
-        mouse_points.push(vec2(pos[0] - 0.5, pos[1] + 0.5));
+        mouse_points.push(vec3(pos[0] - 0.5, pos[1] - 0.5, pos[2]));
+        mouse_points.push(vec3(pos[0] - 0.5, pos[1] + 0.5, pos[2]));
         // Right edge
-        mouse_points.push(vec2(pos[0] + 0.5, pos[1] + 0.5));
-        mouse_points.push(vec2(pos[0] + 0.5, pos[1] - 0.5));
+        mouse_points.push(vec3(pos[0] + 0.5, pos[1] + 0.5, pos[2]));
+        mouse_points.push(vec3(pos[0] + 0.5, pos[1] - 0.5, pos[2]));
         // Top edge
-        mouse_points.push(vec2(pos[0] - 0.5, pos[1] + 0.5));
-        mouse_points.push(vec2(pos[0] + 0.5, pos[1] + 0.5));
+        mouse_points.push(vec3(pos[0] - 0.5, pos[1] + 0.5, pos[2]));
+        mouse_points.push(vec3(pos[0] + 0.5, pos[1] + 0.5, pos[2]));
         // Bot edge
-        mouse_points.push(vec2(pos[0] - 0.5, pos[1] - 0.5));
-        mouse_points.push(vec2(pos[0] + 0.5, pos[1] - 0.5));
+        mouse_points.push(vec3(pos[0] - 0.5, pos[1] - 0.5, pos[2]));
+        mouse_points.push(vec3(pos[0] + 0.5, pos[1] - 0.5, pos[2]));
         // Diagonal edge
-        mouse_points.push(vec2(pos[0] - 0.5, pos[1] - 0.5));
-        mouse_points.push(vec2(pos[0] + 0.5, pos[1] + 0.5));
+        mouse_points.push(vec3(pos[0] - 0.5, pos[1] - 0.5, pos[2]));
+        mouse_points.push(vec3(pos[0] + 0.5, pos[1] + 0.5, pos[2]));
 
         var color = (placeable ? vec4(0., 0., 0., 1.) : vec4(1., 0., 0., 1.));
 
@@ -378,7 +383,7 @@ export class View
         for(var i = 0; i < mouse_points.length; i++)
         {
             mouse_colors.push(color);
-            mouse_centers.push(vec2(pos[0], pos[1]));
+            mouse_centers.push(vec3(pos[0], pos[1], pos[2]));
         }
 
         gl.bindBuffer(gl.ARRAY_BUFFER, this.mouseCBuffer);
@@ -407,12 +412,12 @@ export class View
         // Setup stickman
         this.initialize_stick_man();
 
-        this.model.on("update_tile", function(x, y, tile)
+        this.model.on("update_tile", function(x, y,z, tile)
         {
             var tile_color = this.tile_to_color(tile);
 
             // Get the start offset into world_colors
-            var offset = 4 * (y + (x * model.worldX));
+            var offset = 4 * (y + (x * model.worldX),z);
 
             this.rebufferColor(offset, offset+4, tile_color);
         }.bind(this));
@@ -458,4 +463,4 @@ export class View
 
         }.bind(this));
     }
-};
+}
