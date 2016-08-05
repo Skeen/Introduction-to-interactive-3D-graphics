@@ -1,9 +1,13 @@
+///<reference path="../typings/globals/node/index.d.ts" />
 import { Model } from "./Model";
 import { Tile, TileUtil } from "./Tile"
 
+declare var normalize: any;
+declare var scale: any;
 declare var vec2: any;
 declare var vec3: any;
 declare var $: any;
+declare var vec3: any;
 
 export class Controller
 {
@@ -15,37 +19,50 @@ export class Controller
 
         function flip_material(tile : Tile)
         {
-            if(tile == Tile.FIRE)
-                return Tile.WATER;
-            else if (tile == Tile.WATER)
-                return Tile.FIRE;
-            else
-                alert("Invalid usage!");
+            if(tile != undefined)
+            {
+                if(tile == Tile.FIRE)
+                    return Tile.WATER;
+                else if (tile == Tile.WATER)
+                    return Tile.FIRE;
+                else
+                    alert("Invalid usage!");
+            }
+            else console.log("tile undefined in flip_material")
         }
 
         for (var x = 0; x < model.worldX; x++) 
         {
             for (var y = 0; y < model.worldY; y++) 
             {
-                var tile = model.get_tile(x, y);
-                // Not fire or water? - Meh
-                if(!(tile == Tile.FIRE || tile == Tile.WATER))
-                    continue;
-
-                // Check adjacent blocks
-                for(var i = -1; i <= 1; i++)
+                for (var z = 0; z < model.worldZ; z++)
                 {
-                    for(var j = -1; j <= 1; j++)
-                    {
-                        if((i == j) || (model.valid_index(x+i, y+j) == false))
-                            continue;
+                    var tile = model.get_tile(x, y, z);
+                    // Not fire or water? - Meh
+                    if(!(tile == Tile.FIRE || tile == Tile.WATER))
+                        continue;
 
-                        if(model.get_tile(x+i, y+j) == flip_material(tile))
+                    // Check adjacent blocks
+                    //console.log("check blocks")
+                    for(var i = -1; i <= 1; i++)
+                    {
+                        for(var j = -1; j <= 1; j++)
                         {
-                            model.update_tile(x+i, y+j, Tile.STONE);
+                            for(var k = -1; k <= 1; k++)
+                            {
+                                if((i == j) || (model.valid_index(x+i, y+j, z+k) == false))
+                                    continue;
+
+                                if(model.get_tile(x+i, y+j, z+k) == flip_material(tile))
+                                {
+                                    model.update_tile(x+i, y+j, z+k, Tile.STONE);
+                                }
+                            }
+
                         }
                     }
                 }
+
             }
         }
     }
@@ -53,42 +70,63 @@ export class Controller
     // Let blocks flow onto empty blocks
     private block_flow() : void
     {
+        /*
         var model = this.model;
 
         // Array to buffer changes
         // (We cannot change the world while processing it)
         var changes = [];
-
         // Loop through the world
         for (var x = 0; x < model.worldX; x++) 
         {
-            for (var y = 0; y < model.worldY; y++) 
+            for (var y = 0; y < model.worldY; y++)
             {
-                var tile = model.get_tile(x, y);
+                for (var z = 0; y < model.worldZ; z++)
+                {
+                    /*
+                    var tile = model.get_tile(x, y, z);
 
-                if(TileUtil.is_flow_block(tile) == false)
-                    continue;
+                    if(TileUtil.is_flow_block(tile) == false)
+                        continue;
+                        */
+                    //x-1
+                    /*
+                    if(model.valid_index(x-1, y,z) && model.get_tile(x-1, y, z) == Tile.EMPTY)
+                    {
+                        changes.push({'x': x-1, 'y': y, 'z': z, 'tile': tile});
+                    }
+                    //x+1
+                    if(model.valid_index(x+1, y,z) && model.get_tile(x+1,y,z) == Tile.EMPTY)
+                    {
+                        changes.push({'x': x+1, 'y': y, 'z': z, 'tile': tile});
+                    }
+                    //y-1
+                    if(model.valid_index(x, y-1, z) && model.get_tile(x, y-1, z) == Tile.EMPTY)
+                    {
+                        changes.push({'x': x, 'y': y-1, 'z': z, 'tile': tile});
+                    }
+                    */
+                    /*
+                    if(model.valid_index(x, y,z-1) && model.get_tile(x+1,y,z-1) == Tile.EMPTY)
+                    {
+                        changes.push({'x': x, 'y': y, 'z': z-1, 'tile': tile});
+                    }
+                    if(model.valid_index(x, y-1, z) && model.get_tile(x, y-1, z) == Tile.EMPTY)
+                    {
+                        changes.push({'x': x, 'y': y-1, 'z': z, 'tile': tile});
+                    }
 
-                if(model.valid_index(x-1, y) && model.get_tile(x-1, y) == Tile.EMPTY)
-                {
-                    changes.push({'x': x-1, 'y': y, 'tile': tile});
                 }
-                if(model.valid_index(x+1, y) && model.get_tile(x+1,y) == Tile.EMPTY)
-                {
-                    changes.push({'x': x+1, 'y': y, 'tile': tile});
-                }
-                if(model.valid_index(x, y-1) && model.get_tile(x, y-1) == Tile.EMPTY)
-                {
-                    changes.push({'x': x, 'y': y-1, 'tile': tile});
-                }
+
             }
-        }
 
+        }
         // Apply any changes required
         for(var change of changes)
         {
-            model.update_tile(change.x, change.y, change.tile);
+            model.update_tile(change.x, change.y, change.z, change.tile);
         }
+
     }
 
     // stick-man variables  
@@ -165,19 +203,20 @@ export class Controller
 
         var new_x = xPos;
         var new_y = yPos;
+        var new_z = zPos;
 
         //row 1 one above
-        var col11 = model.get_tile(Math.round(new_x), Math.floor(new_y)+5);
-        var col12 = model.get_tile(Math.floor(new_x)+1, Math.floor(new_y)+5);
+        var col11 = model.get_tile(Math.round(new_x), Math.floor(new_y)+5, Math.floor(new_z));
+        var col12 = model.get_tile(Math.floor(new_x)+1, Math.floor(new_y)+5, Math.floor(new_z));
         //row 2
-        var col21 = model.get_tile(Math.round(new_x), Math.floor(new_y)+6);
-        var col22 = model.get_tile(Math.floor(new_x)+1, Math.floor(new_y)+6);
+        var col21 = model.get_tile(Math.round(new_x), Math.floor(new_y)+6, Math.floor(new_z));
+        var col22 = model.get_tile(Math.floor(new_x)+1, Math.floor(new_y)+6, Math.floor(new_z));
         //row 3
-        var col31 = model.get_tile(Math.round(new_x), Math.floor(new_y)+7);
-        var col32 = model.get_tile(Math.floor(new_x)+1, Math.floor(new_y)+7);
+        var col31 = model.get_tile(Math.round(new_x), Math.floor(new_y)+7, Math.floor(new_z));
+        var col32 = model.get_tile(Math.floor(new_x)+1, Math.floor(new_y)+7, Math.floor(new_z));
         //row 4
-        var col41 = model.get_tile(Math.round(new_x), Math.floor(new_y)+8);
-        var col42 = model.get_tile(Math.floor(new_x)+1, Math.floor(new_y)+8);
+        var col41 = model.get_tile(Math.round(new_x), Math.floor(new_y)+8, Math.floor(new_z));
+        var col42 = model.get_tile(Math.floor(new_x)+1, Math.floor(new_y)+8, Math.floor(new_z));
 
         //var col51 = model.get_tile(Math.round(new_x), Math.floor(new_y)+9);
         //var col52 = model.get_tile(Math.floor(new_x)+1, Math.floor(new_y)+9);
@@ -235,7 +274,7 @@ export class Controller
             keyState[id] = keyState[id] || {};
             keyState[id].state = true;
             keyState[id].click_time = keyState[id].click_time || 0;
-        },true);    
+        },true);
 
         window.addEventListener('keyup',function(e)
         {
@@ -288,7 +327,7 @@ export class Controller
         // Blocks / time-interval
         var terminal_velocity = 0.1;
 
-        setInterval(function() 
+        setInterval(function()
         {
             function jump()
             {
@@ -315,7 +354,7 @@ export class Controller
                 {
                     model.update_stickman_position(
                             vec3(model.worldX/3,
-                                 model.worldY/3 + 10, 
+                                 model.worldY/3 + 10,
                                 (model.worldZ - 1)/2));
                 }
             }
@@ -433,38 +472,46 @@ export class Controller
         //window.addEventListener("keydown", this.stickman_move.bind(this));
 
         var canvas : any = document.getElementById("gl-canvas");
-/*
+
         var place_block = function(event)
         {
             var model = this.model;
-
+/*
             function shockwave()
             {
-                model.update_shockwave(vec2(x, y));
+                model.update_shockwave(vec3(x, y,z));
             }
 
             // Get block coordinates
             var blockX = Math.floor(x);
             var blockY = Math.floor(y);
+            var blockZ = Math.floor(z);
+*/
+            var stick_pos = model.get_stickman_position().map(Math.round);
+            var mouse_pos = model.get_mouse_position();
+            var block_pos = add(stick_pos, mouse_pos).map(Math.round);
 
             // Check if block is free
-            var placeable = model.can_build(blockX, blockY);
+            var placeable = model.can_build(block_pos);
             if(placeable && event.shiftKey == false)
             {
+                /*
                 var block_picker : any = document.getElementById('block_picker');
                 var block_string = block_picker.options[block_picker.selectedIndex].value;
                 var block_id = TileUtil.fromString(block_string);
-            
-                model.update_tile(blockX, blockY, block_id);
-                shockwave();
+                */
+                var tile_id = Tile.STONE;
+
+                model.update_tile(block_pos, tile_id);
+                //shockwave();
             }
-            else if(model.get_tile(blockX, blockY) != Tile.EMPTY && event.shiftKey == true)
+            else if(model.get_tile(block_pos) != Tile.EMPTY && event.shiftKey == true)
             {
-                model.update_tile(blockX, blockY, Tile.EMPTY);
-                shockwave();
+                model.update_tile(block_pos, Tile.EMPTY);
+                //shockwave();
             }
         }.bind(this);
-*/
+
         // Setup Printer Lock
         canvas.requestPointerLock = canvas.requestPointerLock;
         document.exitPointerLock = document.exitPointerLock;
@@ -488,14 +535,14 @@ export class Controller
                 console.log('The pointer lock status is now locked');
                 $(canvas).off("click", capture_mouse);
                 $(document).on("mousemove", handler);
-                //$(canvas).on("click", place_block);
+                $(canvas).on("click", place_block);
             }
-            else 
+            else
             {
-                console.log('The pointer lock status is now unlocked');  
+                console.log('The pointer lock status is now unlocked');
                 $(canvas).on("click", capture_mouse);
                 $(document).off("mousemove", handler);
-                //$(canvas).off("click", place_block);
+                $(canvas).off("click", place_block);
             }
         }
 

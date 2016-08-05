@@ -48,9 +48,9 @@ export class View
     //private stickVBuffer : WebGLBuffer;
     //private stickCBuffer : WebGLBuffer;
     // Mouse
-    //private mouseVBuffer : WebGLBuffer;
-    //private mouseCBuffer : WebGLBuffer;
-    //private mouseTranslateBuffer : WebGLBuffer;
+    private mouseVBuffer : WebGLBuffer;
+    private mouseCBuffer : WebGLBuffer;
+    private mouseTranslateBuffer : WebGLBuffer;
 
     // Game related stuff.
     // world variables
@@ -61,7 +61,9 @@ export class View
     //private stick_man_num_points : number;
 
     // Fix this
-    //private mouse_lines : number = 0;
+    private mouse_lines : number = 0;
+    private block_indicies : number = 0;
+    private vec_to_offset;
 
     // Shockwave variables
     //private shockwave_duration : number = 1000;
@@ -159,7 +161,7 @@ export class View
         this.worldIndexBuffer = gl.createBuffer();
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.worldIndexBuffer);
         gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, Uint32Array.BYTES_PER_ELEMENT * model.worldSize * this.indicies_per_block, gl.STATIC_DRAW);
- /*
+ 
         // Mouse Vertex buffer
         this.mouseVBuffer = gl.createBuffer();
         gl.bindBuffer(gl.ARRAY_BUFFER, this.mouseVBuffer);
@@ -178,7 +180,7 @@ export class View
         gl.bufferData(gl.ARRAY_BUFFER, sizeof['vec2'] * 5 * 4, gl.STATIC_DRAW);
         gl.vertexAttribPointer(this.vTranslate, 2, gl.FLOAT, false, 0, 0);
         gl.enableVertexAttribArray(this.vTranslate);
-
+/*
         // Set the uniform scale variable
         gl.uniform1f(this.vScalePos, this.render_scale);
 
@@ -219,7 +221,7 @@ export class View
         var offset = ((x*model.worldY+y) * model.worldZ + z) * this.verts_per_block;
         // Row major
         //var offset = ((z*model.worldY+y) * model.worldX + x) * this.verts_per_block;
-        
+
         return offset;
     }
 
@@ -233,6 +235,8 @@ export class View
         var world_translate = [];
         var world_indicies = [];
 
+        this.vec_to_offset = {};
+
         var x = 0;
         var y = 0;
         var z = 0;
@@ -240,9 +244,45 @@ export class View
         {
             for (var y = 0; y < model.worldY; y++)
             {
+                next_block:
                 for (var z = 0; z < model.worldZ; z++)
                 {
                     var tile = model.get_tile(vec3(x, y, z));
+
+                    // No tile, don't render
+                    if(tile == Tile.EMPTY)
+                        continue next_block;
+
+                    var empty_found = false;
+                    // Check for adjacent Empty or water
+                    for(var i = -1; i <= 1; i++)
+                    {
+                        var pos = vec3(x+i, y, z);
+                        if(model.valid_index(pos) == false)
+                            continue;
+                        var tile = model.get_tile(pos);
+                        empty_found = empty_found || tile == Tile.EMPTY;
+                    }
+                    for(var j = -1; j <= 1; j++)
+                    {
+                        var pos = vec3(x, y+j, z);
+                        if(model.valid_index(pos) == false)
+                            continue;
+                        var tile = model.get_tile(pos);
+                        empty_found = empty_found || tile == Tile.EMPTY;
+                    }
+                    for(var k = -1; k <= 1; k++)
+                    {
+                        var pos = vec3(x, y, z+k);
+                        if(model.valid_index(pos) == false)
+                            continue;
+                        var tile = model.get_tile(pos);
+                        empty_found = empty_found || tile == Tile.EMPTY;
+                    }
+
+                    if(empty_found == false)
+                        continue;
+
                     var tile_color = this.tile_to_color(tile);
 
                     //var pos = this.index_to_position(x, y);
@@ -286,8 +326,11 @@ export class View
                     ];
 
                     // Get the start offset into world_colors
-                    var offset = this.idx_to_offset(vec3(x,y,z));
+                    //var offset = this.idx_to_offset(vec3(x,y,z));
+                    var offset = world_points.length;
                     //console.log(offset);
+
+                    this.vec_to_offset[vec3(x,y,z)] = offset;
 
                     var cubeVertexIndices = [
                         0,  1,  2,      0,  2,  3,    // front
@@ -327,6 +370,7 @@ export class View
 
                     for(var i = 0; i < this.indicies_per_block; i++)
                     {
+
                         world_indicies.push(cubeVertexIndices[i] + offset);
                     }
 
@@ -341,6 +385,7 @@ export class View
             }
         }
         console.log(world_indicies.length);
+        this.block_indicies = world_indicies.length;
 
         // Buffer Color
         gl.bindBuffer(gl.ARRAY_BUFFER, this.worldTranslateBuffer);
@@ -364,6 +409,18 @@ export class View
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
         // Draw the world
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.mouseCBuffer);
+        gl.vertexAttribPointer(this.vColor, 4, gl.FLOAT, false, 0, 0);
+
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.mouseVBuffer);
+        gl.vertexAttribPointer(this.vPosition, 3, gl.FLOAT, false, 0, 0);
+
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.mouseTranslateBuffer);
+        gl.vertexAttribPointer(this.vTranslate, 3, gl.FLOAT, false, 0, 0);
+
+        gl.drawArrays(gl.LINES, 0, this.mouse_lines);
+
+        // Draw the world
         gl.bindBuffer(gl.ARRAY_BUFFER, this.worldCBuffer);
         gl.vertexAttribPointer(this.vColor, 4, gl.FLOAT, false, 0, 0);
 
@@ -376,7 +433,7 @@ export class View
         var ext = gl.getExtension("OES_element_index_uint");
 
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.worldIndexBuffer);
-        gl.drawElements(gl.TRIANGLES, this.indicies_per_block * this.model.worldSize, gl.UNSIGNED_INT, 0);
+        gl.drawElements(gl.TRIANGLES, this.block_indicies, gl.UNSIGNED_INT, 0);
 
         (<any>window).requestAnimFrame(this.render.bind(this), this.canvas);
     }
@@ -406,9 +463,9 @@ export class View
         }
     }
 
-    private index_to_position(x, y) : any
+    private index_to_position(x, y, z) : any
     {
-        return vec2(x + 0.5, y + 0.5);
+        return vec3(x + 0.5, y + 0.5, z+ 0.5);
     }
 
     public run() : void
@@ -424,16 +481,16 @@ export class View
         var stick_points = [];
         var stick_colors = [];
         // Legs
-        stick_points.push(vec2(0,0), vec2(1,1));
-        stick_points.push(vec2(2,0), vec2(1,1));
+        stick_points.push(vec3(0,0,0), vec3(1,1,0));
+        stick_points.push(vec3(2,0,0), vec3(1,1,0));
         // Body
-        stick_points.push(vec2(1,1), vec2(1,3));
+        stick_points.push(vec3(1,1,0), vec3(1,3,0));
         // Arms
-        stick_points.push(vec2(0,2.5), vec2(2,2.5));
+        stick_points.push(vec3(0,2.5,0), vec3(2,2.5,0));
         // Face
-        stick_points.push(vec2(1,3), vec2(0.5,4));
-        stick_points.push(vec2(1,3), vec2(1.5,4));
-        stick_points.push(vec2(0.5,4), vec2(1.5,4));
+        stick_points.push(vec3(1,3,0), vec3(0.5,4,0));
+        stick_points.push(vec3(1,3,0), vec3(1.5,4,0));
+        stick_points.push(vec3(0.5,4,0), vec3(1.5,4,0));
 
         // We need to know number of points in render
         this.stick_man_num_points = stick_points.length;
@@ -451,29 +508,49 @@ export class View
         gl.bufferData(gl.ARRAY_BUFFER, flatten(stick_points), gl.STATIC_DRAW);
 
         gl.useProgram(this.program);
-        gl.uniform2fv(this.vStickPos, model.get_stickman_position());
+        gl.uniform3fv(this.vStickPos, flatten(model.get_stickman_position()));
     }
-
+*/
     private initialize_mouse(pos, placeable : boolean) : void
     {
         var gl = this.gl;
 
         var mouse_points = [];
         // Left edge
-        mouse_points.push(vec2(- 0.5, - 0.5));
-        mouse_points.push(vec2(- 0.5, + 0.5));
+        mouse_points.push(vec3(- 0.5, - 0.5, - 0.5));
+        mouse_points.push(vec3(- 0.5, + 0.5, - 0.5));
         // Right edge
-        mouse_points.push(vec2(+ 0.5, + 0.5));
-        mouse_points.push(vec2(+ 0.5, - 0.5));
+        mouse_points.push(vec3(+ 0.5, + 0.5, - 0.5));
+        mouse_points.push(vec3(+ 0.5, - 0.5, - 0.5));
         // Top edge
-        mouse_points.push(vec2(- 0.5, + 0.5));
-        mouse_points.push(vec2(+ 0.5, + 0.5));
+        mouse_points.push(vec3(- 0.5, + 0.5, - 0.5));
+        mouse_points.push(vec3(+ 0.5, + 0.5, - 0.5));
         // Bot edge
-        mouse_points.push(vec2(- 0.5, - 0.5));
-        mouse_points.push(vec2(+ 0.5, - 0.5));
-        // Diagonal edge
-        mouse_points.push(vec2(- 0.5, - 0.5));
-        mouse_points.push(vec2(+ 0.5, + 0.5));
+        mouse_points.push(vec3(- 0.5, - 0.5, - 0.5));
+        mouse_points.push(vec3(+ 0.5, - 0.5, - 0.5));
+
+        // Left edge
+        mouse_points.push(vec3(- 0.5, - 0.5, + 0.5));
+        mouse_points.push(vec3(- 0.5, + 0.5, + 0.5));
+        // Right edge
+        mouse_points.push(vec3(+ 0.5, + 0.5, + 0.5));
+        mouse_points.push(vec3(+ 0.5, - 0.5, + 0.5));
+        // Top edge
+        mouse_points.push(vec3(- 0.5, + 0.5, + 0.5));
+        mouse_points.push(vec3(+ 0.5, + 0.5, + 0.5));
+        // Bot edge
+        mouse_points.push(vec3(- 0.5, - 0.5, + 0.5));
+        mouse_points.push(vec3(+ 0.5, - 0.5, + 0.5));
+
+        // Edges
+        mouse_points.push(vec3(- 0.5, - 0.5, - 0.5));
+        mouse_points.push(vec3(- 0.5, - 0.5, + 0.5));
+        mouse_points.push(vec3(+ 0.5, - 0.5, - 0.5));
+        mouse_points.push(vec3(+ 0.5, - 0.5, + 0.5));
+        mouse_points.push(vec3(+ 0.5, + 0.5, - 0.5));
+        mouse_points.push(vec3(+ 0.5, + 0.5, + 0.5));
+        mouse_points.push(vec3(- 0.5, + 0.5, - 0.5));
+        mouse_points.push(vec3(- 0.5, + 0.5, + 0.5));
 
         var color = (placeable ? vec4(0., 0., 0., 1.) : vec4(1., 0., 0., 1.));
 
@@ -482,7 +559,7 @@ export class View
         for(var i = 0; i < mouse_points.length; i++)
         {
             mouse_colors.push(color);
-            mouse_translate.push(vec2(pos[0], pos[1]));
+            mouse_translate.push(pos);
         }
 
         gl.bindBuffer(gl.ARRAY_BUFFER, this.mouseCBuffer);
@@ -496,7 +573,7 @@ export class View
 
         this.mouse_lines = mouse_points.length;
     }
-*/
+
     constructor(model : Model)
     {
         this.model = model;
@@ -508,7 +585,7 @@ export class View
         this.initialize_block_world();
         // Setup stickman
         //this.initialize_stick_man();
-        
+
         var canvas = this.canvas;
         var gl = this.gl;
         
@@ -517,14 +594,23 @@ export class View
 
         this.model.on("update_tile", function(pos, tile)
         {
-            console.log("update tile!");
+            //console.log("update tile!");
             var tile_color = this.tile_to_color(tile);
 
             // Get the start offset into world_colors
-            var offset = this.idx_to_offset(pos);
-            console.log(offset);
+            //var offset = this.idx_to_offset(pos);
+            var offset = this.vec_to_offset[pos];
+            if(offset == undefined)
+            {
+                // Add a block
+            }
+            else
+            {
+                // Redraw the color of a block
+                this.rebufferColor(offset, offset+this.verts_per_block, tile_color);
+            }
+            //console.log(offset);
 
-            this.rebufferColor(offset, offset+this.verts_per_block, tile_color);
         }.bind(this));
 
         var height = 1;
@@ -536,21 +622,21 @@ export class View
             if(model.is_map_active())
             {
                 var modelMatrix = lookAt(vec3(stick_pos[0],
-                                              stick_pos[1] + 50, 
+                                              stick_pos[1] + 50,
                                               stick_pos[2]),
-                                         vec3(stick_pos[0], 
-                                              stick_pos[1], 
+                                         vec3(stick_pos[0],
+                                              stick_pos[1],
                                               stick_pos[2]),
                                          vec3(1,0,0));
                 gl.uniformMatrix4fv(this.uMVMatrix, false, flatten(modelMatrix));
             }
             else
             {
-                var modelMatrix = lookAt(vec3(stick_pos[0], 
-                                              stick_pos[1] + height, 
+                var modelMatrix = lookAt(vec3(stick_pos[0],
+                                              stick_pos[1] + height,
                                               stick_pos[2]),
-                                         vec3(stick_pos[0] + cam_pos[0], 
-                                              stick_pos[1] + cam_pos[1] + height, 
+                                         vec3(stick_pos[0] + cam_pos[0],
+                                              stick_pos[1] + cam_pos[1] + height,
                                               stick_pos[2] + cam_pos[2]),
                                          vec3(0,1,0));
                 gl.uniformMatrix4fv(this.uMVMatrix, false, flatten(modelMatrix));
@@ -563,10 +649,29 @@ export class View
 
         this.model.on("stickman_move", function(pos)
         {
-            this.model.update_tile(vec3(Math.round(pos[0]), Math.round(pos[1])-1, Math.round(pos[2])), Tile.STONE);
+            //this.model.update_tile(vec3(Math.round(pos[0]), Math.round(pos[1])-1, Math.round(pos[2])), Tile.STONE);
+        }.bind(this));
+
+        this.model.on("mouse_move", function(mouse_pos)
+        {
+            var stick_pos = model.get_stickman_position().map(Math.round);
+            var block_pos = add(stick_pos, mouse_pos).map(Math.round);
+            if(stick_pos == block_pos)
+            {
+                this.mouse_lines = 0;
+            }
+            else
+            {
+                //console.log(block_pos);
+                var placeable = this.model.can_build(block_pos);
+                this.initialize_mouse(block_pos, placeable);
+            }
+
         }.bind(this));
 
         update_camera();
+
+        this.initialize_mouse(vec3(0,5,0), false);
 
 /*
         this.model.on("shockwave", function(pos)
@@ -588,7 +693,7 @@ export class View
             }
 
             gl.useProgram(this.boxShaderProgram);
-            gl.uniform2fv(this.vClickPos, pos);
+            gl.uniform3fv(this.vClickPos, flatten(pos));
 
             if (this.timerId)
                 clearInterval(this.timerId);
