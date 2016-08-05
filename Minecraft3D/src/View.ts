@@ -7,6 +7,7 @@ declare var vec4: any;
 
 declare var flatten: any;
 declare var add: any;
+declare var scale: any;
 
 declare var sizeof: any;
 
@@ -120,8 +121,10 @@ export class View
     private worldTranslateBuffer : WebGLBuffer;
     private worldIndexBuffer : WebGLBuffer;
     // Stick figure
-    //private stickVBuffer : WebGLBuffer;
-    //private stickCBuffer : WebGLBuffer;
+    private stickVBuffer : WebGLBuffer;
+    private stickCBuffer : WebGLBuffer;
+    private stickTranslateBuffer : WebGLBuffer;
+    private stickIndexBuffer : WebGLBuffer;
     // Mouse
     private mouseVBuffer : WebGLBuffer;
     private mouseCBuffer : WebGLBuffer;
@@ -132,7 +135,7 @@ export class View
     private verts_per_block : number = 24;
     private indicies_per_block : number = 36;
 
-    // Stickman stuff
+
     //private stick_man_num_points : number;
 
     // Fix this
@@ -141,10 +144,11 @@ export class View
     private block_verts : number = 0;
     private vec_to_offset;
 
+    private stickman_lines : number = 0;
     // Shockwave variables
     //private shockwave_duration : number = 1000;
     //private timerId;
-    
+
     private gen_indicies(arr, offset)
     {
         for(var i = 0; i < this.indicies_per_block; i++)
@@ -215,7 +219,6 @@ export class View
         var model = this.model;
         var gl = this.gl;
 
-
         var points = [];
         var colors = [];
         var translate = [];
@@ -242,7 +245,7 @@ export class View
         gl.bufferSubData(gl.ARRAY_BUFFER, offset * sizeof['vec3'], flatten(translate));
 
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.worldIndexBuffer);
-        gl.bufferSubData(gl.ELEMENT_ARRAY_BUFFER, (this.block_indicies)*Uint32Array.BYTES_PER_ELEMENT, new Uint32Array(indicies)); 
+        gl.bufferSubData(gl.ELEMENT_ARRAY_BUFFER, (this.block_indicies)*Uint32Array.BYTES_PER_ELEMENT, new Uint32Array(indicies));
 
         this.block_indicies = this.block_indicies + this.indicies_per_block;
     }
@@ -283,7 +286,7 @@ export class View
 
                     if(this.render_block(x+i, y+j, z+k) == false)
                         continue;
-                    
+
                     this.update_block(vec3(x+i, y+j, z+k));
                 }
             }
@@ -377,7 +380,26 @@ export class View
         console.log("Total World Translate memory consumption:",    worldTranslateBufferSize,   "MB");
         console.log("Total World Indicies memory consumption:",     worldIndexBufferSize,       "MB");
         console.log("Total World GPU memory consumption:",          (worldVBufferSize + worldCBufferSize + worldTranslateBufferSize + worldIndexBufferSize), "MB");
- 
+
+        // Stick Vertex buffer
+        this.stickVBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.stickVBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, sizeof['vec3'] * 5 * 2, gl.STATIC_DRAW);
+        gl.vertexAttribPointer(this.vPosition, 2, gl.FLOAT, false, 0, 0);
+        gl.enableVertexAttribArray(this.vPosition);
+        // Stick Color buffer
+        this.stickCBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.stickCBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, sizeof['vec4'] * 5 * 2, gl.STATIC_DRAW);
+        gl.vertexAttribPointer(this.vColor, 4, gl.FLOAT, false, 0, 0);
+        gl.enableVertexAttribArray(this.vColor);
+        // Stick Translate buffer
+        this.stickTranslateBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.stickTranslateBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, sizeof['vec3'] * 5 * 4, gl.STATIC_DRAW);
+        gl.vertexAttribPointer(this.vTranslate, 2, gl.FLOAT, false, 0, 0);
+        gl.enableVertexAttribArray(this.vTranslate);
+
         // Mouse Vertex buffer
         this.mouseVBuffer = gl.createBuffer();
         gl.bindBuffer(gl.ARRAY_BUFFER, this.mouseVBuffer);
@@ -390,39 +412,12 @@ export class View
         gl.bufferData(gl.ARRAY_BUFFER, sizeof['vec4'] * 5 * 2, gl.STATIC_DRAW);
         gl.vertexAttribPointer(this.vColor, 4, gl.FLOAT, false, 0, 0);
         gl.enableVertexAttribArray(this.vColor);
-        // World Translate buffer
+        // Mouse Translate buffer
         this.mouseTranslateBuffer = gl.createBuffer();
         gl.bindBuffer(gl.ARRAY_BUFFER, this.mouseTranslateBuffer);
         gl.bufferData(gl.ARRAY_BUFFER, sizeof['vec2'] * 5 * 4, gl.STATIC_DRAW);
         gl.vertexAttribPointer(this.vTranslate, 2, gl.FLOAT, false, 0, 0);
         gl.enableVertexAttribArray(this.vTranslate);
-/*
-        // Set the uniform scale variable
-        gl.uniform1f(this.vScalePos, this.render_scale);
-
-        gl.useProgram(this.program);
-
-        this.vPosition  = gl.getAttribLocation(this.program, "vPosition");
-        this.vColor     = gl.getAttribLocation(this.program, "vColor");
-        this.vScalePos  = gl.getUniformLocation(this.program, "vScale");
-        this.vStickPos  = gl.getUniformLocation(this.program, "vStickPos");
-
-        // Stickman Vertex buffer
-        this.stickVBuffer = gl.createBuffer();
-        gl.bindBuffer(gl.ARRAY_BUFFER, this.stickVBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, sizeof['vec2'] * 7 * 2, gl.STATIC_DRAW);
-        gl.vertexAttribPointer(this.vPosition, 2, gl.FLOAT, false, 0, 0);
-        gl.enableVertexAttribArray(this.vPosition);
-        // Stickman Color buffer
-        this.stickCBuffer = gl.createBuffer();
-        gl.bindBuffer(gl.ARRAY_BUFFER, this.stickCBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, sizeof['vec4'] * model.worldSize, gl.STATIC_DRAW);
-        gl.vertexAttribPointer(this.vColor, 4, gl.FLOAT, false, 0, 0);
-        gl.enableVertexAttribArray(this.vColor);
-
-        // Set the uniform scale variable
-        gl.uniform1f(this.vScalePos, this.render_scale);
-        */
     }
 
     private idx_to_offset(pos) : number
@@ -449,7 +444,7 @@ export class View
         var world_points = [];
         var world_colors = [];
         var world_translate = [];
-        var world_indicies = [];
+        var world_indices = [];
 
         this.vec_to_offset = {};
 
@@ -472,7 +467,7 @@ export class View
                     //console.log(offset);
 
                     this.vec_to_offset[vec3(x,y,z)] = offset;
-                    this.gen_indicies(world_indicies, offset);
+                    this.gen_indicies(world_indices, offset);
 
                     var tile = model.get_tile(vec3(x, y, z));
                     var tile_color = this.tile_to_color(tile);
@@ -483,10 +478,10 @@ export class View
         var forLoopTs = new Date().getTime() - start;
         console.log("Buffer filling loop done. It took", forLoopTs, "ms.");
 
-        console.log("Number of rendered vertices:", world_indicies.length);
+        console.log("Number of rendered vertices:", world_indices.length);
         console.log("Number of stored vertices:", world_points.length);
 
-        this.block_indicies = world_indicies.length;
+        this.block_indicies = world_indices.length;
         this.block_verts = world_points.length;
 
         var tsStart = new Date().getTime();
@@ -501,9 +496,76 @@ export class View
         gl.bufferSubData(gl.ARRAY_BUFFER, 0, flatten(world_points));
         // Buffer Indicies
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.worldIndexBuffer);
-        gl.bufferSubData(gl.ELEMENT_ARRAY_BUFFER, 0, new Uint32Array(world_indicies));
+        gl.bufferSubData(gl.ELEMENT_ARRAY_BUFFER, 0, new Uint32Array(world_indices));
         var tsDone = new Date().getTime() - tsStart;
         console.log('Buffer transfer finished in', tsDone, 'ms.');
+    }
+
+    // Stickman stuff
+    private initialize_stick_man(pos) : any
+    {
+        var gl = this.gl;
+        var height : number = 1.0 ;
+        var back : number = 0.3;
+        var front : number = 0.1;
+        var feet : number = 0.2;
+        var stick_points = [];
+
+         // Front face
+        stick_points.push(vec3(-back, feet,  front));
+        stick_points.push(vec3(front, feet,  front));
+        stick_points.push(vec3(front,  height,  front));
+        stick_points.push(vec3(-back,  height,  front));
+
+        // Back face
+        stick_points.push(vec3(-back, feet, -back));
+        stick_points.push(vec3(-back,  height, -back));
+        stick_points.push(vec3(front,  height, -back));
+        stick_points.push(vec3(front, feet, -back));
+
+        // Top face
+        stick_points.push(vec3(-back,  height, -back));
+        stick_points.push(vec3(-back,  height,  front));
+        stick_points.push(vec3(front,  height,  front));
+        stick_points.push(vec3(front,  height, -back));
+
+            // Bottom face
+        stick_points.push(vec3(-back, feet, -back));
+        stick_points.push(vec3(front, feet, -back));
+        stick_points.push(vec3(front, feet,  front));
+        stick_points.push(vec3(-back, feet,  front));
+
+        // Right face
+        stick_points.push(vec3(front, feet, -back));
+        stick_points.push(vec3(front,  height, -back));
+        stick_points.push(vec3(front,  height,  front));
+        stick_points.push(vec3(front, feet,  front));
+
+        // Left face
+        stick_points.push(vec3(-back, feet, -back));
+        stick_points.push(vec3(-back, feet,  front));
+        stick_points.push(vec3(-back,  height,  front));
+        stick_points.push(vec3(-back,  height, -back));
+
+        var stick_colors = [];
+        var stick_translate = [];
+        for(var i = 0; i < stick_points.length; i++)
+        {
+            stick_translate.push(pos);
+            //skin color
+            stick_colors.push(vec4(1,0.68,0.38,1));
+        }
+
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.stickCBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, flatten(stick_colors), gl.STATIC_DRAW);
+
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.stickVBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, flatten(stick_points), gl.STATIC_DRAW);
+
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.stickTranslateBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, flatten(stick_translate), gl.STATIC_DRAW);
+
+        this.stickman_lines = stick_points.length;
     }
 
     private render() : void
@@ -513,17 +575,35 @@ export class View
 
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-        // Draw the world
-        gl.bindBuffer(gl.ARRAY_BUFFER, this.mouseCBuffer);
-        gl.vertexAttribPointer(this.vColor, 4, gl.FLOAT, false, 0, 0);
+        // Draw the mouse block
+        if(this.mouse_lines != 0)
+        {
+            gl.bindBuffer(gl.ARRAY_BUFFER, this.mouseCBuffer);
+            gl.vertexAttribPointer(this.vColor, 4, gl.FLOAT, false, 0, 0);
 
-        gl.bindBuffer(gl.ARRAY_BUFFER, this.mouseVBuffer);
-        gl.vertexAttribPointer(this.vPosition, 3, gl.FLOAT, false, 0, 0);
+            gl.bindBuffer(gl.ARRAY_BUFFER, this.mouseVBuffer);
+            gl.vertexAttribPointer(this.vPosition, 3, gl.FLOAT, false, 0, 0);
 
-        gl.bindBuffer(gl.ARRAY_BUFFER, this.mouseTranslateBuffer);
-        gl.vertexAttribPointer(this.vTranslate, 3, gl.FLOAT, false, 0, 0);
+            gl.bindBuffer(gl.ARRAY_BUFFER, this.mouseTranslateBuffer);
+            gl.vertexAttribPointer(this.vTranslate, 3, gl.FLOAT, false, 0, 0);
 
-        gl.drawArrays(gl.LINES, 0, this.mouse_lines);
+            gl.drawArrays(gl.LINES, 0, this.mouse_lines);
+        }
+
+        // Draw the stickman
+        if(this.stickman_lines != 0)
+        {
+            gl.bindBuffer(gl.ARRAY_BUFFER, this.stickCBuffer);
+            gl.vertexAttribPointer(this.vColor, 4, gl.FLOAT, false, 0, 0);
+
+            gl.bindBuffer(gl.ARRAY_BUFFER, this.stickVBuffer);
+            gl.vertexAttribPointer(this.vPosition, 3, gl.FLOAT, false, 0, 0);
+
+            gl.bindBuffer(gl.ARRAY_BUFFER, this.stickTranslateBuffer);
+            gl.vertexAttribPointer(this.vTranslate, 3, gl.FLOAT, false, 0, 0);
+
+            gl.drawArrays(gl.TRIANGLE_FAN, 0, this.stickman_lines);
+        }
 
         // Draw the world
         gl.bindBuffer(gl.ARRAY_BUFFER, this.worldCBuffer);
@@ -535,6 +615,8 @@ export class View
         gl.bindBuffer(gl.ARRAY_BUFFER, this.worldTranslateBuffer);
         gl.vertexAttribPointer(this.vTranslate, 3, gl.FLOAT, false, 0, 0);
 
+        // Extension for UNSIGNED INT element indicies
+        // TODO: Check availability
         var ext = gl.getExtension("OES_element_index_uint");
 
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.worldIndexBuffer);
@@ -690,8 +772,7 @@ export class View
         this.initBuffers();
         // Setup world
         this.initialize_block_world();
-        // Setup stickman
-        //this.initialize_stick_man();
+
 
         var canvas = this.canvas;
         var gl = this.gl;
@@ -772,10 +853,29 @@ export class View
             }
 
         }.bind(this));
+/*
+        this.model.on("stickman_move", function(stickman_pos)
+        {
+            var stick_pos = model.get_stickman_position().map(Math.round);
+            var block_pos = add(stick_pos, stickman_pos).map(Math.round);
+            if(stick_pos == block_pos)
+            {
+                this.stickman_lines = 0;
+            }
+            else
+            {
+                //console.log("Block pos: " + scale(0.5,block_pos));
+                //console.log("Stickman Pos: " + model.get_stickman_position());
+                this.initialize_stick_man(scale(0.5,block_pos));
+            }
 
+        }.bind(this));
+        */
         update_camera();
 
         this.initialize_mouse(vec3(0,5,0), false);
+        // Setup stickman
+        //this.initialize_stick_man(model.get_stickman_position());
 
 /*
         this.model.on("shockwave", function(pos)
