@@ -8,6 +8,7 @@ declare var vec2: any;
 declare var vec3: any;
 declare var $: any;
 declare var vec3: any;
+declare var add: any;
 
 export class Controller
 {
@@ -258,9 +259,12 @@ export class Controller
     }
     */
 
+    private flyMode:boolean = false;
+
     constructor(model : Model)
     {
         this.model = model;
+        var self:any = this;
 
         //setInterval(this.block_flow.bind(this), 300);
         //setInterval(this.block_stonify.bind(this), 10);
@@ -281,6 +285,9 @@ export class Controller
             var id = e.keyCode || e.which;
             keyState[id] = keyState[id] || {};
             keyState[id].state = false;
+
+            if (e.keyCode === 48)
+                self.flyMode = !self.flyMode;
         },true);
 
         var velocity = vec3(0,0,0);
@@ -505,7 +512,7 @@ export class Controller
                 model.update_tile(block_pos, tile_id);
                 //shockwave();
             }
-            else if(model.get_tile(block_pos) != Tile.EMPTY && event.shiftKey == true)
+            else if(TileUtil.is_destroyable(model.get_tile(block_pos)) && event.shiftKey == true)
             {
                 model.update_tile(block_pos, Tile.EMPTY);
                 //shockwave();

@@ -16,7 +16,6 @@ declare var initShaders: any;
 declare var perspective: any;
 declare var lookAt: any;
 
-
 var cubeVertexIndices = [
     0,  1,  2,      0,  2,  3,    // front
     4,  5,  6,      4,  6,  7,    // back
@@ -141,6 +140,7 @@ export class View
     // Fix this
     private mouse_lines : number = 0;
     private block_indicies : number = 0;
+    private block_verts : number = 0;
     private vec_to_offset;
 
     private stickman_lines : number = 0;
@@ -161,8 +161,12 @@ export class View
         for(var i = 0; i < this.verts_per_block; i++)
         {
             arr_p.push(vec3(vertices[i]));
-            //arr_c.push(tile_color);
-            arr_c.push(colors[i]);
+
+            var watr = this.tile_to_color(Tile.WATER);
+            if (watr[0] == tile_color[0] && watr[1] == tile_color[1] && watr[2] == tile_color[2])
+                arr_c.push(tile_color);
+            else
+                arr_c.push(colors[i]);
             arr_t.push(pos);
         }
     }
@@ -173,7 +177,7 @@ export class View
         var tile = model.get_tile(vec3(x, y, z));
 
         // No tile, don't render
-        if(tile == Tile.EMPTY)
+        if(tile === Tile.EMPTY)
             return false;
 
         var empty_found = false;
@@ -184,7 +188,7 @@ export class View
             if(model.valid_index(pos) == false)
                 continue;
             var tile = model.get_tile(pos);
-            empty_found = empty_found || tile == Tile.EMPTY;
+            empty_found = empty_found || TileUtil.is_sink_block(tile);
         }
         for(var j = -1; j <= 1; j+=2)
         {
@@ -192,7 +196,7 @@ export class View
             if(model.valid_index(pos) == false)
                 continue;
             var tile = model.get_tile(pos);
-            empty_found = empty_found || tile == Tile.EMPTY;
+            empty_found = empty_found || TileUtil.is_sink_block(tile);
         }
         for(var k = -1; k <= 1; k+=2)
         {
@@ -200,13 +204,94 @@ export class View
             if(model.valid_index(pos) == false)
                 continue;
             var tile = model.get_tile(pos);
-            empty_found = empty_found || tile == Tile.EMPTY;
+            empty_found = empty_found || TileUtil.is_sink_block(tile);
         }
         // No empty blocks? - Noone will see this block then, so skip it
         if(empty_found == false)
             return false;
 
         return true;
+    }
+
+    private new_block(pos)
+    {
+        var model = this.model;
+        var gl = this.gl;
+
+        console.log("New block");
+
+        var points = [];
+        var colors = [];
+        var translate = [];
+        var indicies = [];
+
+        var offset = this.block_verts + this.verts_per_block;
+        this.vec_to_offset[pos] = offset;
+        this.block_verts = offset;
+
+        console.log(offset);
+
+        this.gen_indicies(indicies, offset);
+        var tile = model.get_tile(pos);
+        var tile_color = this.tile_to_color(tile);
+        this.gen_buffers(points, colors, translate, tile, pos);
+
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.worldVBuffer);
+        gl.bufferSubData(gl.ARRAY_BUFFER, offset * sizeof['vec3'], flatten(points));
+
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.worldCBuffer);
+        gl.bufferSubData(gl.ARRAY_BUFFER, offset * sizeof['vec4'], flatten(colors));
+
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.worldTranslateBuffer);
+        gl.bufferSubData(gl.ARRAY_BUFFER, offset * sizeof['vec3'], flatten(translate));
+
+        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.worldIndexBuffer);
+        gl.bufferSubData(gl.ELEMENT_ARRAY_BUFFER, (this.block_indicies)*Uint32Array.BYTES_PER_ELEMENT, new Uint32Array(indicies)); 
+
+        this.block_indicies = this.block_indicies + this.indicies_per_block;
+    }
+
+    private update_block(pos)
+    {
+        var model = this.model;
+        var gl = this.gl;
+
+        var offset = this.vec_to_offset[pos];
+        if(offset == undefined)
+        {
+            this.new_block(pos);
+            //console.log("CRITICAL ISSUE!");
+            return;
+        }
+        else
+        {
+            // TODO: Handle this, I have no idea why or how
+            //console.log("UPDATE BLOCK!");
+        }
+    }
+
+    private rebufferBlocks(pos)
+    {
+        var x = pos[0];
+        var y = pos[1];
+        var z = pos[2];
+
+        for(var i = -1; i <= 1; i++)
+        {
+            for(var j = -1; j <= 1; j++)
+            {
+                for(var k = -1; k <= 1; k++)
+                {
+                    if(i == 0 && j == 0 && k == 0)
+                        continue;
+
+                    if(this.render_block(x+i, y+j, z+k) == false)
+                        continue;
+                    
+                    this.update_block(vec3(x+i, y+j, z+k));
+                }
+            }
+        }
     }
 
     private rebufferColor(start, end, color) : void
@@ -428,21 +513,23 @@ export class View
         console.log("For loop done. It took", forLoopTs, "ms.");
 
         console.log("Number of rendered vertices:", world_indicies.length);
+        console.log("Number of stored vertices:", world_points.length);
         this.block_indicies = world_indicies.length;
+        this.block_verts = world_points.length;
 
         var tsStart = new Date().getTime();
         // Buffer Color
         gl.bindBuffer(gl.ARRAY_BUFFER, this.worldTranslateBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, flatten(world_translate), gl.STATIC_DRAW);
+        gl.bufferSubData(gl.ARRAY_BUFFER, 0, flatten(world_translate));
         // Buffer Color
         gl.bindBuffer(gl.ARRAY_BUFFER, this.worldCBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, flatten(world_colors), gl.STATIC_DRAW);
+        gl.bufferSubData(gl.ARRAY_BUFFER, 0, flatten(world_colors));
         // Buffer Verticies
         gl.bindBuffer(gl.ARRAY_BUFFER, this.worldVBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, flatten(world_points), gl.STATIC_DRAW);
+        gl.bufferSubData(gl.ARRAY_BUFFER, 0, flatten(world_points));
         // Buffer Indicies
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.worldIndexBuffer);
-        gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint32Array(world_indicies), gl.STATIC_DRAW);
+        gl.bufferSubData(gl.ELEMENT_ARRAY_BUFFER, 0, new Uint32Array(world_indicies));
         var tsDone = new Date().getTime() - tsStart;
         console.log('Transfer finished in', tsDone, 'ms.');
         gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint32Array(world_indices), gl.STATIC_DRAW);
@@ -619,6 +706,8 @@ export class View
                 return vec4(0., 0., 1., 0.4);
             case Tile.FIRE:
                 return vec4(1., 0., 0., 0.4);
+            case Tile.BEDROCK:
+                return vec4(1., 1., 1., 1.);
             default:
                 alert("Invalid tile, cannot convert to color!");
         }
@@ -754,23 +843,19 @@ export class View
 
         this.model.on("update_tile", function(pos, tile)
         {
-            //console.log("update tile!");
-            var tile_color = this.tile_to_color(tile);
-
-            // Get the start offset into world_colors
-            //var offset = this.idx_to_offset(pos);
             var offset = this.vec_to_offset[pos];
             if(offset == undefined)
             {
+                this.new_block(pos);
             }
             else
             {
                 // Redraw the color of a block
+                var tile_color = this.tile_to_color(tile);
                 this.rebufferColor(offset, offset+this.verts_per_block, tile_color);
-
+                // Update all adjacent blocks
+                this.rebufferBlocks(pos);
             }
-            //this.initialize_block_world();
-            //console.log(offset);
 
         }.bind(this));
 
