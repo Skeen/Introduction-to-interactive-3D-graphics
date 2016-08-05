@@ -161,15 +161,17 @@ export class View
     {
         for(var i = 0; i < this.verts_per_block; i++)
         {
-            arr_p.push(vec3(vertices[i]));
+            //arr_p.push(vec3(vertices[i]));
 
             var watr = this.tile_to_color(Tile.WATER);
             if (watr[0] == tile_color[0] && watr[1] == tile_color[1] && watr[2] == tile_color[2])
                 arr_c.push(tile_color);
             else
                 arr_c.push(colors[i]);
-            arr_t.push(pos);
         }
+
+        arr_t.push(pos);
+        //arr_t.push(pos);
     }
 
     private render_block(x, y, z)
@@ -350,7 +352,7 @@ export class View
         // World Vertex buffer
         this.worldVBuffer = gl.createBuffer();
         gl.bindBuffer(gl.ARRAY_BUFFER, this.worldVBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, sizeof['vec3'] * model.worldSize * this.verts_per_block, gl.STATIC_DRAW);
+        gl.bufferData(gl.ARRAY_BUFFER, sizeof['vec3'] * this.verts_per_block, gl.STATIC_DRAW);
         gl.vertexAttribPointer(this.vPosition, 3, gl.FLOAT, false, 0, 0);
         gl.enableVertexAttribArray(this.vPosition);
         var worldVBufferSize = Math.round(gl.getBufferParameter(gl.ARRAY_BUFFER, gl.BUFFER_SIZE) / 1000 / 1000);
@@ -486,6 +488,12 @@ export class View
 
         var tsStart = new Date().getTime();
         // Buffer Color
+        
+        world_points = []
+        for(var i = 0; i < this.verts_per_block; i++)
+        {
+            world_points.push(vec3(vertices[i]));
+        }
         gl.bindBuffer(gl.ARRAY_BUFFER, this.worldTranslateBuffer);
         gl.bufferSubData(gl.ARRAY_BUFFER, 0, flatten(world_translate));
         // Buffer Color
@@ -617,10 +625,27 @@ export class View
 
         // Extension for UNSIGNED INT element indicies
         // TODO: Check availability
-        var ext = gl.getExtension("OES_element_index_uint");
+        var ext_angle = gl.getExtension("ANGLE_instanced_arrays");
+        if(!ext_angle)
+        {
+            console.log("'ANGLE_instanced_arrays' extension not available!");
+            alert("FUCK");
+        }
+        var ext_oes = gl.getExtension("OES_element_index_uint");
+        if(!ext_oes)
+        {
+            console.log("'OES_element_index_uint' extension not available!");
+            alert("FUCK");
+        }
 
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.worldIndexBuffer);
-        gl.drawElements(gl.TRIANGLES, this.block_indicies, gl.UNSIGNED_INT, 0);
+        
+        ext_angle.vertexAttribDivisorANGLE(this.vTranslate, 1);
+        //ext_angle.vertexAttribDivisorANGLE(this.vColor, 1);
+        ext_angle.vertexAttribDivisorANGLE(this.vPosition, 0);
+        //ext_angle.drawElementsInstancedANGLE(gl.TRIANGLES, this.block_indicies, gl.UNSIGNED_INT, 0, 1);
+        ext_angle.drawElementsInstancedANGLE(gl.TRIANGLES, this.indicies_per_block, gl.UNSIGNED_INT, 0, this.block_indicies / this.indicies_per_block);
+        //gl.drawElements(gl.TRIANGLES, this.block_indicies, gl.UNSIGNED_INT, 0);
 
         (<any>window).requestAnimFrame(this.render.bind(this), this.canvas);
     }
