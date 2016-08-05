@@ -151,28 +151,33 @@ export class Model extends events.EventEmitter
         }
 
         var heightmap = this.worldGenerator.generate(.857);
-
-
         for (var x = 0; x < this.worldX; x++)
         {
-            // this.worldGrid[x] = [];
-                for (var y = 0; y < this.worldY; y++)
-            {
-                // this.worldGrid[x][y] = [];
-            }
             for(var z = 0; z < this.worldZ; z++)
             {
                 var offset = z + (x * this.worldZ);
                 var yHeight = Math.round((heightmap[offset] / this.worldX) * this.worldY);
                 if (yHeight > this.worldY) yHeight = this.worldY;
-                for (var y = 0; y < yHeight; y++) {
+
+                this.worldGrid[x][0][z] = Tile.BEDROCK;
+                for (var y = 1; y < yHeight-1; y++) {
                     this.worldGrid[x][y][z] = Tile.DIRT;
                 }
-                // for (var y = yHeight; y < this.worldY; y++) {
-                //     this.worldGrid[x][y][z] = Tile.EMPTY;
-                // }
             }
         }
+
+        for (var x = 0; x < this.worldX; x++)
+        {
+            for (var y = 0; y < Math.round(this.worldY / 3); y++)
+            {
+                for(var z = 0; z < this.worldZ; z++)
+                {
+                    if (this.worldGrid[x][y][z] === Tile.EMPTY)
+                        this.worldGrid[x][y][z] = Tile.WATER;
+                }
+            }
+        }
+
 
         // // ------------ //
         // // Update tiles //
@@ -252,7 +257,7 @@ export class Model extends events.EventEmitter
     {
         super();
         this.setup_world();
-        this.update_stickman_position(vec3(this.worldX/3, this.worldY/3 + 10, (this.worldZ - 1)/2));
+        this.update_stickman_position(vec3(this.worldX/2, this.worldY + 10, (this.worldZ - 1)/2));
         this.update_mouse_position(vec3(1, -0.5, 0));
 
         this.emit('ready');

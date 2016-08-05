@@ -158,8 +158,12 @@ export class View
         for(var i = 0; i < this.verts_per_block; i++)
         {
             arr_p.push(vec3(vertices[i]));
-            //arr_c.push(tile_color);
-            arr_c.push(colors[i]);
+
+            var watr = this.tile_to_color(Tile.WATER);
+            if (watr[0] == tile_color[0] && watr[1] == tile_color[1] && watr[2] == tile_color[2])
+                arr_c.push(tile_color);
+            else
+                arr_c.push(colors[i]);
             arr_t.push(pos);
         }
     }
@@ -170,7 +174,7 @@ export class View
         var tile = model.get_tile(vec3(x, y, z));
 
         // No tile, don't render
-        if(tile == Tile.EMPTY)
+        if(tile === Tile.EMPTY)
             return false;
 
         var empty_found = false;
@@ -181,7 +185,7 @@ export class View
             if(model.valid_index(pos) == false)
                 continue;
             var tile = model.get_tile(pos);
-            empty_found = empty_found || tile == Tile.EMPTY;
+            empty_found = empty_found || TileUtil.is_sink_block(tile);
         }
         for(var j = -1; j <= 1; j+=2)
         {
@@ -189,7 +193,7 @@ export class View
             if(model.valid_index(pos) == false)
                 continue;
             var tile = model.get_tile(pos);
-            empty_found = empty_found || tile == Tile.EMPTY;
+            empty_found = empty_found || TileUtil.is_sink_block(tile);
         }
         for(var k = -1; k <= 1; k+=2)
         {
@@ -197,7 +201,7 @@ export class View
             if(model.valid_index(pos) == false)
                 continue;
             var tile = model.get_tile(pos);
-            empty_found = empty_found || tile == Tile.EMPTY;
+            empty_found = empty_found || TileUtil.is_sink_block(tile);
         }
         // No empty blocks? - Noone will see this block then, so skip it
         if(empty_found == false)
@@ -481,6 +485,8 @@ export class View
                 return vec4(0., 0., 1., 0.4);
             case Tile.FIRE:
                 return vec4(1., 0., 0., 0.4);
+            case Tile.BEDROCK:
+                return vec4(1., 1., 1., 1.);
             default:
                 alert("Invalid tile, cannot convert to color!");
         }
