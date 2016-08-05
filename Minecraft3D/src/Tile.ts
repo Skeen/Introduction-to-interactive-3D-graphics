@@ -7,7 +7,8 @@ export enum Tile
     WOOD,
     METAL,
     WATER,
-    FIRE
+    FIRE,
+    BEDROCK
 }
 
 export class TileUtil 
@@ -37,6 +38,10 @@ export class TileUtil
     public static is_flow_block(tile : Tile) : boolean
     {
         return tile == Tile.FIRE || tile == Tile.WATER;
+    }
+
+    public static is_destroyable(tile:Tile):boolean {
+        return tile != Tile.BEDROCK && tile != Tile.EMPTY;
     }
 }
 /*
