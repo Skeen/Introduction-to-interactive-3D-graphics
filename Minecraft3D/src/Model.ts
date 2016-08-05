@@ -9,7 +9,7 @@ import { Tile } from "./Tile"
 export class Model extends events.EventEmitter
 {
     public worldX : number = 40;
-    public worldY : number = 3;
+    public worldY : number = 5;
     public worldZ : number = 40;
 
     public worldSize : number = this.worldX * this.worldY * this.worldZ;
@@ -224,6 +224,7 @@ export class Model extends events.EventEmitter
     constructor() 
     {
         super();
+        console.log("Setting up world!");
         this.setup_world();
         this.update_stickman_position(vec3(this.worldX/3, this.worldY/3 + 10, (this.worldZ - 1)/2));
         this.update_mouse_position(vec3(1, -0.5, 0));
