@@ -15,6 +15,81 @@ declare var initShaders: any;
 declare var perspective: any;
 declare var lookAt: any;
 
+
+var cubeVertexIndices = [
+    0,  1,  2,      0,  2,  3,    // front
+    4,  5,  6,      4,  6,  7,    // back
+    8,  9,  10,     8,  10, 11,   // top
+    12, 13, 14,     12, 14, 15,   // bottom
+    16, 17, 18,     16, 18, 19,   // right
+    20, 21, 22,     20, 22, 23    // left
+]
+
+var colors = [
+    [0.0,  1.0,  1.0,  1.0],    // Front face: cyan
+    [0.0,  1.0,  1.0,  1.0],    // Front face: cyan
+    [0.0,  1.0,  1.0,  1.0],    // Front face: cyan
+    [0.0,  1.0,  1.0,  1.0],    // Front face: cyan
+    [1.0,  0.0,  0.0,  1.0],    // Back face: red
+    [1.0,  0.0,  0.0,  1.0],    // Back face: red
+    [1.0,  0.0,  0.0,  1.0],    // Back face: red
+    [1.0,  0.0,  0.0,  1.0],    // Back face: red
+    [0.0,  1.0,  0.0,  1.0],    // Top face: green
+    [0.0,  1.0,  0.0,  1.0],    // Top face: green
+    [0.0,  1.0,  0.0,  1.0],    // Top face: green
+    [0.0,  1.0,  0.0,  1.0],    // Top face: green
+    [0.0,  0.0,  1.0,  1.0],    // Bottom face: blue
+    [0.0,  0.0,  1.0,  1.0],    // Bottom face: blue
+    [0.0,  0.0,  1.0,  1.0],    // Bottom face: blue
+    [0.0,  0.0,  1.0,  1.0],    // Bottom face: blue
+    [1.0,  1.0,  0.0,  1.0],    // Right face: yellow
+    [1.0,  1.0,  0.0,  1.0],    // Right face: yellow
+    [1.0,  1.0,  0.0,  1.0],    // Right face: yellow
+    [1.0,  1.0,  0.0,  1.0],    // Right face: yellow
+    [1.0,  0.0,  1.0,  1.0],    // Left face: purple
+    [1.0,  0.0,  1.0,  1.0],    // Left face: purple
+    [1.0,  0.0,  1.0,  1.0],    // Left face: purple
+    [1.0,  0.0,  1.0,  1.0]     // Left face: purple
+];
+
+var vertices = [
+    // Front face
+    [-0.5, -0.5,  0.5],
+    [ 0.5, -0.5,  0.5],
+    [ 0.5,  0.5,  0.5],
+    [-0.5,  0.5,  0.5],
+
+    // Back face
+    [-0.5, -0.5, -0.5],
+    [-0.5,  0.5, -0.5],
+    [ 0.5,  0.5, -0.5],
+    [ 0.5, -0.5, -0.5],
+
+    // Top face
+    [-0.5,  0.5, -0.5],
+    [-0.5,  0.5,  0.5],
+    [ 0.5,  0.5,  0.5],
+    [ 0.5,  0.5, -0.5],
+
+    // Bottom face
+    [-0.5, -0.5, -0.5],
+    [ 0.5, -0.5, -0.5],
+    [ 0.5, -0.5,  0.5],
+    [-0.5, -0.5,  0.5],
+
+    // Right face
+    [ 0.5, -0.5, -0.5],
+    [ 0.5,  0.5, -0.5],
+    [ 0.5,  0.5,  0.5],
+    [ 0.5, -0.5,  0.5],
+
+    // Left face
+    [-0.5, -0.5, -0.5],
+    [-0.5, -0.5,  0.5],
+    [-0.5,  0.5,  0.5],
+    [-0.5,  0.5, -0.5]
+];
+
 export class View
 {
     private model : Model;
@@ -68,6 +143,67 @@ export class View
     // Shockwave variables
     //private shockwave_duration : number = 1000;
     //private timerId;
+    
+    private gen_indicies(arr, offset)
+    {
+        for(var i = 0; i < this.indicies_per_block; i++)
+        {
+            arr.push(cubeVertexIndices[i] + offset);
+        }
+    }
+
+    private gen_buffers(arr_p, arr_c, arr_t, tile_color, pos)
+    {
+        for(var i = 0; i < this.verts_per_block; i++)
+        {
+            arr_p.push(vec3(vertices[i]));
+            //arr_c.push(tile_color);
+            arr_c.push(colors[i]);
+            arr_t.push(pos);
+        }
+    }
+
+    private render_block(x, y, z)
+    {
+        var model = this.model;
+        var tile = model.get_tile(vec3(x, y, z));
+
+        // No tile, don't render
+        if(tile == Tile.EMPTY)
+            return false;
+
+        var empty_found = false;
+        // Check for adjacent Empty or water
+        for(var i = -1; i <= 1; i+=2)
+        {
+            var pos = vec3(x+i, y, z);
+            if(model.valid_index(pos) == false)
+                continue;
+            var tile = model.get_tile(pos);
+            empty_found = empty_found || tile == Tile.EMPTY;
+        }
+        for(var j = -1; j <= 1; j+=2)
+        {
+            var pos = vec3(x, y+j, z);
+            if(model.valid_index(pos) == false)
+                continue;
+            var tile = model.get_tile(pos);
+            empty_found = empty_found || tile == Tile.EMPTY;
+        }
+        for(var k = -1; k <= 1; k+=2)
+        {
+            var pos = vec3(x, y, z+k);
+            if(model.valid_index(pos) == false)
+                continue;
+            var tile = model.get_tile(pos);
+            empty_found = empty_found || tile == Tile.EMPTY;
+        }
+        // No empty blocks? - Noone will see this block then, so skip it
+        if(empty_found == false)
+            return false;
+
+        return true;
+    }
 
     private rebufferColor(start, end, color) : void
     {
@@ -244,86 +380,10 @@ export class View
         {
             for (var y = 0; y < model.worldY; y++)
             {
-                next_block:
                 for (var z = 0; z < model.worldZ; z++)
                 {
-                    var tile = model.get_tile(vec3(x, y, z));
-
-                    // No tile, don't render
-                    if(tile == Tile.EMPTY)
-                        continue next_block;
-
-                    var empty_found = false;
-                    // Check for adjacent Empty or water
-                    for(var i = -1; i <= 1; i++)
-                    {
-                        var pos = vec3(x+i, y, z);
-                        if(model.valid_index(pos) == false)
-                            continue;
-                        var tile = model.get_tile(pos);
-                        empty_found = empty_found || tile == Tile.EMPTY;
-                    }
-                    for(var j = -1; j <= 1; j++)
-                    {
-                        var pos = vec3(x, y+j, z);
-                        if(model.valid_index(pos) == false)
-                            continue;
-                        var tile = model.get_tile(pos);
-                        empty_found = empty_found || tile == Tile.EMPTY;
-                    }
-                    for(var k = -1; k <= 1; k++)
-                    {
-                        var pos = vec3(x, y, z+k);
-                        if(model.valid_index(pos) == false)
-                            continue;
-                        var tile = model.get_tile(pos);
-                        empty_found = empty_found || tile == Tile.EMPTY;
-                    }
-
-                    if(empty_found == false)
+                    if(this.render_block(x, y, z) == false)
                         continue;
-
-                    var tile_color = this.tile_to_color(tile);
-
-                    //var pos = this.index_to_position(x, y);
-
-                    var vertices = [
-                        // Front face
-                        [-0.5, -0.5,  0.5],
-                        [ 0.5, -0.5,  0.5],
-                        [ 0.5,  0.5,  0.5],
-                        [-0.5,  0.5,  0.5],
-
-                        // Back face
-                        [-0.5, -0.5, -0.5],
-                        [-0.5,  0.5, -0.5],
-                        [ 0.5,  0.5, -0.5],
-                        [ 0.5, -0.5, -0.5],
-
-                        // Top face
-                        [-0.5,  0.5, -0.5],
-                        [-0.5,  0.5,  0.5],
-                        [ 0.5,  0.5,  0.5],
-                        [ 0.5,  0.5, -0.5],
-
-                        // Bottom face
-                        [-0.5, -0.5, -0.5],
-                        [ 0.5, -0.5, -0.5],
-                        [ 0.5, -0.5,  0.5],
-                        [-0.5, -0.5,  0.5],
-
-                        // Right face
-                        [ 0.5, -0.5, -0.5],
-                        [ 0.5,  0.5, -0.5],
-                        [ 0.5,  0.5,  0.5],
-                        [ 0.5, -0.5,  0.5],
-
-                        // Left face
-                        [-0.5, -0.5, -0.5],
-                        [-0.5, -0.5,  0.5],
-                        [-0.5,  0.5,  0.5],
-                        [-0.5,  0.5, -0.5]
-                    ];
 
                     // Get the start offset into world_colors
                     //var offset = this.idx_to_offset(vec3(x,y,z));
@@ -331,56 +391,11 @@ export class View
                     //console.log(offset);
 
                     this.vec_to_offset[vec3(x,y,z)] = offset;
+                    this.gen_indicies(world_indicies, offset);
 
-                    var cubeVertexIndices = [
-                        0,  1,  2,      0,  2,  3,    // front
-                        4,  5,  6,      4,  6,  7,    // back
-                        8,  9,  10,     8,  10, 11,   // top
-                        12, 13, 14,     12, 14, 15,   // bottom
-                        16, 17, 18,     16, 18, 19,   // right
-                        20, 21, 22,     20, 22, 23    // left
-                    ]
-
-                    var colors = [
-                        [0.0,  1.0,  1.0,  1.0],    // Front face: cyan
-                        [0.0,  1.0,  1.0,  1.0],    // Front face: cyan
-                        [0.0,  1.0,  1.0,  1.0],    // Front face: cyan
-                        [0.0,  1.0,  1.0,  1.0],    // Front face: cyan
-                        [1.0,  0.0,  0.0,  1.0],    // Back face: red
-                        [1.0,  0.0,  0.0,  1.0],    // Back face: red
-                        [1.0,  0.0,  0.0,  1.0],    // Back face: red
-                        [1.0,  0.0,  0.0,  1.0],    // Back face: red
-                        [0.0,  1.0,  0.0,  1.0],    // Top face: green
-                        [0.0,  1.0,  0.0,  1.0],    // Top face: green
-                        [0.0,  1.0,  0.0,  1.0],    // Top face: green
-                        [0.0,  1.0,  0.0,  1.0],    // Top face: green
-                        [0.0,  0.0,  1.0,  1.0],    // Bottom face: blue
-                        [0.0,  0.0,  1.0,  1.0],    // Bottom face: blue
-                        [0.0,  0.0,  1.0,  1.0],    // Bottom face: blue
-                        [0.0,  0.0,  1.0,  1.0],    // Bottom face: blue
-                        [1.0,  1.0,  0.0,  1.0],    // Right face: yellow
-                        [1.0,  1.0,  0.0,  1.0],    // Right face: yellow
-                        [1.0,  1.0,  0.0,  1.0],    // Right face: yellow
-                        [1.0,  1.0,  0.0,  1.0],    // Right face: yellow
-                        [1.0,  0.0,  1.0,  1.0],    // Left face: purple
-                        [1.0,  0.0,  1.0,  1.0],    // Left face: purple
-                        [1.0,  0.0,  1.0,  1.0],    // Left face: purple
-                        [1.0,  0.0,  1.0,  1.0]     // Left face: purple
-                    ];
-
-                    for(var i = 0; i < this.indicies_per_block; i++)
-                    {
-
-                        world_indicies.push(cubeVertexIndices[i] + offset);
-                    }
-
-                    for(var i = 0; i < this.verts_per_block; i++)
-                    {
-                        world_points.push(vec3(vertices[i]));
-                        world_colors.push(tile_color);
-                        //world_colors.push(colors[i]);
-                        world_translate.push(vec3(x, y, z));
-                    }
+                    var tile = model.get_tile(vec3(x, y, z));
+                    var tile_color = this.tile_to_color(tile);
+                    this.gen_buffers(world_points, world_colors, world_translate, tile_color, vec3(x,y,z));
                 }
             }
         }
@@ -602,13 +617,14 @@ export class View
             var offset = this.vec_to_offset[pos];
             if(offset == undefined)
             {
-                // Add a block
             }
             else
             {
                 // Redraw the color of a block
                 this.rebufferColor(offset, offset+this.verts_per_block, tile_color);
+
             }
+            //this.initialize_block_world();
             //console.log(offset);
 
         }.bind(this));
