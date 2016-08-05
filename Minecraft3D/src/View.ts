@@ -6,6 +6,7 @@ declare var vec3: any;
 declare var vec4: any;
 
 declare var flatten: any;
+declare var add: any;
 
 declare var sizeof: any;
 
@@ -14,6 +15,81 @@ declare var initShaders: any;
 
 declare var perspective: any;
 declare var lookAt: any;
+
+
+var cubeVertexIndices = [
+    0,  1,  2,      0,  2,  3,    // front
+    4,  5,  6,      4,  6,  7,    // back
+    8,  9,  10,     8,  10, 11,   // top
+    12, 13, 14,     12, 14, 15,   // bottom
+    16, 17, 18,     16, 18, 19,   // right
+    20, 21, 22,     20, 22, 23    // left
+]
+
+var colors = [
+    [0.0,  1.0,  1.0,  1.0],    // Front face: cyan
+    [0.0,  1.0,  1.0,  1.0],    // Front face: cyan
+    [0.0,  1.0,  1.0,  1.0],    // Front face: cyan
+    [0.0,  1.0,  1.0,  1.0],    // Front face: cyan
+    [1.0,  0.0,  0.0,  1.0],    // Back face: red
+    [1.0,  0.0,  0.0,  1.0],    // Back face: red
+    [1.0,  0.0,  0.0,  1.0],    // Back face: red
+    [1.0,  0.0,  0.0,  1.0],    // Back face: red
+    [0.0,  1.0,  0.0,  1.0],    // Top face: green
+    [0.0,  1.0,  0.0,  1.0],    // Top face: green
+    [0.0,  1.0,  0.0,  1.0],    // Top face: green
+    [0.0,  1.0,  0.0,  1.0],    // Top face: green
+    [0.0,  0.0,  1.0,  1.0],    // Bottom face: blue
+    [0.0,  0.0,  1.0,  1.0],    // Bottom face: blue
+    [0.0,  0.0,  1.0,  1.0],    // Bottom face: blue
+    [0.0,  0.0,  1.0,  1.0],    // Bottom face: blue
+    [1.0,  1.0,  0.0,  1.0],    // Right face: yellow
+    [1.0,  1.0,  0.0,  1.0],    // Right face: yellow
+    [1.0,  1.0,  0.0,  1.0],    // Right face: yellow
+    [1.0,  1.0,  0.0,  1.0],    // Right face: yellow
+    [1.0,  0.0,  1.0,  1.0],    // Left face: purple
+    [1.0,  0.0,  1.0,  1.0],    // Left face: purple
+    [1.0,  0.0,  1.0,  1.0],    // Left face: purple
+    [1.0,  0.0,  1.0,  1.0]     // Left face: purple
+];
+
+var vertices = [
+    // Front face
+    [-0.5, -0.5,  0.5],
+    [ 0.5, -0.5,  0.5],
+    [ 0.5,  0.5,  0.5],
+    [-0.5,  0.5,  0.5],
+
+    // Back face
+    [-0.5, -0.5, -0.5],
+    [-0.5,  0.5, -0.5],
+    [ 0.5,  0.5, -0.5],
+    [ 0.5, -0.5, -0.5],
+
+    // Top face
+    [-0.5,  0.5, -0.5],
+    [-0.5,  0.5,  0.5],
+    [ 0.5,  0.5,  0.5],
+    [ 0.5,  0.5, -0.5],
+
+    // Bottom face
+    [-0.5, -0.5, -0.5],
+    [ 0.5, -0.5, -0.5],
+    [ 0.5, -0.5,  0.5],
+    [-0.5, -0.5,  0.5],
+
+    // Right face
+    [ 0.5, -0.5, -0.5],
+    [ 0.5,  0.5, -0.5],
+    [ 0.5,  0.5,  0.5],
+    [ 0.5, -0.5,  0.5],
+
+    // Left face
+    [-0.5, -0.5, -0.5],
+    [-0.5, -0.5,  0.5],
+    [-0.5,  0.5,  0.5],
+    [-0.5,  0.5, -0.5]
+];
 
 export class View
 {
@@ -64,10 +140,74 @@ export class View
 
     // Fix this
     private mouse_lines : number = 0;
+    private block_indicies : number = 0;
+    private vec_to_offset;
+
     private stickman_lines : number = 0;
     // Shockwave variables
     //private shockwave_duration : number = 1000;
     //private timerId;
+
+    private gen_indicies(arr, offset)
+    {
+        for(var i = 0; i < this.indicies_per_block; i++)
+        {
+            arr.push(cubeVertexIndices[i] + offset);
+        }
+    }
+
+    private gen_buffers(arr_p, arr_c, arr_t, tile_color, pos)
+    {
+        for(var i = 0; i < this.verts_per_block; i++)
+        {
+            arr_p.push(vec3(vertices[i]));
+            //arr_c.push(tile_color);
+            arr_c.push(colors[i]);
+            arr_t.push(pos);
+        }
+    }
+
+    private render_block(x, y, z)
+    {
+        var model = this.model;
+        var tile = model.get_tile(vec3(x, y, z));
+
+        // No tile, don't render
+        if(tile == Tile.EMPTY)
+            return false;
+
+        var empty_found = false;
+        // Check for adjacent Empty or water
+        for(var i = -1; i <= 1; i+=2)
+        {
+            var pos = vec3(x+i, y, z);
+            if(model.valid_index(pos) == false)
+                continue;
+            var tile = model.get_tile(pos);
+            empty_found = empty_found || tile == Tile.EMPTY;
+        }
+        for(var j = -1; j <= 1; j+=2)
+        {
+            var pos = vec3(x, y+j, z);
+            if(model.valid_index(pos) == false)
+                continue;
+            var tile = model.get_tile(pos);
+            empty_found = empty_found || tile == Tile.EMPTY;
+        }
+        for(var k = -1; k <= 1; k+=2)
+        {
+            var pos = vec3(x, y, z+k);
+            if(model.valid_index(pos) == false)
+                continue;
+            var tile = model.get_tile(pos);
+            empty_found = empty_found || tile == Tile.EMPTY;
+        }
+        // No empty blocks? - Noone will see this block then, so skip it
+        if(empty_found == false)
+            return false;
+
+        return true;
+    }
 
     private rebufferColor(start, end, color) : void
     {
@@ -255,112 +395,42 @@ export class View
         var world_translate = [];
         var world_indices = [];
 
+        this.vec_to_offset = {};
+
+        var x = 0;
+        var y = 0;
+        var z = 0;
+        var start = new Date().getTime();
         for (var x = 0; x < model.worldX; x++)
         {
             for (var y = 0; y < model.worldY; y++)
             {
                 for (var z = 0; z < model.worldZ; z++)
                 {
-                    var tile = model.get_tile(vec3(x, y, z));
-                    var tile_color = this.tile_to_color(tile);
-
-                    //var pos = this.index_to_position(x, y);
-
-                    var vertices = [
-                        // Front face
-                        [-0.5, -0.5,  0.5],
-                        [ 0.5, -0.5,  0.5],
-                        [ 0.5,  0.5,  0.5],
-                        [-0.5,  0.5,  0.5],
-
-                        // Back face
-                        [-0.5, -0.5, -0.5],
-                        [-0.5,  0.5, -0.5],
-                        [ 0.5,  0.5, -0.5],
-                        [ 0.5, -0.5, -0.5],
-
-                        // Top face
-                        [-0.5,  0.5, -0.5],
-                        [-0.5,  0.5,  0.5],
-                        [ 0.5,  0.5,  0.5],
-                        [ 0.5,  0.5, -0.5],
-
-                        // Bottom face
-                        [-0.5, -0.5, -0.5],
-                        [ 0.5, -0.5, -0.5],
-                        [ 0.5, -0.5,  0.5],
-                        [-0.5, -0.5,  0.5],
-
-                        // Right face
-                        [ 0.5, -0.5, -0.5],
-                        [ 0.5,  0.5, -0.5],
-                        [ 0.5,  0.5,  0.5],
-                        [ 0.5, -0.5,  0.5],
-
-                        // Left face
-                        [-0.5, -0.5, -0.5],
-                        [-0.5, -0.5,  0.5],
-                        [-0.5,  0.5,  0.5],
-                        [-0.5,  0.5, -0.5]
-                    ];
+                    if(this.render_block(x, y, z) == false)
+                        continue;
 
                     // Get the start offset into world_colors
-                    var offset = this.idx_to_offset(vec3(x,y,z));
+                    //var offset = this.idx_to_offset(vec3(x,y,z));
+                    var offset = world_points.length;
                     //console.log(offset);
 
-                    var cubeVertexIndices = [
-                        0,  1,  2,      0,  2,  3,    // front
-                        4,  5,  6,      4,  6,  7,    // back
-                        8,  9,  10,     8,  10, 11,   // top
-                        12, 13, 14,     12, 14, 15,   // bottom
-                        16, 17, 18,     16, 18, 19,   // right
-                        20, 21, 22,     20, 22, 23    // left
-                    ]
+                    this.vec_to_offset[vec3(x,y,z)] = offset;
+                    this.gen_indicies(world_indicies, offset);
 
-                    var colors = [
-                        [0.0,  1.0,  1.0,  1.0],    // Front face: cyan
-                        [0.0,  1.0,  1.0,  1.0],    // Front face: cyan
-                        [0.0,  1.0,  1.0,  1.0],    // Front face: cyan
-                        [0.0,  1.0,  1.0,  1.0],    // Front face: cyan
-                        [1.0,  0.0,  0.0,  1.0],    // Back face: red
-                        [1.0,  0.0,  0.0,  1.0],    // Back face: red
-                        [1.0,  0.0,  0.0,  1.0],    // Back face: red
-                        [1.0,  0.0,  0.0,  1.0],    // Back face: red
-                        [0.0,  1.0,  0.0,  1.0],    // Top face: green
-                        [0.0,  1.0,  0.0,  1.0],    // Top face: green
-                        [0.0,  1.0,  0.0,  1.0],    // Top face: green
-                        [0.0,  1.0,  0.0,  1.0],    // Top face: green
-                        [0.0,  0.0,  1.0,  1.0],    // Bottom face: blue
-                        [0.0,  0.0,  1.0,  1.0],    // Bottom face: blue
-                        [0.0,  0.0,  1.0,  1.0],    // Bottom face: blue
-                        [0.0,  0.0,  1.0,  1.0],    // Bottom face: blue
-                        [1.0,  1.0,  0.0,  1.0],    // Right face: yellow
-                        [1.0,  1.0,  0.0,  1.0],    // Right face: yellow
-                        [1.0,  1.0,  0.0,  1.0],    // Right face: yellow
-                        [1.0,  1.0,  0.0,  1.0],    // Right face: yellow
-                        [1.0,  0.0,  1.0,  1.0],    // Left face: purple
-                        [1.0,  0.0,  1.0,  1.0],    // Left face: purple
-                        [1.0,  0.0,  1.0,  1.0],    // Left face: purple
-                        [1.0,  0.0,  1.0,  1.0]     // Left face: purple
-                    ];
-
-                    for(var i = 0; i < this.indicies_per_block; i++)
-                    {
-                        world_indices.push(cubeVertexIndices[i] + offset);
-                    }
-
-                    for(var i = 0; i < this.verts_per_block; i++)
-                    {
-                        world_points.push(vec3(vertices[i]));
-                        world_colors.push(tile_color);
-                        //world_colors.push(colors[i]);
-                        world_translate.push(vec3(x, y, z));
-                    }
+                    var tile = model.get_tile(vec3(x, y, z));
+                    var tile_color = this.tile_to_color(tile);
+                    this.gen_buffers(world_points, world_colors, world_translate, tile_color, vec3(x,y,z));
                 }
             }
         }
-        console.log(world_indices.length);
+        var forLoopTs = new Date().getTime() - start;
+        console.log("For loop done. It took", forLoopTs, "ms.");
 
+        console.log("Number of rendered vertices:", world_indicies.length);
+        this.block_indicies = world_indicies.length;
+
+        var tsStart = new Date().getTime();
         // Buffer Color
         gl.bindBuffer(gl.ARRAY_BUFFER, this.worldTranslateBuffer);
         gl.bufferData(gl.ARRAY_BUFFER, flatten(world_translate), gl.STATIC_DRAW);
@@ -372,6 +442,9 @@ export class View
         gl.bufferData(gl.ARRAY_BUFFER, flatten(world_points), gl.STATIC_DRAW);
         // Buffer Indicies
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.worldIndexBuffer);
+        gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint32Array(world_indicies), gl.STATIC_DRAW);
+        var tsDone = new Date().getTime() - tsStart;
+        console.log('Transfer finished in', tsDone, 'ms.');
         gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint32Array(world_indices), gl.STATIC_DRAW);
     }
 
@@ -521,7 +594,7 @@ export class View
         var ext = gl.getExtension("OES_element_index_uint");
 
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.worldIndexBuffer);
-        gl.drawElements(gl.TRIANGLES, this.indicies_per_block * this.model.worldSize, gl.UNSIGNED_INT, 0);
+        gl.drawElements(gl.TRIANGLES, this.block_indicies, gl.UNSIGNED_INT, 0);
 
         (<any>window).requestAnimFrame(this.render.bind(this), this.canvas);
     }
@@ -681,14 +754,24 @@ export class View
 
         this.model.on("update_tile", function(pos, tile)
         {
-            console.log("update tile!");
+            //console.log("update tile!");
             var tile_color = this.tile_to_color(tile);
 
             // Get the start offset into world_colors
-            var offset = this.idx_to_offset(pos);
-            console.log(offset);
+            //var offset = this.idx_to_offset(pos);
+            var offset = this.vec_to_offset[pos];
+            if(offset == undefined)
+            {
+            }
+            else
+            {
+                // Redraw the color of a block
+                this.rebufferColor(offset, offset+this.verts_per_block, tile_color);
 
-            this.rebufferColor(offset, offset+this.verts_per_block, tile_color);
+            }
+            //this.initialize_block_world();
+            //console.log(offset);
+
         }.bind(this));
 
         var height = 1;
@@ -727,12 +810,29 @@ export class View
 
         this.model.on("stickman_move", function(pos)
         {
-            this.model.update_tile(vec3(Math.round(pos[0]), Math.round(pos[1])-1, Math.round(pos[2])), Tile.STONE);
+            //this.model.update_tile(vec3(Math.round(pos[0]), Math.round(pos[1])-1, Math.round(pos[2])), Tile.STONE);
+        }.bind(this));
+
+        this.model.on("mouse_move", function(mouse_pos)
+        {
+            var stick_pos = model.get_stickman_position().map(Math.round);
+            var block_pos = add(stick_pos, mouse_pos).map(Math.round);
+            if(stick_pos == block_pos)
+            {
+                this.mouse_lines = 0;
+            }
+            else
+            {
+                //console.log(block_pos);
+                var placeable = this.model.can_build(block_pos);
+                this.initialize_mouse(block_pos, placeable);
+            }
+
         }.bind(this));
 
         update_camera();
 
-        this.initialize_mouse(vec3(0,5,0), true);
+        this.initialize_mouse(vec3(0,5,0), false);
         // Setup stickman
         this.initialize_stick_man(model.get_stickman_position());
 

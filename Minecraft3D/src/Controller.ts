@@ -472,11 +472,11 @@ export class Controller
         //window.addEventListener("keydown", this.stickman_move.bind(this));
 
         var canvas : any = document.getElementById("gl-canvas");
-/*
+
         var place_block = function(event)
         {
             var model = this.model;
-
+/*
             function shockwave()
             {
                 model.update_shockwave(vec3(x, y,z));
@@ -486,25 +486,32 @@ export class Controller
             var blockX = Math.floor(x);
             var blockY = Math.floor(y);
             var blockZ = Math.floor(z);
+*/
+            var stick_pos = model.get_stickman_position().map(Math.round);
+            var mouse_pos = model.get_mouse_position();
+            var block_pos = add(stick_pos, mouse_pos).map(Math.round);
 
             // Check if block is free
-            var placeable = model.can_build(blockX, blockY);
+            var placeable = model.can_build(block_pos);
             if(placeable && event.shiftKey == false)
             {
+                /*
                 var block_picker : any = document.getElementById('block_picker');
                 var block_string = block_picker.options[block_picker.selectedIndex].value;
                 var block_id = TileUtil.fromString(block_string);
+                */
+                var tile_id = Tile.STONE;
 
-                model.update_tile(blockX, blockY, block_id);
-                shockwave();
+                model.update_tile(block_pos, tile_id);
+                //shockwave();
             }
-            else if(model.get_tile(blockX, blockY) != Tile.EMPTY && event.shiftKey == true)
+            else if(model.get_tile(block_pos) != Tile.EMPTY && event.shiftKey == true)
             {
-                model.update_tile(blockX, blockY, Tile.EMPTY);
-                shockwave();
+                model.update_tile(block_pos, Tile.EMPTY);
+                //shockwave();
             }
         }.bind(this);
-*/
+
         // Setup Printer Lock
         canvas.requestPointerLock = canvas.requestPointerLock;
         document.exitPointerLock = document.exitPointerLock;
@@ -528,14 +535,14 @@ export class Controller
                 console.log('The pointer lock status is now locked');
                 $(canvas).off("click", capture_mouse);
                 $(document).on("mousemove", handler);
-                //$(canvas).on("click", place_block);
+                $(canvas).on("click", place_block);
             }
             else
             {
                 console.log('The pointer lock status is now unlocked');
                 $(canvas).on("click", capture_mouse);
                 $(document).off("mousemove", handler);
-                //$(canvas).off("click", place_block);
+                $(canvas).off("click", place_block);
             }
         }
 
