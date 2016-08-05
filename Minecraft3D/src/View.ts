@@ -62,6 +62,8 @@ export class View
 
     // Fix this
     private mouse_lines : number = 0;
+    private block_indicies : number = 0;
+    private vec_to_offset;
 
     // Shockwave variables
     //private shockwave_duration : number = 1000;
@@ -233,6 +235,8 @@ export class View
         var world_translate = [];
         var world_indicies = [];
 
+        this.vec_to_offset = {};
+
         var x = 0;
         var y = 0;
         var z = 0;
@@ -240,9 +244,45 @@ export class View
         {
             for (var y = 0; y < model.worldY; y++)
             {
+                next_block:
                 for (var z = 0; z < model.worldZ; z++)
                 {
                     var tile = model.get_tile(vec3(x, y, z));
+
+                    // No tile, don't render
+                    if(tile == Tile.EMPTY)
+                        continue next_block;
+
+                    var empty_found = false;
+                    // Check for adjacent Empty or water
+                    for(var i = -1; i <= 1; i++)
+                    {
+                        var pos = vec3(x+i, y, z);
+                        if(model.valid_index(pos) == false)
+                            continue;
+                        var tile = model.get_tile(pos);
+                        empty_found = empty_found || tile == Tile.EMPTY;
+                    }
+                    for(var j = -1; j <= 1; j++)
+                    {
+                        var pos = vec3(x, y+j, z);
+                        if(model.valid_index(pos) == false)
+                            continue;
+                        var tile = model.get_tile(pos);
+                        empty_found = empty_found || tile == Tile.EMPTY;
+                    }
+                    for(var k = -1; k <= 1; k++)
+                    {
+                        var pos = vec3(x, y, z+k);
+                        if(model.valid_index(pos) == false)
+                            continue;
+                        var tile = model.get_tile(pos);
+                        empty_found = empty_found || tile == Tile.EMPTY;
+                    }
+
+                    if(empty_found == false)
+                        continue;
+
                     var tile_color = this.tile_to_color(tile);
 
                     //var pos = this.index_to_position(x, y);
@@ -286,8 +326,11 @@ export class View
                     ];
 
                     // Get the start offset into world_colors
-                    var offset = this.idx_to_offset(vec3(x,y,z));
+                    //var offset = this.idx_to_offset(vec3(x,y,z));
+                    var offset = world_points.length;
                     //console.log(offset);
+
+                    this.vec_to_offset[vec3(x,y,z)] = offset;
 
                     var cubeVertexIndices = [
                         0,  1,  2,      0,  2,  3,    // front
@@ -327,6 +370,7 @@ export class View
 
                     for(var i = 0; i < this.indicies_per_block; i++)
                     {
+
                         world_indicies.push(cubeVertexIndices[i] + offset);
                     }
 
@@ -341,6 +385,7 @@ export class View
             }
         }
         console.log(world_indicies.length);
+        this.block_indicies = world_indicies.length;
 
         // Buffer Color
         gl.bindBuffer(gl.ARRAY_BUFFER, this.worldTranslateBuffer);
@@ -388,7 +433,7 @@ export class View
         var ext = gl.getExtension("OES_element_index_uint");
 
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.worldIndexBuffer);
-        gl.drawElements(gl.TRIANGLES, this.indicies_per_block * this.model.worldSize, gl.UNSIGNED_INT, 0);
+        gl.drawElements(gl.TRIANGLES, this.block_indicies, gl.UNSIGNED_INT, 0);
 
         (<any>window).requestAnimFrame(this.render.bind(this), this.canvas);
     }
@@ -553,10 +598,19 @@ export class View
             var tile_color = this.tile_to_color(tile);
 
             // Get the start offset into world_colors
-            var offset = this.idx_to_offset(pos);
+            //var offset = this.idx_to_offset(pos);
+            var offset = this.vec_to_offset[pos];
+            if(offset == undefined)
+            {
+                // Add a block
+            }
+            else
+            {
+                // Redraw the color of a block
+                this.rebufferColor(offset, offset+this.verts_per_block, tile_color);
+            }
             //console.log(offset);
 
-            this.rebufferColor(offset, offset+this.verts_per_block, tile_color);
         }.bind(this));
 
         var height = 1;
