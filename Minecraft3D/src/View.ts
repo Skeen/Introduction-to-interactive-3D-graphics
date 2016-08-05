@@ -549,12 +549,12 @@ export class View
 
         this.model.on("update_tile", function(pos, tile)
         {
-            console.log("update tile!");
+            //console.log("update tile!");
             var tile_color = this.tile_to_color(tile);
 
             // Get the start offset into world_colors
             var offset = this.idx_to_offset(pos);
-            console.log(offset);
+            //console.log(offset);
 
             this.rebufferColor(offset, offset+this.verts_per_block, tile_color);
         }.bind(this));
@@ -598,9 +598,20 @@ export class View
             this.model.update_tile(vec3(Math.round(pos[0]), Math.round(pos[1])-1, Math.round(pos[2])), Tile.STONE);
         }.bind(this));
 
+        this.model.on("mouse_move", function(mouse_pos)
+        {
+            var stick_pos = model.get_stickman_position().map(Math.round);
+            var block_pos = add(stick_pos, mouse_pos).map(Math.round);
+
+            //console.log(block_pos);
+            var placeable = this.model.can_build(block_pos);
+            this.initialize_mouse(block_pos, placeable);
+
+        }.bind(this));
+
         update_camera();
 
-        this.initialize_mouse(vec3(0,5,0), true);
+        this.initialize_mouse(vec3(0,5,0), false);
 
 /*
         this.model.on("shockwave", function(pos)
