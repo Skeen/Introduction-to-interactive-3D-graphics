@@ -595,17 +595,23 @@ export class View
 
         this.model.on("stickman_move", function(pos)
         {
-            this.model.update_tile(vec3(Math.round(pos[0]), Math.round(pos[1])-1, Math.round(pos[2])), Tile.STONE);
+            //this.model.update_tile(vec3(Math.round(pos[0]), Math.round(pos[1])-1, Math.round(pos[2])), Tile.STONE);
         }.bind(this));
 
         this.model.on("mouse_move", function(mouse_pos)
         {
             var stick_pos = model.get_stickman_position().map(Math.round);
             var block_pos = add(stick_pos, mouse_pos).map(Math.round);
-
-            //console.log(block_pos);
-            var placeable = this.model.can_build(block_pos);
-            this.initialize_mouse(block_pos, placeable);
+            if(stick_pos == block_pos)
+            {
+                this.mouse_lines = 0;
+            }
+            else
+            {
+                //console.log(block_pos);
+                var placeable = this.model.can_build(block_pos);
+                this.initialize_mouse(block_pos, placeable);
+            }
 
         }.bind(this));
 
