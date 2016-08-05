@@ -48,9 +48,9 @@ export class View
     //private stickVBuffer : WebGLBuffer;
     //private stickCBuffer : WebGLBuffer;
     // Mouse
-    //private mouseVBuffer : WebGLBuffer;
-    //private mouseCBuffer : WebGLBuffer;
-    //private mouseTranslateBuffer : WebGLBuffer;
+    private mouseVBuffer : WebGLBuffer;
+    private mouseCBuffer : WebGLBuffer;
+    private mouseTranslateBuffer : WebGLBuffer;
 
     // Game related stuff.
     // world variables
@@ -61,7 +61,7 @@ export class View
     //private stick_man_num_points : number;
 
     // Fix this
-    //private mouse_lines : number = 0;
+    private mouse_lines : number = 0;
 
     // Shockwave variables
     //private shockwave_duration : number = 1000;
@@ -159,7 +159,7 @@ export class View
         this.worldIndexBuffer = gl.createBuffer();
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.worldIndexBuffer);
         gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, Uint32Array.BYTES_PER_ELEMENT * model.worldSize * this.indicies_per_block, gl.STATIC_DRAW);
- /*
+ 
         // Mouse Vertex buffer
         this.mouseVBuffer = gl.createBuffer();
         gl.bindBuffer(gl.ARRAY_BUFFER, this.mouseVBuffer);
@@ -178,7 +178,7 @@ export class View
         gl.bufferData(gl.ARRAY_BUFFER, sizeof['vec2'] * 5 * 4, gl.STATIC_DRAW);
         gl.vertexAttribPointer(this.vTranslate, 2, gl.FLOAT, false, 0, 0);
         gl.enableVertexAttribArray(this.vTranslate);
-
+/*
         // Set the uniform scale variable
         gl.uniform1f(this.vScalePos, this.render_scale);
 
@@ -411,6 +411,18 @@ export class View
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
         // Draw the world
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.mouseCBuffer);
+        gl.vertexAttribPointer(this.vColor, 4, gl.FLOAT, false, 0, 0);
+
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.mouseVBuffer);
+        gl.vertexAttribPointer(this.vPosition, 3, gl.FLOAT, false, 0, 0);
+
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.mouseTranslateBuffer);
+        gl.vertexAttribPointer(this.vTranslate, 3, gl.FLOAT, false, 0, 0);
+
+        gl.drawArrays(gl.LINES, 0, this.mouse_lines);
+
+        // Draw the world
         gl.bindBuffer(gl.ARRAY_BUFFER, this.worldCBuffer);
         gl.vertexAttribPointer(this.vColor, 4, gl.FLOAT, false, 0, 0);
 
@@ -500,27 +512,47 @@ export class View
         gl.useProgram(this.program);
         gl.uniform3fv(this.vStickPos, flatten(model.get_stickman_position()));
     }
-
+*/
     private initialize_mouse(pos, placeable : boolean) : void
     {
         var gl = this.gl;
 
         var mouse_points = [];
         // Left edge
-        mouse_points.push(vec3(- 0.5, - 0.5 ,0.5));
-        mouse_points.push(vec3( - 0.5, 0.5, 0.5));
+        mouse_points.push(vec3(- 0.5, - 0.5, - 0.5));
+        mouse_points.push(vec3(- 0.5, + 0.5, - 0.5));
         // Right edge
-        mouse_points.push(vec3(0.5, + 0.5,0));
-        mouse_points.push(vec3(0.5, - 0.5, 0));
+        mouse_points.push(vec3(+ 0.5, + 0.5, - 0.5));
+        mouse_points.push(vec3(+ 0.5, - 0.5, - 0.5));
         // Top edge
-        mouse_points.push(vec3( - 0.5, + 0.5, 0));
-        mouse_points.push(vec3(0.5, 0.5, 0));
+        mouse_points.push(vec3(- 0.5, + 0.5, - 0.5));
+        mouse_points.push(vec3(+ 0.5, + 0.5, - 0.5));
         // Bot edge
-        mouse_points.push(vec3(0 - 0.5, 0 - 0.5, 0));
-        mouse_points.push(vec3(0.5, 0 - 0.5, 0));
-        // Diagonal edge
-        mouse_points.push(vec3(0 - 0.5, 0 - 0.5, 0));
-        mouse_points.push(vec3(0.5, 0.5, 0));
+        mouse_points.push(vec3(- 0.5, - 0.5, - 0.5));
+        mouse_points.push(vec3(+ 0.5, - 0.5, - 0.5));
+
+        // Left edge
+        mouse_points.push(vec3(- 0.5, - 0.5, + 0.5));
+        mouse_points.push(vec3(- 0.5, + 0.5, + 0.5));
+        // Right edge
+        mouse_points.push(vec3(+ 0.5, + 0.5, + 0.5));
+        mouse_points.push(vec3(+ 0.5, - 0.5, + 0.5));
+        // Top edge
+        mouse_points.push(vec3(- 0.5, + 0.5, + 0.5));
+        mouse_points.push(vec3(+ 0.5, + 0.5, + 0.5));
+        // Bot edge
+        mouse_points.push(vec3(- 0.5, - 0.5, + 0.5));
+        mouse_points.push(vec3(+ 0.5, - 0.5, + 0.5));
+
+        // Edges
+        mouse_points.push(vec3(- 0.5, - 0.5, - 0.5));
+        mouse_points.push(vec3(- 0.5, - 0.5, + 0.5));
+        mouse_points.push(vec3(+ 0.5, - 0.5, - 0.5));
+        mouse_points.push(vec3(+ 0.5, - 0.5, + 0.5));
+        mouse_points.push(vec3(+ 0.5, + 0.5, - 0.5));
+        mouse_points.push(vec3(+ 0.5, + 0.5, + 0.5));
+        mouse_points.push(vec3(- 0.5, + 0.5, - 0.5));
+        mouse_points.push(vec3(- 0.5, + 0.5, + 0.5));
 
         var color = (placeable ? vec4(0., 0., 0., 1.) : vec4(1., 0., 0., 1.));
 
@@ -529,7 +561,7 @@ export class View
         for(var i = 0; i < mouse_points.length; i++)
         {
             mouse_colors.push(color);
-            mouse_translate.push(vec2(pos[0], pos[1],pos[2]));
+            mouse_translate.push(pos);
         }
 
         gl.bindBuffer(gl.ARRAY_BUFFER, this.mouseCBuffer);
@@ -543,7 +575,7 @@ export class View
 
         this.mouse_lines = mouse_points.length;
     }
-*/
+
     constructor(model : Model)
     {
         this.model = model;
@@ -614,6 +646,8 @@ export class View
         }.bind(this));
 
         update_camera();
+
+        this.initialize_mouse(vec3(0,5,0), true);
 
 /*
         this.model.on("shockwave", function(pos)
