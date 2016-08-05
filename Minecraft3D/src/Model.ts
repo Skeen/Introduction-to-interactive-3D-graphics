@@ -7,15 +7,22 @@ declare var vec3: any;
 import { Tile } from "./Tile"
 import {TerrainGenerator, DiamondTerrainGenerator} from "./TerrainGenerator";
 
+// Math.log2 = Math.log2 || function(x){return Math.log(x)*Math.LOG2E;};
+
 export class Model extends events.EventEmitter
 {
-    public worldX : number = 129;
-    public worldY : number = 25;
-    public worldZ : number = 129;
+    public worldPower : number = 5;
+
+    public worldXZ : number = Math.pow(2, this.worldPower) + 1;
+    public worldX : number = this.worldXZ;
+    public worldY : number = 20;
+    public worldZ : number = this.worldXZ;
 
     public worldSize : number = this.worldX * this.worldY * this.worldZ;
 
-    public worldGenerator: TerrainGenerator = new DiamondTerrainGenerator(7);
+    public worldRoughness : number = 0.857;
+
+    public worldGenerator : TerrainGenerator = new DiamondTerrainGenerator(this.worldPower);
 
     private worldGrid : any[] = [];
 
@@ -135,6 +142,22 @@ export class Model extends events.EventEmitter
 
     private setup_world() : void
     {
+        function isPowerOfTwo(x : number) : boolean
+        {
+            return (x & (x - 1)) == 0;
+        }
+
+        if(this.worldX != this.worldZ)
+            alert("World needs to be square!");
+        if(isPowerOfTwo(this.worldX - 1) == false)
+            alert("worldX is not a power of 2 + 1!")
+        if(isPowerOfTwo(this.worldZ - 1) == false)
+            alert("worldY is not a power of 2 + 1!")
+
+        console.log("World is size:", this.worldPower,"(", this.worldX, "x", this.worldY, "x", this.worldZ, "blocks)");
+        console.log("World contains:", this.worldSize, "blocks");
+        console.log("World roughness is:", this.worldRoughness);
+
         this.worldGrid = [];
         // Generate empty world.
         for (var x = 0; x < this.worldX; x++)
@@ -150,7 +173,7 @@ export class Model extends events.EventEmitter
             }
         }
 
-        var heightmap = this.worldGenerator.generate(.857);
+        var heightmap = this.worldGenerator.generate(this.worldRoughness);
         for (var x = 0; x < this.worldX; x++)
         {
             for(var z = 0; z < this.worldZ; z++)

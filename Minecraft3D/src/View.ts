@@ -215,7 +215,6 @@ export class View
         var model = this.model;
         var gl = this.gl;
 
-        console.log("New block");
 
         var points = [];
         var colors = [];
@@ -226,7 +225,7 @@ export class View
         this.vec_to_offset[pos] = offset;
         this.block_verts = offset;
 
-        console.log(offset);
+        console.log("New block at offset =", offset);
 
         this.gen_indicies(indicies, offset);
         var tile = model.get_tile(pos);
@@ -320,24 +319,11 @@ export class View
 
         gl.clearDepth(1.0);
         gl.enable(gl.DEPTH_TEST);
-        gl.depthFunc(gl.LEQUAL);            // Near things obscure far things
+        gl.depthFunc(gl.LEQUAL);            
 
         gl.enable(gl.CULL_FACE);
         gl.cullFace(gl.BACK);
-/*
-        gl.disable(gl.DEPTH_TEST);
-        gl.enable( gl.BLEND );
-        //gl.blendFunc(gl.DST_COLOR, gl.ZERO);
-        //gl.blendFunc(gl.ZERO, gl.DST_COLOR);
-        //gl.blendEquation( gl.FUNC_ADD );
-        //gl.blendFunc( gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA );
-        //gl.blendFunc( gl.DST_COLOR, gl.ONE_MINUS_SRC_ALPHA );
-        gl.blendFunc( gl.DST_COLOR, gl.SRC_ALPHA );
-        //gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
-        //gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
-        //gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
-*/
-        //this.program = initShaders(gl, "vertex-shader.glsl", "fragment-shader.glsl");
+
         this.boxShaderProgram = initShaders(gl, "block-vertex-shader.glsl", "block-fragment-shader.glsl");
         this.canvas = canvas;
         this.gl = gl;
@@ -355,9 +341,6 @@ export class View
         this.vPosition  = gl.getAttribLocation(this.boxShaderProgram, "vPosition");
         this.vColor     = gl.getAttribLocation(this.boxShaderProgram, "vColor");
         this.vTranslate = gl.getAttribLocation(this.boxShaderProgram, 'vTranslate');
-        //this.vScalePos  = gl.getUniformLocation(this.boxShaderProgram, "vScale");
-        //this.vClickPos  = gl.getUniformLocation(this.boxShaderProgram, "vClickPos");
-        //this.vTime      = gl.getUniformLocation(this.boxShaderProgram, "vTime");
         this.uPMatrix = gl.getUniformLocation(this.boxShaderProgram, "uPMatrix");
         this.uMVMatrix = gl.getUniformLocation(this.boxShaderProgram, "uMVMatrix");
 
@@ -367,22 +350,33 @@ export class View
         gl.bufferData(gl.ARRAY_BUFFER, sizeof['vec3'] * model.worldSize * this.verts_per_block, gl.STATIC_DRAW);
         gl.vertexAttribPointer(this.vPosition, 3, gl.FLOAT, false, 0, 0);
         gl.enableVertexAttribArray(this.vPosition);
+        var worldVBufferSize = Math.round(gl.getBufferParameter(gl.ARRAY_BUFFER, gl.BUFFER_SIZE) / 1000 / 1000);
         // World Color buffer
         this.worldCBuffer = gl.createBuffer();
         gl.bindBuffer(gl.ARRAY_BUFFER, this.worldCBuffer);
         gl.bufferData(gl.ARRAY_BUFFER, sizeof['vec4'] * model.worldSize * this.verts_per_block, gl.STATIC_DRAW);
         gl.vertexAttribPointer(this.vColor, 4, gl.FLOAT, false, 0, 0);
         gl.enableVertexAttribArray(this.vColor);
+        var worldCBufferSize = Math.round(gl.getBufferParameter(gl.ARRAY_BUFFER, gl.BUFFER_SIZE) / 1000 / 1000);
         // World Translate buffer
         this.worldTranslateBuffer = gl.createBuffer();
         gl.bindBuffer(gl.ARRAY_BUFFER, this.worldTranslateBuffer);
         gl.bufferData(gl.ARRAY_BUFFER, sizeof['vec3'] * model.worldSize * this.verts_per_block, gl.STATIC_DRAW);
         gl.vertexAttribPointer(this.vTranslate, 3, gl.FLOAT, false, 0, 0);
         gl.enableVertexAttribArray(this.vTranslate);
+        var worldTranslateBufferSize = Math.round(gl.getBufferParameter(gl.ARRAY_BUFFER, gl.BUFFER_SIZE) / 1000 / 1000);
         // World Index buffer
         this.worldIndexBuffer = gl.createBuffer();
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.worldIndexBuffer);
         gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, Uint32Array.BYTES_PER_ELEMENT * model.worldSize * this.indicies_per_block, gl.STATIC_DRAW);
+        var worldIndexBufferSize = Math.round(gl.getBufferParameter(gl.ELEMENT_ARRAY_BUFFER, gl.BUFFER_SIZE) / 1000 / 1000);
+
+        // Output memory usage information
+        console.log("Total World Vertex memory consumption:",       worldVBufferSize,           "MB");
+        console.log("Total World Color memory consumption:",        worldCBufferSize,           "MB");
+        console.log("Total World Translate memory consumption:",    worldTranslateBufferSize,   "MB");
+        console.log("Total World Indicies memory consumption:",     worldIndexBufferSize,       "MB");
+        console.log("Total World GPU memory consumption:",          (worldVBufferSize + worldCBufferSize + worldTranslateBufferSize + worldIndexBufferSize), "MB");
  
         // Mouse Vertex buffer
         this.mouseVBuffer = gl.createBuffer();
@@ -487,10 +481,11 @@ export class View
             }
         }
         var forLoopTs = new Date().getTime() - start;
-        console.log("For loop done. It took", forLoopTs, "ms.");
+        console.log("Buffer filling loop done. It took", forLoopTs, "ms.");
 
         console.log("Number of rendered vertices:", world_indicies.length);
         console.log("Number of stored vertices:", world_points.length);
+
         this.block_indicies = world_indicies.length;
         this.block_verts = world_points.length;
 
@@ -508,7 +503,7 @@ export class View
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.worldIndexBuffer);
         gl.bufferSubData(gl.ELEMENT_ARRAY_BUFFER, 0, new Uint32Array(world_indicies));
         var tsDone = new Date().getTime() - tsStart;
-        console.log('Transfer finished in', tsDone, 'ms.');
+        console.log('Buffer transfer finished in', tsDone, 'ms.');
     }
 
     private render() : void
