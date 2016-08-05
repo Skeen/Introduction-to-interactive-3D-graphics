@@ -14,7 +14,8 @@ module.exports = {
             baseDir: output
         },
         // Enable to syncronize browser input
-        ghostMode: false
+        ghostMode: false,
+        browser: "google chrome"
     },
     browserify: {
         debug: true

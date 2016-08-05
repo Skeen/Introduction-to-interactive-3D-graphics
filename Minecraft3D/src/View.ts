@@ -6,6 +6,7 @@ declare var vec3: any;
 declare var vec4: any;
 
 declare var flatten: any;
+declare var add: any;
 
 declare var sizeof: any;
 
@@ -376,6 +377,7 @@ export class View
         var x = 0;
         var y = 0;
         var z = 0;
+        var start = new Date().getTime();
         for (var x = 0; x < model.worldX; x++)
         {
             for (var y = 0; y < model.worldY; y++)
@@ -399,9 +401,13 @@ export class View
                 }
             }
         }
-        console.log(world_indicies.length);
+        var forLoopTs = new Date().getTime() - start;
+        console.log("For loop done. It took", forLoopTs, "ms.");
+
+        console.log("Number of rendered vertices:", world_indicies.length);
         this.block_indicies = world_indicies.length;
 
+        var tsStart = new Date().getTime();
         // Buffer Color
         gl.bindBuffer(gl.ARRAY_BUFFER, this.worldTranslateBuffer);
         gl.bufferData(gl.ARRAY_BUFFER, flatten(world_translate), gl.STATIC_DRAW);
@@ -414,6 +420,8 @@ export class View
         // Buffer Indicies
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.worldIndexBuffer);
         gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint32Array(world_indicies), gl.STATIC_DRAW);
+        var tsDone = new Date().getTime() - tsStart;
+        console.log('Transfer finished in', tsDone, 'ms.');
     }
 
     private render() : void

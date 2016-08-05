@@ -9,10 +9,15 @@ import { Tile, TileUtil } from "./Tile"
 
 $(function() 
 {
+    var start = new Date().getTime();
     var model = new Model();
+    var modelTs = new Date().getTime() - start;
+    console.log("Done generating model. It took", modelTs, "ms.");
     var view = new View(model);
+    var viewTs = new Date().getTime() - start;
+    console.log("Done generating view. It took", viewTs, "ms.");
     var controller = new Controller(model);
 
-    console.log("LOADED: Running!");
+    console.log("Load complete! Ready to rock!");
     view.run();
 });
