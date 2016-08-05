@@ -5,14 +5,17 @@ declare var vec2: any;
 declare var vec3: any;
 
 import { Tile } from "./Tile"
+import {TerrainGenerator, DiamondTerrainGenerator} from "./TerrainGenerator";
 
 export class Model extends events.EventEmitter
 {
-    public worldX : number = 500;
-    public worldY : number = 5;
-    public worldZ : number = 500;
+    public worldX : number = 129;
+    public worldY : number = 25;
+    public worldZ : number = 129;
 
     public worldSize : number = this.worldX * this.worldY * this.worldZ;
+
+    public worldGenerator: TerrainGenerator = new DiamondTerrainGenerator(7);
 
     private worldGrid : any[] = [];
 
@@ -132,12 +135,12 @@ export class Model extends events.EventEmitter
 
     private setup_world() : void
     {
-        //this.worldGrid = [];
+        this.worldGrid = [];
         // Generate empty world.
-        for (var x = 0; x < this.worldX; x++) 
+        for (var x = 0; x < this.worldX; x++)
         {
             this.worldGrid[x] = [];
-            for (var y = 0; y < this.worldY; y++) 
+            for (var y = 0; y < this.worldY; y++)
             {
                 this.worldGrid[x][y] = [];
                 for(var z = 0; z < this.worldZ; z++)
@@ -147,51 +150,75 @@ export class Model extends events.EventEmitter
             }
         }
 
-        // ------------ //
-        // Update tiles //
-        // ------------ //
-        // Create ground
-        for (var x = 0; x < this.worldX; x++) 
+        var heightmap = this.worldGenerator.generate(.857);
+
+
+        for (var x = 0; x < this.worldX; x++)
         {
-            for (var y = 0; y < Math.floor(this.worldY/3); y++) 
+            // this.worldGrid[x] = [];
+                for (var y = 0; y < this.worldY; y++)
             {
-                for(var z = 0; z < this.worldZ; z++)
-                {
-                    this.set_tile(vec3(x, y, z), Tile.DIRT);
+                // this.worldGrid[x][y] = [];
+            }
+            for(var z = 0; z < this.worldZ; z++)
+            {
+                var offset = z + (x * this.worldZ);
+                var yHeight = Math.round((heightmap[offset] / this.worldX) * this.worldY);
+                if (yHeight > this.worldY) yHeight = this.worldY;
+                for (var y = 0; y < yHeight; y++) {
+                    this.worldGrid[x][y][z] = Tile.DIRT;
                 }
+                // for (var y = yHeight; y < this.worldY; y++) {
+                //     this.worldGrid[x][y][z] = Tile.EMPTY;
+                // }
             }
         }
 
-        // Create grass
-        for (var x = 0; x < this.worldX; x++) 
-        {
-            var y = Math.floor(this.worldY/3);
-            for(var z = 0; z < this.worldZ; z++)
-            {
-                this.set_tile(vec3(x, y, z), Tile.GRASS);
-                this.set_tile(vec3(x, y+1, z), Tile.GRASS);
-            }
-        }
-
-        // Create lake
-        for (var x = Math.floor(this.worldX/4*2); x < Math.floor(this.worldX/4*3); x++)
-        {
-            var y = Math.floor(this.worldY/3);
-            for(var z = 0; z < this.worldZ; z++)
-            {
-                this.set_tile(vec3(x, y+1, z), Tile.WATER);
-            }
-        }
-
-        // Create fire/lava pit
-        for (var x = 0; x < Math.floor(this.worldX/4); x++) 
-        {
-            var y = Math.floor(this.worldY/3);
-            for(var z = 0; z < this.worldZ; z++)
-            {
-                this.set_tile(vec3(x, y+1, z), Tile.FIRE);
-            }
-        }
+        // // ------------ //
+        // // Update tiles //
+        // // ------------ //
+        // // Create ground
+        // for (var x = 0; x < this.worldX; x++)
+        // {
+        //     for (var y = 0; y < Math.floor(this.worldY/3); y++)
+        //     {
+        //         for(var z = 0; z < this.worldZ; z++)
+        //         {
+        //             this.set_tile(vec3(x, y, z), Tile.DIRT);
+        //         }
+        //     }
+        // }
+        //
+        // // Create grass
+        // for (var x = 0; x < this.worldX; x++)
+        // {
+        //     var y = Math.floor(this.worldY/3);
+        //     for(var z = 0; z < this.worldZ; z++)
+        //     {
+        //         this.set_tile(vec3(x, y, z), Tile.GRASS);
+        //         this.set_tile(vec3(x, y+1, z), Tile.GRASS);
+        //     }
+        // }
+        //
+        // // Create lake
+        // for (var x = Math.floor(this.worldX/4*2); x < Math.floor(this.worldX/4*3); x++)
+        // {
+        //     var y = Math.floor(this.worldY/3);
+        //     for(var z = 0; z < this.worldZ; z++)
+        //     {
+        //         this.set_tile(vec3(x, y+1, z), Tile.WATER);
+        //     }
+        // }
+        //
+        // // Create fire/lava pit
+        // for (var x = 0; x < Math.floor(this.worldX/4); x++)
+        // {
+        //     var y = Math.floor(this.worldY/3);
+        //     for(var z = 0; z < this.worldZ; z++)
+        //     {
+        //         this.set_tile(vec3(x, y+1, z), Tile.FIRE);
+        //     }
+        // }
     }
 
     public get_mouse_position()
