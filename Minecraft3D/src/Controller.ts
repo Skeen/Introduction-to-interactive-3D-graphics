@@ -9,7 +9,7 @@ declare var vec3: any;
 export class Controller
 {
     private model : Model;
-
+/*
     private block_stonify() : void
     {
         var model = this.model;
@@ -123,38 +123,78 @@ export class Controller
         {
             model.update_tile(change.x, change.y, change.z, change.tile);
         }
-        */
+
     }
 
     // stick-man variables  
     private move_length : number = 0.5;
     private jump_height : number = 5;
     private gravity_check : number = 0.1;
-
-    private get_stickman_blocks(x, y, z)
+*/
+    private get_stickman_blocks(pos)
     {
         var model = this.model;
 
-        if( model.valid_index(Math.floor(x), Math.floor(y), Math.floor(z))     == false &&
-            model.valid_index(Math.ceil(x), Math.floor(y) , Math.floor(z))     == false &&
-            model.valid_index(1 + Math.floor(x), Math.floor(y), Math.floor(z)) == false &&
-            model.valid_index(1 + Math.ceil(x), Math.floor(y), Math.floor(z))  == false)
-            return;
+        // Check that x and y are valid
+        if(model.valid_index(pos) == false)
+        {
+            return [];
+        }
 
-        // Get all the blocks under the stickman
-        // Only ever 3 unique points
-        var block_left          = model.get_tile(Math.floor(x), Math.floor(y), Math.floor(z));
-        var block_center_left   = model.get_tile(Math.ceil(x), Math.floor(y), Math.floor(z));
-        //var block_center_right = model.get_tile(1 + Math.floor(x), Math.floor(y));
-        var block_right         = model.get_tile(1 + Math.ceil(x), Math.floor(y), Math.floor(z));
+        var x = pos[0];
+        var y = pos[1];
+        var z = pos[2];
 
-        return [block_left,
-                block_center_left,
-                //block_center_right,
-                block_right];
+        // Collect adjacent blocks
+        var blocks = [];
+        for(var i = -1; i <= 1; i++)
+        {
+            for(var k = -1; k <= 1; k++)
+            {
+                // Ensure that the indicies are valid (i.e. within array bounds)
+                if(model.valid_index(vec3(x+i, y, z+k)) == false)
+                    continue;
+
+                blocks.push(model.get_tile(vec3(x+i, y, z+k)));
+            }
+        }
+        return blocks;
     }
 
-    private reduced_jump_height(xPos, yPos, zPos)
+    private get_stickman_direction(pos)
+    {
+        var model = this.model;
+
+        // Check that x and y are valid
+        if(model.valid_index(pos) == false)
+        {
+            return [];
+        }
+
+        var x = pos[0];
+        var y = pos[1];
+        var z = pos[2];
+
+        // Collect adjacent blocks
+        var blocks = [];
+        for(var i = -1; i <= 1; i++)
+        {
+            for(var j = 0; j <= 1; j++)
+            {
+                for(var k = -1; k <= 1; k++)
+                {
+                    // Ensure that the indicies are valid (i.e. within array bounds)
+                    if(model.valid_index(vec3(x+i, y+j, z+k)) == false)
+                        continue;
+
+                    blocks.push(model.get_tile(vec3(x+i, y+j, z+k)));
+                }
+            }
+        }
+        return blocks;
+    }
+/*
+    private reduced_jump_height(xPos, yPos)
     {
         var model = this.model;
 
@@ -213,139 +253,220 @@ export class Controller
         }
         return reducedJumpHeight;
     }
+    */
 
-    // Apply gravity to stick-man
-    private stickman_gravity() : void
+    constructor(model : Model)
     {
-        var model = this.model;
+        this.model = model;
 
-        var old_position = model.get_stickman_position();
-        var new_x = old_position[0];
-        var new_y = old_position[1] - this.gravity_check;
-        var new_z = old_position[2];
+        //setInterval(this.block_flow.bind(this), 300);
+        //setInterval(this.block_stonify.bind(this), 10);
 
-        // Get blocks below stickman
-        //var blocks = this.get_stickman_blocks(new_x, new_y, new_z);
+        //setInterval(this.stickman_gravity.bind(this), 10);
 
-        // Check if all blocks below us are sink blocks
-        var all_sink = true;
-        //TODO can't jump if blocks are undefined
-        /*
-        if(blocks != undefined)
+        var keyState = [];
+        window.addEventListener('keydown',function(e)
         {
-            for(var x = 0; x < blocks.length; x++)
-            {
-                all_sink = all_sink && TileUtil.is_sink_block(blocks[x]);
-            }
-            if(all_sink)
-            {
-                model.update_stickman_position(new_x, new_y, new_z);
-            }
+            var id = e.keyCode || e.which;
+            keyState[id] = keyState[id] || {};
+            keyState[id].state = true;
+            keyState[id].click_time = keyState[id].click_time || 0;
+        },true);
 
-            // Check if any blocks below us are fire blocks
-            var any_fire = false;
-            for(var x = 0; x < blocks.length; x++)
-            {
-                any_fire = any_fire || TileUtil.is_jump_block(blocks[x]);
-            }
-            if(any_fire)
-            {
-                new_y = old_position[1] + (this.jump_height - this.reduced_jump_height(new_x, new_y, new_z));
-                model.update_stickman_position(new_x, new_y, new_z);
-            }
-        }
-        */
-    }
-
-    private stickman_move(e)
-    {
-        var model = this.model;
-
-        var key = String.fromCharCode(e.keyCode);
-
-        var old_position = model.get_stickman_position();
-        var x = old_position[0];
-        var y = old_position[1];
-        var z = old_position[2];
-
-        function jump()
+        window.addEventListener('keyup',function(e)
         {
-            var new_x = x;
-            var new_y = y - this.gravity_check;
-            var new_z = z;
+            var id = e.keyCode || e.which;
+            keyState[id] = keyState[id] || {};
+            keyState[id].state = false;
+        },true);
 
+        var velocity = vec3(0,0,0);
+
+        var can_jump = function(pos)
+        {
             // Get blocks below stickman
-            var blocks = this.get_stickman_blocks(new_x, new_y);
-            if(blocks == undefined)
-                return;
+            var blocks = this.get_stickman_blocks(vec3(Math.round(pos[0]), Math.floor(pos[1]), Math.round(pos[2])));
+            if(blocks.length == 0)
+                return undefined;
 
             // Check if all blocks below us are sink blocks
             var all_sink = true;
             for(var i = 0; i < blocks.length; i++) {
                 all_sink = all_sink && TileUtil.is_sink_block(blocks[i]);
             }
+            return (all_sink == false);
 
-            if(all_sink == false) // We can jump off something and nothing is above us
-            {
-                new_y = old_position[1] + (this.jump_height - this.reduced_jump_height(new_x,new_y, new_z));
-                model.update_stickman_position(new_x, new_y, new_z);
+        }.bind(this);
+
+        var can_move = function(pos)
+        {
+            // Get blocks below stickman
+            var blocks = this.get_stickman_direction(vec3(Math.round(pos[0]), Math.floor(pos[1]), Math.round(pos[2])));
+            if(blocks.length == 0)
+                return undefined;
+
+            // Check if all blocks below us are sink blocks
+            var all_sink = true;
+            for(var i = 0; i < blocks.length; i++) {
+                all_sink = all_sink && TileUtil.is_sink_block(blocks[i]);
             }
-        }
+            return all_sink;
 
-        function move(new_x, new_y, new_z, rounder)
+        }.bind(this);
+
+        // Blocks / time-interval
+        var move_force = 0.1;
+        // Blocks / Jump
+        var jump_force = 0.2;
+        // Blocks / time-interval
+        var gravity_force = 0.005;
+        var friction_force = 0.5;
+        // Blocks / time-interval
+        var terminal_velocity = 0.1;
+
+        setInterval(function()
         {
-            if(model.valid_index(rounder(new_x), Math.floor(new_y), Math.floor(new_z)) == false)
-                return;
-
-            // Check that we can stand in the new position
-            var block1  = model.get_tile(rounder(new_x), Math.floor(new_y), Math.floor(new_z));
-            var block2  = model.get_tile(rounder(new_x), Math.floor(new_y)+1, Math.floor(new_z));
-            var block3  = model.get_tile(rounder(new_x), Math.floor(new_y)+2, Math.floor(new_z));
-            var block4  = model.get_tile(rounder(new_x), Math.floor(new_y)+3, Math.floor(new_z));
-            if(TileUtil.is_sink_block(block1) &&
-               TileUtil.is_sink_block(block2) && 
-               TileUtil.is_sink_block(block3) && 
-               TileUtil.is_sink_block(block4))
+            function jump()
             {
-                model.update_stickman_position(new_x, new_y, new_z);
+                var stick_pos = model.get_stickman_position();
+                if(can_jump(vec3(stick_pos[0], stick_pos[1] - 0.1, stick_pos[2])))
+                {
+                    console.log("JUMP");
+                    velocity[1] = jump_force;
+                }
             }
-        }
 
-        function move_left()
-        {
-            // We only need to check the left block (i.e. floor(x))
-            move(x - this.move_length, y, z, Math.floor);
-        }
+            function gravity()
+            {
+                if(velocity[1] > -terminal_velocity)
+                {
+                    velocity[1] -= gravity_force;
+                }
+            }
 
-        function move_right()
-        {
-            // We only need to check the right block (i.e. 1+ceil(x))
-            move(x + this.move_length, y,z, function(x) { return 1 + Math.ceil(x) });
-        }
+            function killY()
+            {
+                var stick_pos = model.get_stickman_position();
+                if(stick_pos[1] < 0)
+                {
+                    model.update_stickman_position(
+                            vec3(model.worldX/3,
+                                 model.worldY/3 + 10,
+                                (model.worldZ - 1)/2));
+                }
+            }
 
-        switch(key) {
-            case "W":
+            function friction()
+            {
+                var old_y = velocity[1];
+                velocity = scale(friction_force, velocity);
+                velocity[1] = old_y;
+            }
+
+            function move_straight(direction : number)
+            {
+                var mouse_pos = model.get_mouse_position();
+
+                velocity[0] = mouse_pos[0] * move_force * direction;
+                velocity[2] = mouse_pos[2] * move_force * direction;
+
+                //console.log(velocity);
+            }
+
+            function move_strafe(direction : number)
+            {
+                var mouse_pos = normalize(model.get_mouse_position());
+
+                velocity[0] = -mouse_pos[2] / 10 * direction;
+                velocity[2] = mouse_pos[0] / 10 * direction;
+            }
+
+            function update_position()
+            {
+                var old_position = model.get_stickman_position();
+
+                var new_x = old_position[0] + velocity[0];
+                var new_y = old_position[1] + velocity[1];
+                var new_z = old_position[2] + velocity[2];
+
+                // If we can jump, i.e. stand on ground disable gravity
+                if(can_jump(vec3(new_x, new_y-0.1, new_z)) == true)
+                    new_y = old_position[1];
+
+                if(can_move(vec3(new_x, new_y, new_z)) == false)
+                {
+                    console.log("NO MOVE");
+                    new_x = old_position[0];
+                    new_z = old_position[0];
+                }
+                else
+                {
+                    model.update_stickman_position(vec3(new_x, new_y, new_z));
+                }
+            }
+            //------------------//
+            // Apply velocities //
+            //------------------//
+            var cur_time = new Date().getTime();
+            function is_pressed(key)
+            {
+                if(keyState[key] == undefined)
+                    return false;
+                return keyState[key].state;
+            }
+            function recently_pressed(key, time)
+            {
+                return (cur_time - keyState[key].click_time) < time;
+            }
+            function just_pressed(key)
+            {
+                keyState[key].click_time = cur_time;
+            }
+
+            // Left, A
+            if (is_pressed(37) || is_pressed(65))
+            {
+                move_strafe.bind(this)(-1);
+            }
+            // Right, D
+            if (is_pressed(39) || is_pressed(68))
+            {
+                move_strafe.bind(this)(1);
+            }
+            // Forward, W
+            if (is_pressed(38) || is_pressed(87))
+            {
+                move_straight.bind(this)(1);
+            }
+            // Backwards, S
+            if (is_pressed(40) || is_pressed(83))
+            {
+                move_straight.bind(this)(-1);
+            }
+            // Space (jump)
+            if (is_pressed(32) && recently_pressed(32, 500) == false)
+            {
+                just_pressed(32);
                 jump.bind(this)();
-                break;
-            case "A":
-                move_left.bind(this)();
-                break;
-            case "D":
-                move_right.bind(this)();
-                break;
-        }
-    }
+            }
+            // Space (jump)
+            if (is_pressed(77) && recently_pressed(77, 500) == false)
+            {
+                just_pressed(77);
+                model.update_map_active(!model.is_map_active());
+            }
+            // Apply gravity and friction
+            gravity.bind(this)();
+            friction.bind(this)();
 
-    constructor(model : Model)
-    {
-        this.model = model;
+            // Update position via velocities
+            update_position.bind(this)();
 
-        setInterval(this.block_flow.bind(this), 300);
-        setInterval(this.block_stonify.bind(this), 10);
+            // If we fall off the world
+            killY.bind(this)();
+        }.bind(this), 10);
 
-        setInterval(this.stickman_gravity.bind(this), 10);
-
-        window.addEventListener("keydown", this.stickman_move.bind(this));
+        //window.addEventListener("keydown", this.stickman_move.bind(this));
 
         var canvas : any = document.getElementById("gl-canvas");
 /*
@@ -417,28 +538,40 @@ export class Controller
 
         var yaw = 0;
         var pitch = 0;
-
         var mouse_speed = 0.001;
 
         function canvasLoop(e) 
         {
             e = e.originalEvent;
-            var movementX = e.movementX ||
-                            e.mozMovementX          ||
-                            0;
-
-            var movementY = e.movementY ||
-                            e.mozMovementY      ||
-                            0;
-
+            // Get relative mouse movements
+            var movementX = e.movementX || 0;
+            var movementY = e.movementY || 0;
+            // Append to our movement variables
             yaw += movementX * mouse_speed;
             pitch -= movementY * mouse_speed;
 
+            // Clamp us from looking directly up
+            if(pitch > Math.PI / 2 * 0.9)
+                pitch = Math.PI / 2 * 0.9;
+            // Clamp us from looking directly down
+            if(pitch < -Math.PI / 2 * 0.9)
+                pitch = -Math.PI / 2 * 0.9;
+
+            // Normalize our yaw
+            if(yaw > Math.PI * 2)
+                yaw -= Math.PI * 2;
+            if(yaw < -Math.PI * 2)
+                yaw += Math.PI * 2;
+
+            // Calculate view vector [-1,1] on all axis
             var x = Math.cos(yaw) * Math.cos(pitch)
             var y = Math.sin(pitch)
             var z = Math.sin(yaw) * Math.cos(pitch)
 
+            // Let everyone know
             this.model.update_mouse_position(vec3(x, y, z));
+
+            //console.log(vec3(x,y,z));
         }
     }
 };
