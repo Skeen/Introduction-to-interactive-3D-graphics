@@ -1,6 +1,9 @@
+///<reference path="../typings/globals/node/index.d.ts" />
 import { Model } from "./Model";
 import { Tile, TileUtil } from "./Tile"
 
+declare var normalize: any;
+declare var scale: any;
 declare var vec2: any;
 declare var vec3: any;
 declare var $: any;
