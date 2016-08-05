@@ -57,7 +57,7 @@ export class View
     private verts_per_block : number = 24;
     private indicies_per_block : number = 36;
 
-    // Stickman stuff
+
     //private stick_man_num_points : number;
 
     // Fix this
@@ -231,11 +231,8 @@ export class View
         var world_points = [];
         var world_colors = [];
         var world_translate = [];
-        var world_indicies = [];
+        var world_indices = [];
 
-        var x = 0;
-        var y = 0;
-        var z = 0;
         for (var x = 0; x < model.worldX; x++)
         {
             for (var y = 0; y < model.worldY; y++)
@@ -327,7 +324,7 @@ export class View
 
                     for(var i = 0; i < this.indicies_per_block; i++)
                     {
-                        world_indicies.push(cubeVertexIndices[i] + offset);
+                        world_indices.push(cubeVertexIndices[i] + offset);
                     }
 
                     for(var i = 0; i < this.verts_per_block; i++)
@@ -340,7 +337,7 @@ export class View
                 }
             }
         }
-        console.log(world_indicies.length);
+        console.log(world_indices.length);
 
         // Buffer Color
         gl.bindBuffer(gl.ARRAY_BUFFER, this.worldTranslateBuffer);
@@ -353,7 +350,57 @@ export class View
         gl.bufferData(gl.ARRAY_BUFFER, flatten(world_points), gl.STATIC_DRAW);
         // Buffer Indicies
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.worldIndexBuffer);
-        gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint32Array(world_indicies), gl.STATIC_DRAW);
+        gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint32Array(world_indices), gl.STATIC_DRAW);
+    }
+
+    // Stickman stuff
+    private drawStickman() : any
+    {
+        var gl = this.gl;
+        var model = this.model;
+
+        var world_points = [];
+        var world_colors = [];
+        var world_translate = [];
+        //var world_indicies = [];
+        var vertices = [
+            // Front face
+            [-0.5, -0.5,  0.5],
+            [ 0.5, -0.5,  0.5],
+            [ 0.5,  0.5,  0.5],
+            [-0.5,  0.5,  0.5],
+
+            // Back face
+            [-0.5, -0.5, -0.5],
+            [-0.5,  0.5, -0.5],
+            [ 0.5,  0.5, -0.5],
+            [ 0.5, -0.5, -0.5],
+
+            // Top face
+            [-0.5,  0.5, -0.5],
+            [-0.5,  0.5,  0.5],
+            [ 0.5,  0.5,  0.5],
+            [ 0.5,  0.5, -0.5],
+
+            // Bottom face
+            [-0.5, -0.5, -0.5],
+            [ 0.5, -0.5, -0.5],
+            [ 0.5, -0.5,  0.5],
+            [-0.5, -0.5,  0.5],
+
+            // Right face
+            [ 0.5, -0.5, -0.5],
+            [ 0.5,  0.5, -0.5],
+            [ 0.5,  0.5,  0.5],
+            [ 0.5, -0.5,  0.5],
+
+            // Left face
+            [-0.5, -0.5, -0.5],
+            [-0.5, -0.5,  0.5],
+            [-0.5,  0.5,  0.5],
+            [-0.5,  0.5, -0.5]
+        ];
+
     }
 
     private render() : void

@@ -119,6 +119,12 @@ export class Model extends events.EventEmitter
         return true;
     }
 
+    /*
+    private create_stickman() : any
+    {
+
+    }
+*/
     public get_stickman_position() : any
     {
         return this.stickman_position;
