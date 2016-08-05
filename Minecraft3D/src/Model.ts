@@ -61,7 +61,7 @@ export class Model extends events.EventEmitter
         var x = pos[0];
         var y = pos[1];
         var z = pos[2];
-       
+
         this.worldGrid[x][y][z] = tile;
     }
 
@@ -221,7 +221,7 @@ export class Model extends events.EventEmitter
         this.emit("map_active", map_active);
     }
 
-    constructor() 
+    constructor()
     {
         super();
         console.log("Setting up world!");

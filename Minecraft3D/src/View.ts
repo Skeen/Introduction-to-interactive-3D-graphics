@@ -219,7 +219,7 @@ export class View
         var offset = ((x*model.worldY+y) * model.worldZ + z) * this.verts_per_block;
         // Row major
         //var offset = ((z*model.worldY+y) * model.worldX + x) * this.verts_per_block;
-        
+
         return offset;
     }
 
@@ -418,9 +418,9 @@ export class View
         }
     }
 
-    private index_to_position(x, y) : any
+    private index_to_position(x, y, z) : any
     {
-        return vec2(x + 0.5, y + 0.5);
+        return vec3(x + 0.5, y + 0.5, z+ 0.5);
     }
 
     public run() : void
@@ -436,16 +436,16 @@ export class View
         var stick_points = [];
         var stick_colors = [];
         // Legs
-        stick_points.push(vec2(0,0), vec2(1,1));
-        stick_points.push(vec2(2,0), vec2(1,1));
+        stick_points.push(vec3(0,0,0), vec3(1,1,0));
+        stick_points.push(vec3(2,0,0), vec3(1,1,0));
         // Body
-        stick_points.push(vec2(1,1), vec2(1,3));
+        stick_points.push(vec3(1,1,0), vec3(1,3,0));
         // Arms
-        stick_points.push(vec2(0,2.5), vec2(2,2.5));
+        stick_points.push(vec3(0,2.5,0), vec3(2,2.5,0));
         // Face
-        stick_points.push(vec2(1,3), vec2(0.5,4));
-        stick_points.push(vec2(1,3), vec2(1.5,4));
-        stick_points.push(vec2(0.5,4), vec2(1.5,4));
+        stick_points.push(vec3(1,3,0), vec3(0.5,4,0));
+        stick_points.push(vec3(1,3,0), vec3(1.5,4,0));
+        stick_points.push(vec3(0.5,4,0), vec3(1.5,4,0));
 
         // We need to know number of points in render
         this.stick_man_num_points = stick_points.length;
@@ -463,7 +463,7 @@ export class View
         gl.bufferData(gl.ARRAY_BUFFER, flatten(stick_points), gl.STATIC_DRAW);
 
         gl.useProgram(this.program);
-        gl.uniform2fv(this.vStickPos, model.get_stickman_position());
+        gl.uniform3fv(this.vStickPos, flatten(model.get_stickman_position()));
     }
 */
     private initialize_mouse(pos, placeable : boolean) : void
@@ -540,7 +540,7 @@ export class View
         this.initialize_block_world();
         // Setup stickman
         //this.initialize_stick_man();
-        
+
         var canvas = this.canvas;
         var gl = this.gl;
         
@@ -568,21 +568,21 @@ export class View
             if(model.is_map_active())
             {
                 var modelMatrix = lookAt(vec3(stick_pos[0],
-                                              stick_pos[1] + 50, 
+                                              stick_pos[1] + 50,
                                               stick_pos[2]),
-                                         vec3(stick_pos[0], 
-                                              stick_pos[1], 
+                                         vec3(stick_pos[0],
+                                              stick_pos[1],
                                               stick_pos[2]),
                                          vec3(1,0,0));
                 gl.uniformMatrix4fv(this.uMVMatrix, false, flatten(modelMatrix));
             }
             else
             {
-                var modelMatrix = lookAt(vec3(stick_pos[0], 
-                                              stick_pos[1] + height, 
+                var modelMatrix = lookAt(vec3(stick_pos[0],
+                                              stick_pos[1] + height,
                                               stick_pos[2]),
-                                         vec3(stick_pos[0] + cam_pos[0], 
-                                              stick_pos[1] + cam_pos[1] + height, 
+                                         vec3(stick_pos[0] + cam_pos[0],
+                                              stick_pos[1] + cam_pos[1] + height,
                                               stick_pos[2] + cam_pos[2]),
                                          vec3(0,1,0));
                 gl.uniformMatrix4fv(this.uMVMatrix, false, flatten(modelMatrix));
@@ -622,7 +622,7 @@ export class View
             }
 
             gl.useProgram(this.boxShaderProgram);
-            gl.uniform2fv(this.vClickPos, pos);
+            gl.uniform3fv(this.vClickPos, flatten(pos));
 
             if (this.timerId)
                 clearInterval(this.timerId);
