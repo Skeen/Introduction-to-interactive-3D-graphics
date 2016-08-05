@@ -7,6 +7,7 @@ declare var vec4: any;
 
 declare var flatten: any;
 declare var add: any;
+declare var scale: any;
 
 declare var sizeof: any;
 
@@ -246,7 +247,7 @@ export class View
         gl.bufferSubData(gl.ARRAY_BUFFER, offset * sizeof['vec3'], flatten(translate));
 
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.worldIndexBuffer);
-        gl.bufferSubData(gl.ELEMENT_ARRAY_BUFFER, (this.block_indicies)*Uint32Array.BYTES_PER_ELEMENT, new Uint32Array(indicies)); 
+        gl.bufferSubData(gl.ELEMENT_ARRAY_BUFFER, (this.block_indicies)*Uint32Array.BYTES_PER_ELEMENT, new Uint32Array(indicies));
 
         this.block_indicies = this.block_indicies + this.indicies_per_block;
     }
@@ -287,7 +288,7 @@ export class View
 
                     if(this.render_block(x+i, y+j, z+k) == false)
                         continue;
-                    
+
                     this.update_block(vec3(x+i, y+j, z+k));
                 }
             }
@@ -501,7 +502,7 @@ export class View
                     //console.log(offset);
 
                     this.vec_to_offset[vec3(x,y,z)] = offset;
-                    this.gen_indicies(world_indicies, offset);
+                    this.gen_indicies(world_indices, offset);
 
                     var tile = model.get_tile(vec3(x, y, z));
                     var tile_color = this.tile_to_color(tile);
@@ -512,9 +513,9 @@ export class View
         var forLoopTs = new Date().getTime() - start;
         console.log("For loop done. It took", forLoopTs, "ms.");
 
-        console.log("Number of rendered vertices:", world_indicies.length);
+        console.log("Number of rendered vertices:", world_indices.length);
         console.log("Number of stored vertices:", world_points.length);
-        this.block_indicies = world_indicies.length;
+        this.block_indicies = world_indices.length;
         this.block_verts = world_points.length;
 
         var tsStart = new Date().getTime();
@@ -529,7 +530,7 @@ export class View
         gl.bufferSubData(gl.ARRAY_BUFFER, 0, flatten(world_points));
         // Buffer Indicies
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.worldIndexBuffer);
-        gl.bufferSubData(gl.ELEMENT_ARRAY_BUFFER, 0, new Uint32Array(world_indicies));
+        gl.bufferSubData(gl.ELEMENT_ARRAY_BUFFER, 0, new Uint32Array(world_indices));
         var tsDone = new Date().getTime() - tsStart;
         console.log('Transfer finished in', tsDone, 'ms.');
         gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint32Array(world_indices), gl.STATIC_DRAW);
@@ -539,81 +540,47 @@ export class View
     private initialize_stick_man(pos) : any
     {
         var gl = this.gl;
-
+        var height : number = 1.0 ;
+        var back : number = 0.3;
+        var front : number = 0.1;
+        var feet : number = 0.2;
         var stick_points = [];
 
-        /*
          // Front face
-         [-0.5, -0.5,  0.5],
-         [ 0.5, -0.5,  0.5],
-         [ 0.5,  0.5,  0.5],
-         [-0.5,  0.5,  0.5],
-         */
-        stick_points.push(vec3(-1.0, -1.0,  1.0));
-        stick_points.push(vec3(1.0, -1.0,  1.0));
-        stick_points.push(vec3(1.0,  1.0,  1.0));
-        stick_points.push(vec3(-1.0,  1.0,  1.0));
-        /*
-         // Back face
-         [-0.5, -0.5, -0.5],
-         [-0.5,  0.5, -0.5],
-         [ 0.5,  0.5, -0.5],
-         [ 0.5, -0.5, -0.5],
-         */
-            // Back face
-        stick_points.push(vec3(-1.0, -1.0, -1.0));
-        stick_points.push(vec3(-1.0,  1.0, -1.0));
-        stick_points.push(vec3(1.0,  1.0, -1.0));
-        stick_points.push(vec3(1.0, -1.0, -1.0));
-        /*
-         // Top face
-         [-0.5,  0.5, -0.5],
-         [-0.5,  0.5,  0.5],
-         [ 0.5,  0.5,  0.5],
-         [ 0.5,  0.5, -0.5],
-         */
-            // Top face
-        stick_points.push(vec3(-1.0,  1.0, -1.0));
-        stick_points.push(vec3(-1.0,  1.0,  1.0));
-        stick_points.push(vec3(1.0,  1.0,  1.0));
-        stick_points.push(vec3(1.0,  1.0, -1.0));
-        /*
-         // Bottom face
-         [-0.5, -0.5, -0.5],
-         [ 0.5, -0.5, -0.5],
-         [ 0.5, -0.5,  0.5],
-         [-0.5, -0.5,  0.5],
-         */
+        stick_points.push(vec3(-back, feet,  front));
+        stick_points.push(vec3(front, feet,  front));
+        stick_points.push(vec3(front,  height,  front));
+        stick_points.push(vec3(-back,  height,  front));
+
+        // Back face
+        stick_points.push(vec3(-back, feet, -back));
+        stick_points.push(vec3(-back,  height, -back));
+        stick_points.push(vec3(front,  height, -back));
+        stick_points.push(vec3(front, feet, -back));
+
+        // Top face
+        stick_points.push(vec3(-back,  height, -back));
+        stick_points.push(vec3(-back,  height,  front));
+        stick_points.push(vec3(front,  height,  front));
+        stick_points.push(vec3(front,  height, -back));
+
             // Bottom face
-        stick_points.push(vec3(-1.0, -1.0, -1.0));
-        stick_points.push(vec3(1.0, -1.0, -1.0));
-        stick_points.push(vec3(1.0, -1.0,  1.0));
-        stick_points.push(vec3(-1.0, -1.0,  1.0));
-        /*
-         // Right face
-         [ 0.5, -0.5, -0.5],
-         [ 0.5,  0.5, -0.5],
-         [ 0.5,  0.5,  0.5],
-         [ 0.5, -0.5,  0.5],
-         */
-            // Right face
-        stick_points.push(vec3(1.0, -1.0, -1.0));
-        stick_points.push(vec3(1.0,  1.0, -1.0));
-        stick_points.push(vec3(1.0,  1.0,  1.0));
-        stick_points.push(vec3(1.0, -1.0,  1.0));
-        /*
-         // Left face
-         [-0.5, -0.5, -0.5],
-         [-0.5, -0.5,  0.5],
-         [-0.5,  0.5,  0.5],
-         [-0.5,  0.5, -0.5]
-         // Front face
-         */
-            // Left face
-        stick_points.push(vec3(-1.0, -1.0, -1.0));
-        stick_points.push(vec3(-1.0, -1.0,  1.0));
-        stick_points.push(vec3(-1.0,  1.0,  1.0));
-        stick_points.push(vec3(-1.0,  1.0, -1.0));
+        stick_points.push(vec3(-back, feet, -back));
+        stick_points.push(vec3(front, feet, -back));
+        stick_points.push(vec3(front, feet,  front));
+        stick_points.push(vec3(-back, feet,  front));
+
+        // Right face
+        stick_points.push(vec3(front, feet, -back));
+        stick_points.push(vec3(front,  height, -back));
+        stick_points.push(vec3(front,  height,  front));
+        stick_points.push(vec3(front, feet,  front));
+
+        // Left face
+        stick_points.push(vec3(-back, feet, -back));
+        stick_points.push(vec3(-back, feet,  front));
+        stick_points.push(vec3(-back,  height,  front));
+        stick_points.push(vec3(-back,  height, -back));
 
         var stick_colors = [];
         var stick_translate = [];
@@ -915,6 +882,22 @@ export class View
 
         }.bind(this));
 
+        this.model.on("stickman_move", function(stickman_pos)
+        {
+            var stick_pos = model.get_stickman_position().map(Math.round);
+            var block_pos = add(stick_pos, stickman_pos).map(Math.round);
+            if(stick_pos == block_pos)
+            {
+                this.stickman_lines = 0;
+            }
+            else
+            {
+                console.log("Block pos: " + scale(0.5,block_pos));
+                console.log("Stickman Pos: " + model.get_stickman_position());
+                this.initialize_stick_man(scale(0.5,block_pos));
+            }
+
+        }.bind(this));
         update_camera();
 
         this.initialize_mouse(vec3(0,5,0), false);

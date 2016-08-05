@@ -9,9 +9,9 @@ import {TerrainGenerator, DiamondTerrainGenerator} from "./TerrainGenerator";
 
 export class Model extends events.EventEmitter
 {
-    public worldX : number = 129;
+    public worldX : number = 125;
     public worldY : number = 25;
-    public worldZ : number = 129;
+    public worldZ : number = 125;
 
     public worldSize : number = this.worldX * this.worldY * this.worldZ;
 
@@ -156,7 +156,7 @@ export class Model extends events.EventEmitter
             }
         }
 
-        var heightmap = this.worldGenerator.generate(.857);
+        var heightmap = this.worldGenerator.generate(.001);
         for (var x = 0; x < this.worldX; x++)
         {
             for(var z = 0; z < this.worldZ; z++)
