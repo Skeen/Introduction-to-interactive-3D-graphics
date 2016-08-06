@@ -112,6 +112,7 @@ export class View
     //private vStickPos;
     private uPMatrix; 
     private uMVMatrix; 
+    private uTheta;
 
     // Buffers
     //--------
@@ -143,6 +144,7 @@ export class View
     private block_indicies : number = 0;
     private block_verts : number = 0;
     private vec_to_offset;
+    private theta : number = 0;
 
     private stickman_lines : number = 0;
     // Shockwave variables
@@ -346,6 +348,7 @@ export class View
         this.vTranslate = gl.getAttribLocation(this.boxShaderProgram, 'vTranslate');
         this.uPMatrix = gl.getUniformLocation(this.boxShaderProgram, "uPMatrix");
         this.uMVMatrix = gl.getUniformLocation(this.boxShaderProgram, "uMVMatrix");
+        this.uTheta     = gl.getUniformLocation(this.boxShaderProgram, "uTheta");
 
         // World Vertex buffer
         this.worldVBuffer = gl.createBuffer();
@@ -575,6 +578,9 @@ export class View
 
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
+        this.theta += 0.1;
+        gl.uniform1f(this.uTheta, this.theta);
+
         // Draw the mouse block
         if(this.mouse_lines != 0)
         {
@@ -618,6 +624,7 @@ export class View
         // Extension for UNSIGNED INT element indicies
         // TODO: Check availability
         var ext = gl.getExtension("OES_element_index_uint");
+
 
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.worldIndexBuffer);
         gl.drawElements(gl.TRIANGLES, this.block_indicies, gl.UNSIGNED_INT, 0);
