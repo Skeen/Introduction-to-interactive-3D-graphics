@@ -7,7 +7,7 @@ declare var vec3: any;
 import { Tile } from "./Tile"
 import {TerrainGenerator, DiamondTerrainGenerator} from "./TerrainGenerator";
 
-// Math.log2 = Math.log2 || function(x){return Math.log(x)*Math.LOG2E;};
+// Math.log2 = Math.log2 || function(x) { return Math.log(x) * Math.LOG2E; };
 
 export class Model extends events.EventEmitter
 {

@@ -498,6 +498,9 @@ export class Controller
             var mouse_pos = model.get_mouse_position();
             var block_pos = add(stick_pos, mouse_pos).map(Math.round);
 
+            if(model.valid_index(block_pos) == false)
+                return;
+
             // Check if block is free
             var placeable = model.can_build(block_pos);
             if(placeable && event.shiftKey == false)
