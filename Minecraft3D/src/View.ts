@@ -226,6 +226,7 @@ export class View
         var points = [];
         var colors = [];
         var translate = [];
+        var destroyed = [];
         var indicies = [];
 
         var offset = this.block_verts + this.verts_per_block;
@@ -239,6 +240,9 @@ export class View
         var tile_color = this.tile_to_color(tile);
         this.gen_buffers(points, colors, translate, tile, pos);
 
+        for(var i = 0; i < this.verts_per_block; i++)
+            destroyed.push(model.get_destroyed(pos) ? 1. : 0.);
+
         gl.bindBuffer(gl.ARRAY_BUFFER, this.worldVBuffer);
         gl.bufferSubData(gl.ARRAY_BUFFER, offset * sizeof['vec3'], flatten(points));
 
@@ -247,6 +251,9 @@ export class View
 
         gl.bindBuffer(gl.ARRAY_BUFFER, this.worldTranslateBuffer);
         gl.bufferSubData(gl.ARRAY_BUFFER, offset * sizeof['vec3'], flatten(translate));
+        // Buffer Destroyed
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.worldDBuffer);
+        gl.bufferSubData(gl.ARRAY_BUFFER, offset * Float32Array.BYTES_PER_ELEMENT, new Float32Array(destroyed));
 
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.worldIndexBuffer);
         gl.bufferSubData(gl.ELEMENT_ARRAY_BUFFER, (this.block_indicies)*Uint32Array.BYTES_PER_ELEMENT, new Uint32Array(indicies));
@@ -263,13 +270,11 @@ export class View
         if(offset == undefined)
         {
             this.new_block(pos);
-            //console.log("CRITICAL ISSUE!");
-            return;
         }
         else
         {
             // TODO: Handle this, I have no idea why or how
-            //console.log("UPDATE BLOCK!");
+            console.log("Unhandled block update!");
         }
     }
 
@@ -516,14 +521,14 @@ export class View
 
         var tsStart = new Date().getTime();
         // Buffer Color
-        gl.bindBuffer(gl.ARRAY_BUFFER, this.worldTranslateBuffer);
-        gl.bufferSubData(gl.ARRAY_BUFFER, 0, flatten(world_translate));
-        // Buffer Color
         gl.bindBuffer(gl.ARRAY_BUFFER, this.worldCBuffer);
         gl.bufferSubData(gl.ARRAY_BUFFER, 0, flatten(world_colors));
         // Buffer Verticies
         gl.bindBuffer(gl.ARRAY_BUFFER, this.worldVBuffer);
         gl.bufferSubData(gl.ARRAY_BUFFER, 0, flatten(world_points));
+        // Buffer Translate
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.worldTranslateBuffer);
+        gl.bufferSubData(gl.ARRAY_BUFFER, 0, flatten(world_translate));
         // Buffer Destroyed
         gl.bindBuffer(gl.ARRAY_BUFFER, this.worldDBuffer);
         gl.bufferSubData(gl.ARRAY_BUFFER, 0, new Float32Array(world_destroyed));
@@ -862,8 +867,7 @@ export class View
             var offset = this.vec_to_offset[pos];
             if(offset == undefined)
             {
-                console.log("DESTROYED NON EXISITING BLOCK!");
-                alert("WHAT");
+                this.new_block(pos);
             }
             else
             {
