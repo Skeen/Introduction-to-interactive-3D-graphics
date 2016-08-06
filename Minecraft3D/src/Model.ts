@@ -22,7 +22,7 @@ export class Model extends events.EventEmitter
 
     public worldRoughness : number = 0.857;
 
-    public worldGenerator : TerrainGenerator = new DiamondTerrainGenerator(this.worldPower);
+    public worldGenerator : TerrainGenerator;
 
     private worldGrid : any[] = [];
 
@@ -282,9 +282,11 @@ export class Model extends events.EventEmitter
         this.emit("map_active", map_active);
     }
 
-    constructor()
+    constructor(worldSeed:string)
     {
         super();
+        this.worldGenerator = new DiamondTerrainGenerator(this.worldPower, worldSeed);
+
         this.setup_world();
         this.update_stickman_position(vec3(this.worldX/2, this.worldY + 10, (this.worldZ - 1)/2));
         this.update_mouse_position(vec3(1, -0.5, 0));

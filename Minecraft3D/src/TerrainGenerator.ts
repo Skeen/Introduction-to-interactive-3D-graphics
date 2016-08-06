@@ -1,6 +1,8 @@
 /**
  * Created by dkchokk on 05/08/16.
  */
+///<reference path="../typings/globals/node/index.d.ts" />
+var seedrandom = require('seedrandom');
 export interface TerrainGenerator {
     generate(roughness:number): Float32Array;
 }
@@ -10,11 +12,14 @@ export class DiamondTerrainGenerator implements TerrainGenerator {
     private size:number;
     private max:number;
     private map:Float32Array;
+    private randomFunc: any;
 
-    constructor(mapSize:number) {
+    constructor(mapSize:number, randomSeed:string) {
         this.size = Math.pow(2, mapSize) + 1;
         this.max = this.size - 1;
         this.map = new Float32Array(Math.pow(this.size, 2));
+        this.randomFunc = seedrandom(randomSeed);
+        console.log('Random seed was', '"' + randomSeed + '"');
     }
 
     private get(x:number, y:number):number {
@@ -46,10 +51,10 @@ export class DiamondTerrainGenerator implements TerrainGenerator {
             return;
         for (y = half; y < this.max; y += size)
             for (x = half; x < this.max; x += size)
-                this.square(x, y, half, Math.random() * scale * 2 - scale);
+                this.square(x, y, half, this.randomFunc() * scale * 2 - scale);
         for (y = 0; y <= this.max; y += half)
             for (x = (y + half) % size; x <= this.max; x += size)
-                this.diamond(x, y, half, Math.random() * scale * 2 - scale);
+                this.diamond(x, y, half, this.randomFunc() * scale * 2 - scale);
         this.divide(size / 2, roughness);
     }
 
