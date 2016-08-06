@@ -311,6 +311,7 @@ export class Controller
         var can_move = function(pos)
         {
             return true;
+            /*
             // Get blocks below stickman
             var blocks = this.get_stickman_direction(vec3(Math.round(pos[0]), Math.floor(pos[1]), Math.round(pos[2])));
             if(blocks.length == 0)
@@ -322,6 +323,7 @@ export class Controller
                 all_sink = all_sink && TileUtil.is_sink_block(blocks[i]);
             }
             return all_sink;
+            */
 
         }.bind(this);
 

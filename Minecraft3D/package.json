@@ -8,6 +8,7 @@
   },
   "license": "ISC",
   "dependencies": {
+    "seedrandom": "^2.4.2"
   },
   "devDependencies": {
     "browser-sync": "^2.12.8",
