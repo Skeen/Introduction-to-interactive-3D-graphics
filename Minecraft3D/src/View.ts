@@ -139,7 +139,7 @@ export class View
         }
     }
 
-    private gen_buffers(arr_p, arr_c, arr_t, tile_color, pos)
+    private gen_colors(arr_c, tile_color)
     {
         for(var i = 0; i < this.verts_per_block/6; i++)
         {
@@ -152,7 +152,6 @@ export class View
                 arr_c.push(colors[i]);
         }
 
-        arr_t.push(pos);
     }
 
     private render_block(x, y, z)
@@ -216,7 +215,7 @@ export class View
         this.gen_indicies(indicies, offset);
         var tile = model.get_tile(pos);
         var tile_color = this.tile_to_color(tile);
-        this.gen_buffers(points, colors, translate, tile, pos);
+        //this.gen_buffers(points, colors, translate, tile, pos);
 
         gl.bindBuffer(gl.ARRAY_BUFFER, this.worldVBuffer);
         gl.bufferSubData(gl.ARRAY_BUFFER, offset * sizeof['vec3'], flatten(points));
@@ -340,21 +339,21 @@ export class View
         // World Color buffer
         this.worldCBuffer = gl.createBuffer();
         gl.bindBuffer(gl.ARRAY_BUFFER, this.worldCBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, sizeof['vec4'] * model.worldSize * this.verts_per_block, gl.STATIC_DRAW);
+        gl.bufferData(gl.ARRAY_BUFFER, sizeof['vec4'] * model.worldSize * this.verts_per_block / 50, gl.STATIC_DRAW);
         gl.vertexAttribPointer(this.vColor, 4, gl.FLOAT, false, 0, 0);
         gl.enableVertexAttribArray(this.vColor);
         var worldCBufferSize = Math.round(gl.getBufferParameter(gl.ARRAY_BUFFER, gl.BUFFER_SIZE) / 1000 / 1000);
         // World Translate buffer
         this.worldTranslateBuffer = gl.createBuffer();
         gl.bindBuffer(gl.ARRAY_BUFFER, this.worldTranslateBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, sizeof['vec3'] * model.worldSize, gl.STATIC_DRAW);
+        gl.bufferData(gl.ARRAY_BUFFER, sizeof['vec3'] * model.worldSize / 8, gl.STATIC_DRAW);
         gl.vertexAttribPointer(this.vTranslate, 3, gl.FLOAT, false, 0, 0);
         gl.enableVertexAttribArray(this.vTranslate);
         var worldTranslateBufferSize = Math.round(gl.getBufferParameter(gl.ARRAY_BUFFER, gl.BUFFER_SIZE) / 1000 / 1000);
         // World Index buffer
         this.worldIndexBuffer = gl.createBuffer();
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.worldIndexBuffer);
-        gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, Uint32Array.BYTES_PER_ELEMENT * model.worldSize * this.indicies_per_block, gl.STATIC_DRAW);
+        gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, Uint32Array.BYTES_PER_ELEMENT * model.worldSize * this.indicies_per_block / 8, gl.STATIC_DRAW);
         var worldIndexBufferSize = Math.round(gl.getBufferParameter(gl.ELEMENT_ARRAY_BUFFER, gl.BUFFER_SIZE) / 1000 / 1000);
 
         // Output memory usage information
@@ -424,7 +423,6 @@ export class View
         var gl = this.gl;
         var model = this.model;
 
-        var world_points = [];
         var world_colors = [];
         var world_translate = [];
         var world_indices = [];
@@ -434,6 +432,7 @@ export class View
         var x = 0;
         var y = 0;
         var z = 0;
+        var bx = 0;
         var start = new Date().getTime();
         for (var x = 0; x < model.worldX; x++)
         {
@@ -446,7 +445,8 @@ export class View
 
                     // Get the start offset into world_colors
                     //var offset = this.idx_to_offset(vec3(x,y,z));
-                    var offset = world_points.length;
+                    var offset = 24 * bx;
+                    bx = bx + 1;
                     //console.log(offset);
 
                     this.vec_to_offset[vec3(x,y,z)] = offset;
@@ -454,7 +454,9 @@ export class View
 
                     var tile = model.get_tile(vec3(x, y, z));
                     var tile_color = this.tile_to_color(tile);
-                    this.gen_buffers(world_points, world_colors, world_translate, tile_color, vec3(x,y,z));
+                    this.gen_colors(world_colors, tile_color);
+
+                    world_translate.push(vec3(x,y,z));
                 }
             }
         }
@@ -462,15 +464,15 @@ export class View
         console.log("Buffer filling loop done. It took", forLoopTs, "ms.");
 
         console.log("Number of rendered vertices:", world_indices.length);
-        console.log("Number of stored vertices:", world_points.length);
+        console.log("Number of stored vertices:", world_colors.length);
 
         this.block_indicies = world_indices.length;
-        this.block_verts = world_points.length;
+        this.block_verts = world_colors.length;
 
         var tsStart = new Date().getTime();
         // Buffer Color
         
-        world_points = []
+        var world_points = []
         for(var i = 0; i < this.verts_per_block; i++)
         {
             world_points.push(vec3(vertices[i]));
@@ -621,13 +623,14 @@ export class View
 
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.worldIndexBuffer);
         
-        ext_angle.vertexAttribDivisorANGLE(this.vTranslate, 6);
+        ext_angle.vertexAttribDivisorANGLE(this.vTranslate, 1);
         ext_angle.vertexAttribDivisorANGLE(this.vColor, 0);
         ext_angle.vertexAttribDivisorANGLE(this.vPosition, 0);
         for(var i = 0; i < 6; i++)
         {
-            ext_angle.drawElementsInstancedANGLE(gl.TRIANGLES, 6, gl.UNSIGNED_INT, 4*6*i, this.block_indicies / 6);
+            //ext_angle.drawElementsInstancedANGLE(gl.TRIANGLES, 6, gl.UNSIGNED_INT, 4*6*i, this.block_indicies/6);
         }
+        ext_angle.drawElementsInstancedANGLE(gl.TRIANGLES, 36, gl.UNSIGNED_INT, 0, this.block_indicies/36);
         (<any>window).requestAnimFrame(this.render.bind(this), this.canvas);
     }
 
@@ -779,9 +782,23 @@ export class View
         // Setup world
         this.initialize_block_world();
 
-
         var canvas = this.canvas;
         var gl = this.gl;
+
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.worldCBuffer);
+        var usage = sizeof['vec4'] * this.block_verts;
+        var percentage = usage / gl.getBufferParameter(gl.ARRAY_BUFFER, gl.BUFFER_SIZE);
+        console.log("color buffer usage: ", Math.round(percentage * 100), "%");
+
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.worldTranslateBuffer);
+        var usage = sizeof['vec3'] * this.block_verts / 4;
+        var percentage = usage / gl.getBufferParameter(gl.ARRAY_BUFFER, gl.BUFFER_SIZE);
+        console.log("translate buffer usage: ", Math.round(percentage * 100), "%");
+
+        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.worldIndexBuffer);
+        var usage = Uint32Array.BYTES_PER_ELEMENT * this.block_indicies;
+        var percentage = usage / gl.getBufferParameter(gl.ELEMENT_ARRAY_BUFFER, gl.BUFFER_SIZE);
+        console.log("index buffer usage: ", Math.round(percentage * 100), "%");
         
         var perspectiveMatrix = perspective(60, canvas.clientWidth / canvas.clientHeight, 0.1, 100.0);
         gl.uniformMatrix4fv(this.uPMatrix, false, flatten(perspectiveMatrix));
