@@ -1,7 +1,7 @@
 attribute vec3 vPosition;
 attribute vec4 vColor;
 attribute vec3 vTranslate;
-//attribute float vDestroyed;
+attribute float vDestroyed;
 
 uniform mat4 uMVMatrix;
 uniform mat4 uPMatrix;
@@ -34,9 +34,9 @@ mat4 scaleMat(vec3 scale)
 void main(void) 
 {
     vec4 pos = vec4(vPosition, 1.);
-    vec4 scale_pos = pos * scaleMat(vec3(0.5, 0.5, 0.5));
-    vec4 prerotated_pos = scale_pos * rotMat(vec3(1., 0., 1.), radians(45.));
-    vec4 rotated_pos = prerotated_pos * rotMat(vec3(0., 1., 0.), uTheta);
+    vec4 scale_pos = pos * scaleMat(vec3(1.0 - 0.5 * vDestroyed));
+    vec4 prerotated_pos = scale_pos * rotMat(vec3(1., 0., 1.), radians(45. * vDestroyed));
+    vec4 rotated_pos = prerotated_pos * rotMat(vec3(0., 1., 0.), uTheta * vDestroyed);
     vec4 translated_pos = rotated_pos + vec4(vTranslate, 0.);
     gl_Position = uPMatrix * uMVMatrix * translated_pos;
 

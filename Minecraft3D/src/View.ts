@@ -107,6 +107,7 @@ export class View
     private vColor;
     //private vScalePos;
     private vTranslate;
+    private vDestroyed;
     //private vClickPos;
     //private vTime;
     //private vStickPos;
@@ -119,6 +120,7 @@ export class View
     // Blocks
     private worldVBuffer : WebGLBuffer;
     private worldCBuffer : WebGLBuffer;
+    private worldDBuffer : WebGLBuffer;
     private worldTranslateBuffer : WebGLBuffer;
     private worldIndexBuffer : WebGLBuffer;
     // Stick figure
@@ -191,7 +193,7 @@ export class View
             if(model.valid_index(pos) == false)
                 continue;
             var tile = model.get_tile(pos);
-            empty_found = empty_found || TileUtil.is_sink_block(tile);
+            empty_found = empty_found || TileUtil.is_sink_block(tile) || model.get_destroyed(pos);
         }
         for(var j = -1; j <= 1; j+=2)
         {
@@ -199,7 +201,7 @@ export class View
             if(model.valid_index(pos) == false)
                 continue;
             var tile = model.get_tile(pos);
-            empty_found = empty_found || TileUtil.is_sink_block(tile);
+            empty_found = empty_found || TileUtil.is_sink_block(tile) || model.get_destroyed(pos);
         }
         for(var k = -1; k <= 1; k+=2)
         {
@@ -207,7 +209,7 @@ export class View
             if(model.valid_index(pos) == false)
                 continue;
             var tile = model.get_tile(pos);
-            empty_found = empty_found || TileUtil.is_sink_block(tile);
+            empty_found = empty_found || TileUtil.is_sink_block(tile) || model.get_destroyed(pos);
         }
         // No empty blocks? - Noone will see this block then, so skip it
         if(empty_found == false)
@@ -295,7 +297,7 @@ export class View
         }
     }
 
-    private rebufferColor(start, end, color) : void
+    private updateColor(start, end, color) : void
     {
         var gl = this.gl;
 
@@ -306,6 +308,19 @@ export class View
         }
         gl.bindBuffer(gl.ARRAY_BUFFER, this.worldCBuffer);
         gl.bufferSubData(gl.ARRAY_BUFFER, start*sizeof['vec4'], flatten(replace_values));
+    }
+
+    private updateDestroyed(start, end, destroyed) : void
+    {
+        var gl = this.gl;
+
+        var replace_values = [];
+        for(var i = 0; i < (end - start); i++)
+        {
+            replace_values.push(destroyed ? 1. : 0.);
+        }
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.worldDBuffer);
+        gl.bufferSubData(gl.ARRAY_BUFFER, start*Float32Array.BYTES_PER_ELEMENT, flatten(replace_values));
     }
 
     // Initialize WebGL render context.
@@ -346,6 +361,7 @@ export class View
         this.vPosition  = gl.getAttribLocation(this.boxShaderProgram, "vPosition");
         this.vColor     = gl.getAttribLocation(this.boxShaderProgram, "vColor");
         this.vTranslate = gl.getAttribLocation(this.boxShaderProgram, 'vTranslate');
+        this.vDestroyed = gl.getAttribLocation(this.boxShaderProgram, "vDestroyed");
         this.uPMatrix = gl.getUniformLocation(this.boxShaderProgram, "uPMatrix");
         this.uMVMatrix = gl.getUniformLocation(this.boxShaderProgram, "uMVMatrix");
         this.uTheta     = gl.getUniformLocation(this.boxShaderProgram, "uTheta");
@@ -371,6 +387,13 @@ export class View
         gl.vertexAttribPointer(this.vTranslate, 3, gl.FLOAT, false, 0, 0);
         gl.enableVertexAttribArray(this.vTranslate);
         var worldTranslateBufferSize = Math.round(gl.getBufferParameter(gl.ARRAY_BUFFER, gl.BUFFER_SIZE) / 1000 / 1000);
+        // World Destroyed buffer
+        this.worldDBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.worldDBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, Float32Array.BYTES_PER_ELEMENT * model.worldX * model.worldZ * 6 * this.verts_per_block, gl.STATIC_DRAW);
+        gl.vertexAttribPointer(this.vDestroyed, 1, gl.FLOAT, false, 0, 0);
+        gl.enableVertexAttribArray(this.vDestroyed);
+        var worldDBufferSize = Math.round(gl.getBufferParameter(gl.ARRAY_BUFFER, gl.BUFFER_SIZE) / 1000 / 1000);
         // World Index buffer
         this.worldIndexBuffer = gl.createBuffer();
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.worldIndexBuffer);
@@ -447,6 +470,7 @@ export class View
         var world_points = [];
         var world_colors = [];
         var world_translate = [];
+        var world_destroyed = [];
         var world_indices = [];
 
         this.vec_to_offset = {};
@@ -475,6 +499,9 @@ export class View
                     var tile = model.get_tile(vec3(x, y, z));
                     var tile_color = this.tile_to_color(tile);
                     this.gen_buffers(world_points, world_colors, world_translate, tile_color, vec3(x,y,z));
+
+                    for(var i = 0; i < this.verts_per_block; i++)
+                        world_destroyed.push(model.get_destroyed(vec3(x,y,z)) ? 1. : 0.);
                 }
             }
         }
@@ -497,6 +524,9 @@ export class View
         // Buffer Verticies
         gl.bindBuffer(gl.ARRAY_BUFFER, this.worldVBuffer);
         gl.bufferSubData(gl.ARRAY_BUFFER, 0, flatten(world_points));
+        // Buffer Destroyed
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.worldDBuffer);
+        gl.bufferSubData(gl.ARRAY_BUFFER, 0, new Float32Array(world_destroyed));
         // Buffer Indicies
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.worldIndexBuffer);
         gl.bufferSubData(gl.ELEMENT_ARRAY_BUFFER, 0, new Uint32Array(world_indices));
@@ -621,10 +651,12 @@ export class View
         gl.bindBuffer(gl.ARRAY_BUFFER, this.worldTranslateBuffer);
         gl.vertexAttribPointer(this.vTranslate, 3, gl.FLOAT, false, 0, 0);
 
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.worldDBuffer);
+        gl.vertexAttribPointer(this.vDestroyed, 1, gl.FLOAT, false, 0, 0);
+
         // Extension for UNSIGNED INT element indicies
         // TODO: Check availability
         var ext = gl.getExtension("OES_element_index_uint");
-
 
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.worldIndexBuffer);
         gl.drawElements(gl.TRIANGLES, this.block_indicies, gl.UNSIGNED_INT, 0);
@@ -818,11 +850,28 @@ export class View
             {
                 // Redraw the color of a block
                 var tile_color = this.tile_to_color(tile);
-                this.rebufferColor(offset, offset+this.verts_per_block, tile_color);
+                this.updateColor(offset, offset+this.verts_per_block, tile_color);
                 // Update all adjacent blocks
                 this.rebufferBlocks(pos);
             }
 
+        }.bind(this));
+
+        this.model.on("update_destroyed", function(pos, destroyed : boolean)
+        {
+            var offset = this.vec_to_offset[pos];
+            if(offset == undefined)
+            {
+                console.log("DESTROYED NON EXISITING BLOCK!");
+                alert("WHAT");
+            }
+            else
+            {
+                // Redraw the destroyed status of the block
+                this.updateDestroyed(offset, offset+this.verts_per_block, destroyed);
+                // Update all adjacent blocks
+                this.rebufferBlocks(pos);
+            }
         }.bind(this));
 
         var height = 1;
@@ -859,14 +908,10 @@ export class View
         this.model.on("mouse_move", update_camera);
         this.model.on("map_active", update_camera);
 
-        this.model.on("stickman_move", function(pos)
-        {
-            //this.model.update_tile(vec3(Math.round(pos[0]), Math.round(pos[1])-1, Math.round(pos[2])), Tile.STONE);
-        }.bind(this));
-
-        this.model.on("mouse_move", function(mouse_pos)
+        var update_placeblock = function() : void
         {
             var stick_pos = model.get_stickman_position().map(Math.round);
+            var mouse_pos   = model.get_mouse_position();
             var block_pos = add(stick_pos, mouse_pos).map(Math.round);
             if(stick_pos == block_pos)
             {
@@ -878,13 +923,16 @@ export class View
                 var placeable = this.model.can_build(block_pos);
                 this.initialize_mouse(block_pos, placeable);
             }
+        }.bind(this);
 
-        }.bind(this));
+        this.model.on("stickman_move", update_placeblock);
+        this.model.on("mouse_move", update_placeblock);
+
 /*
         this.model.on("stickman_move", function(stickman_pos)
         {
             var stick_pos = model.get_stickman_position().map(Math.round);
-            var block_pos = add(stick_pos, stickman_pos).map(Math.round);
+            var block_pos = stick_pos;
             if(stick_pos == block_pos)
             {
                 this.stickman_lines = 0;
