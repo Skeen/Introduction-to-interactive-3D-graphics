@@ -11,7 +11,7 @@ import {TerrainGenerator, DiamondTerrainGenerator} from "./TerrainGenerator";
 
 export class Model extends events.EventEmitter
 {
-    public worldPower : number = 5;
+    public worldPower : number = 8;
 
     public worldXZ : number = Math.pow(2, this.worldPower) + 1;
     public worldX : number = this.worldXZ;
@@ -194,7 +194,8 @@ export class Model extends events.EventEmitter
                 }
             }
         }
-
+/*
+        // Add water
         for (var x = 0; x < this.worldX; x++)
         {
             for (var y = 0; y < Math.round(this.worldY / 3); y++)
@@ -206,7 +207,7 @@ export class Model extends events.EventEmitter
                 }
             }
         }
-
+*/
 
         // // ------------ //
         // // Update tiles //

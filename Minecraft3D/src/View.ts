@@ -28,28 +28,10 @@ var cubeVertexIndices = [
 
 var colors = [
     [0.0,  1.0,  1.0,  1.0],    // Front face: cyan
-    [0.0,  1.0,  1.0,  1.0],    // Front face: cyan
-    [0.0,  1.0,  1.0,  1.0],    // Front face: cyan
-    [0.0,  1.0,  1.0,  1.0],    // Front face: cyan
-    [1.0,  0.0,  0.0,  1.0],    // Back face: red
-    [1.0,  0.0,  0.0,  1.0],    // Back face: red
-    [1.0,  0.0,  0.0,  1.0],    // Back face: red
     [1.0,  0.0,  0.0,  1.0],    // Back face: red
     [0.0,  1.0,  0.0,  1.0],    // Top face: green
-    [0.0,  1.0,  0.0,  1.0],    // Top face: green
-    [0.0,  1.0,  0.0,  1.0],    // Top face: green
-    [0.0,  1.0,  0.0,  1.0],    // Top face: green
-    [0.0,  0.0,  1.0,  1.0],    // Bottom face: blue
-    [0.0,  0.0,  1.0,  1.0],    // Bottom face: blue
-    [0.0,  0.0,  1.0,  1.0],    // Bottom face: blue
     [0.0,  0.0,  1.0,  1.0],    // Bottom face: blue
     [1.0,  1.0,  0.0,  1.0],    // Right face: yellow
-    [1.0,  1.0,  0.0,  1.0],    // Right face: yellow
-    [1.0,  1.0,  0.0,  1.0],    // Right face: yellow
-    [1.0,  1.0,  0.0,  1.0],    // Right face: yellow
-    [1.0,  0.0,  1.0,  1.0],    // Left face: purple
-    [1.0,  0.0,  1.0,  1.0],    // Left face: purple
-    [1.0,  0.0,  1.0,  1.0],    // Left face: purple
     [1.0,  0.0,  1.0,  1.0]     // Left face: purple
 ];
 
@@ -159,7 +141,7 @@ export class View
 
     private gen_buffers(arr_p, arr_c, arr_t, tile_color, pos)
     {
-        for(var i = 0; i < this.verts_per_block; i++)
+        for(var i = 0; i < this.verts_per_block/6; i++)
         {
             //arr_p.push(vec3(vertices[i]));
 
@@ -171,7 +153,6 @@ export class View
         }
 
         arr_t.push(pos);
-        //arr_t.push(pos);
     }
 
     private render_block(x, y, z)
@@ -366,7 +347,7 @@ export class View
         // World Translate buffer
         this.worldTranslateBuffer = gl.createBuffer();
         gl.bindBuffer(gl.ARRAY_BUFFER, this.worldTranslateBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, sizeof['vec3'] * model.worldSize * this.verts_per_block, gl.STATIC_DRAW);
+        gl.bufferData(gl.ARRAY_BUFFER, sizeof['vec3'] * model.worldSize, gl.STATIC_DRAW);
         gl.vertexAttribPointer(this.vTranslate, 3, gl.FLOAT, false, 0, 0);
         gl.enableVertexAttribArray(this.vTranslate);
         var worldTranslateBufferSize = Math.round(gl.getBufferParameter(gl.ARRAY_BUFFER, gl.BUFFER_SIZE) / 1000 / 1000);
@@ -640,13 +621,13 @@ export class View
 
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.worldIndexBuffer);
         
-        ext_angle.vertexAttribDivisorANGLE(this.vTranslate, 1);
-        //ext_angle.vertexAttribDivisorANGLE(this.vColor, 1);
+        ext_angle.vertexAttribDivisorANGLE(this.vTranslate, 6);
+        ext_angle.vertexAttribDivisorANGLE(this.vColor, 0);
         ext_angle.vertexAttribDivisorANGLE(this.vPosition, 0);
-        //ext_angle.drawElementsInstancedANGLE(gl.TRIANGLES, this.block_indicies, gl.UNSIGNED_INT, 0, 1);
-        ext_angle.drawElementsInstancedANGLE(gl.TRIANGLES, this.indicies_per_block, gl.UNSIGNED_INT, 0, this.block_indicies / this.indicies_per_block);
-        //gl.drawElements(gl.TRIANGLES, this.block_indicies, gl.UNSIGNED_INT, 0);
-
+        for(var i = 0; i < 6; i++)
+        {
+            ext_angle.drawElementsInstancedANGLE(gl.TRIANGLES, 6, gl.UNSIGNED_INT, 4*6*i, this.block_indicies / 6);
+        }
         (<any>window).requestAnimFrame(this.render.bind(this), this.canvas);
     }
 
