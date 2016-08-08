@@ -985,8 +985,8 @@ export class View
             }
         }
         var optimal = tile_to_texture_coord_worker(tile);
-        var offset = 1 / 16 / 16 / 2;
-        //var offset = 0;
+        //var offset = 1 / 16 / 16 / 2;
+        var offset = 0;
         return vec2(optimal[0] + offset, optimal[1] - offset);
     }
 
