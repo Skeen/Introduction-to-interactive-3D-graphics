@@ -8,6 +8,8 @@ declare var vec4: any;
 declare var flatten: any;
 declare var add: any;
 declare var scale: any;
+declare var radians: any;
+
 declare var rotate: any;
 declare var sizeof: any;
 declare var mult: any;
@@ -133,8 +135,8 @@ export class View
     private vM_Color;
     private vM_Translate;
 
-    private uM_PMatrix; 
-    private uM_MVMatrix; 
+    private uM_PMatrix;
+    private uM_MVMatrix;
 
     // Buffers
     //--------
@@ -416,7 +418,7 @@ export class View
         gl.enableVertexAttribArray(this.vDestroyed);
         var worldDBufferSize = gl.getBufferParameter(gl.ARRAY_BUFFER, gl.BUFFER_SIZE);
 
-        function formatBytes(bytes, decimals) 
+        function formatBytes(bytes, decimals)
         {
             if(bytes == 0)
                 return [ 0, 'Byte' ];
@@ -847,7 +849,7 @@ export class View
             console.log("'ANGLE_instanced_arrays' extension not available!");
             alert("FUCK");
         }
-        
+
         // Draw the mouse block
         if(this.draw_mouse == true)
         {
