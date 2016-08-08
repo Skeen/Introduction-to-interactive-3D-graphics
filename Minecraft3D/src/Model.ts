@@ -11,7 +11,7 @@ import {TerrainGenerator, DiamondTerrainGenerator} from "./TerrainGenerator";
 
 export class Model extends events.EventEmitter
 {
-    public worldPower : number = 5;
+    public worldPower : number = 8;
 
     public worldXZ : number = Math.pow(2, this.worldPower) + 1;
     public worldX : number = this.worldXZ;
@@ -205,8 +205,9 @@ export class Model extends events.EventEmitter
                 for(var z = 0; z < this.worldZ; z++)
                 {
                     this.worldGrid[x][y][z] = {}
-                    this.set_tile(vec3(x, y, z), Tile.EMPTY);
-                    this.set_destroyed(vec3(x, y, z), false);
+                    var pos = vec3(x, y, z);
+                    this.set_tile(pos, Tile.EMPTY);
+                    this.set_destroyed(pos, false);
                 }
             }
         }
@@ -238,9 +239,10 @@ export class Model extends events.EventEmitter
             {
                 for(var z = 0; z < this.worldZ; z++)
                 {
-                    if (this.get_tile(vec3(x,y,z)) == Tile.EMPTY)
+                    var pos = vec3(x, y, z);
+                    if (this.get_tile(pos) == Tile.EMPTY)
                     {
-                        this.set_tile(vec3(x,y,z), Tile.WATER);
+                        this.set_tile(pos, Tile.WATER);
                     }
                 }
             }
