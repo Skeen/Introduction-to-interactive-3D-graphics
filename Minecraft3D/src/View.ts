@@ -260,8 +260,12 @@ export class View
         }
         else
         {
-            // TODO: Handle this, I have no idea why or how
-            console.log("Unhandled block update!");
+            // Redraw the destroyed status of the block
+            var destroyed : boolean = model.get_destroyed(pos);
+            this.updateDestroyed(offset, offset + 1, destroyed);
+            // Redraw the tile of the block
+            var tile : Tile = model.get_tile(pos);
+            this.updateTile(offset, offset + 1, tile);
         }
     }
 
@@ -920,7 +924,7 @@ export class View
         switch(tile)
         {
             case Tile.EMPTY:
-                return vec2(13/16, 0/16);
+                return vec2(-1, -1);
             case Tile.STONE:
                 return vec2(0/16, 14/16);
             case Tile.GRASS:
