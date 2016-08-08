@@ -148,6 +148,8 @@ export class Controller
     private setKeyListeners():void {
         var self = this;
         $(window).on('keydown', function(e){
+            if (!self.pointerLock)
+                return;
             var key = String.fromCharCode(e.which).toLowerCase();
             if (key === ' ' || e.ctrlKey || e.metaKey || e.key.toLowerCase() === 'control')
                 key = String(e.which).toLowerCase();
@@ -155,6 +157,8 @@ export class Controller
         });
 
         $(window).on('keyup', function(e){
+            if (!self.pointerLock)
+                return;
             var key = String.fromCharCode(e.which).toLowerCase();
             if (key === ' ' || e.ctrlKey || e.metaKey || e.key.toLowerCase() === 'control')
                 key = String(e.which).toLowerCase();
@@ -842,78 +846,8 @@ export class KeyboardController {
             }
         }.bind(this));
 
-        // Setup Printer Lock
-        canvas.requestPointerLock = canvas.requestPointerLock;
-        document.exitPointerLock = document.exitPointerLock;
 
-        var capture_mouse = function()
-        {
-            canvas.requestPointerLock();
-        };
 
-        // When we click on the canvas, lock the mouse
-        $(canvas).on("click", capture_mouse);
-        // Hook pointer lock state change events for different browsers
-        document.addEventListener('pointerlockchange', lockChangeAlert.bind(this), false);
-        document.addEventListener('mozpointerlockchange', lockChangeAlert.bind(this), false);
-
-        var handler = canvasLoop.bind(this);
-
-        function lockChangeAlert() {
-            if(document.pointerLockElement === canvas)
-            {
-                console.log('The pointer lock status is now locked');
-                $(canvas).off("click", capture_mouse);
-                $(document).on("mousemove", handler);
-                $(canvas).on("click", place_block);
-            }
-            else
-            {
-                console.log('The pointer lock status is now unlocked');
-                $(canvas).on("click", capture_mouse);
-                $(document).off("mousemove", handler);
-                $(canvas).off("click", place_block);
-            }
-        }
-
-        var yaw = 0;
-        var pitch = 0;
-        var mouse_speed = 0.001;
-
-        function canvasLoop(e) 
-        {
-            e = e.originalEvent;
-            // Get relative mouse movements
-            var movementX = e.movementX || 0;
-            var movementY = e.movementY || 0;
-            // Append to our movement variables
-            yaw += movementX * mouse_speed;
-            pitch -= movementY * mouse_speed;
-
-            // Clamp us from looking directly up
-            if(pitch > Math.PI / 2 * 0.9)
-                pitch = Math.PI / 2 * 0.9;
-            // Clamp us from looking directly down
-            if(pitch < -Math.PI / 2 * 0.9)
-                pitch = -Math.PI / 2 * 0.9;
-
-            // Normalize our yaw
-            if(yaw > Math.PI * 2)
-                yaw -= Math.PI * 2;
-            if(yaw < -Math.PI * 2)
-                yaw += Math.PI * 2;
-
-            // Calculate view vector [-1,1] on all axis
-            var x = Math.cos(yaw) * Math.cos(pitch)
-            var y = Math.sin(pitch)
-            var z = Math.sin(yaw) * Math.cos(pitch)
-
-            // Let everyone know
-            this.model.update_mouse_position(vec3(x, y, z));
-
-            //console.log(vec3(x,y,z));
-        }
-    }
 };
  if(this.model.get_destroyed(block_pos) == 10)
  {
