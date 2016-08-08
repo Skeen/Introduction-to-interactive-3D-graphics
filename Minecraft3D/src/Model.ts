@@ -20,7 +20,7 @@ export class Model extends events.EventEmitter
 
     public worldSize : number = this.worldX * this.worldY * this.worldZ;
 
-    public worldRoughness : number = 0.1;
+    public worldRoughness : number = 0.540;
 
     public worldGenerator : TerrainGenerator;
 
