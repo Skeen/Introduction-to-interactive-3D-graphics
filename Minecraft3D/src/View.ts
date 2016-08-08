@@ -525,9 +525,8 @@ export class View
                     if(this.render_block(x, y, z) == false)
                         continue;
 
-                    this.blocks = this.blocks + 1;
-
                     this.vec_to_offset[vec3(x,y,z)] = this.blocks;
+                    this.blocks = this.blocks + 1;
 
                     var pos = vec3(x, y, z);
                     var tile = model.get_tile(pos);
