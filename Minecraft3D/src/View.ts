@@ -18,7 +18,7 @@ declare var initShaders: any;
 
 declare var perspective: any;
 declare var lookAt: any;
-
+/*
 var colors = [
     [0.0,  1.0,  1.0,  1.0],    // Front face: cyan
     [1.0,  0.0,  0.0,  1.0],    // Back face: red
@@ -27,6 +27,7 @@ var colors = [
     [1.0,  1.0,  0.0,  1.0],    // Right face: yellow
     [1.0,  0.0,  1.0,  1.0]     // Left face: purple
 ];
+*/
 
 var vertices = [
     // Front face (1)
@@ -85,54 +86,14 @@ var vertices = [
 ];
 
 var textureCoords = [
-    // Front face
+    // Front face (1)
     [0, 0],
     [1, 0],
     [1, 1],
-
+    // Front face (2)
     [0, 0],
     [1, 1],
-    [0, 1],
-    // Front face
-    [0, 0],
-    [1, 0],
-    [1, 1],
-
-    [0, 0],
-    [1, 1],
-    [0, 1],
-    // Front face
-    [0, 0],
-    [1, 0],
-    [1, 1],
-
-    [0, 0],
-    [1, 1],
-    [0, 1],
-    // Front face
-    [0, 0],
-    [1, 0],
-    [1, 1],
-
-    [0, 0],
-    [1, 1],
-    [0, 1],
-    // Front face
-    [0, 0],
-    [1, 0],
-    [1, 1],
-
-    [0, 0],
-    [1, 1],
-    [0, 1],
-    // Front face
-    [0, 0],
-    [1, 0],
-    [1, 1],
-
-    [0, 0],
-    [1, 1],
-    [0, 1],
+    [0, 1]
 ];
 
 export class View
@@ -146,8 +107,11 @@ export class View
     //private program : any;
     private boxShaderProgram : any;
 
-    //Texture variable
+    // Texture variables
     private tileTexture : any;
+
+    // Number of full world lines to buffer
+    private worldBufferLayers = 4;
 
     // Shader variables
     private vPosition;
@@ -173,7 +137,6 @@ export class View
     private worldTileBuffer : WebGLBuffer;
     private worldDBuffer : WebGLBuffer;
     private worldTranslateBuffer : WebGLBuffer;
-    //private worldIndexBuffer : WebGLBuffer;
     // Stick figure
     private stickVBuffer : WebGLBuffer;
     private stickCBuffer : WebGLBuffer;
@@ -202,6 +165,7 @@ export class View
     //private shockwave_duration : number = 1000;
     //private timerId;
 
+    /*
     private gen_colors(arr_c, tile_color)
     {
         for(var i = 0; i < this.verts_per_block/6; i++)
@@ -209,6 +173,7 @@ export class View
             arr_c.push(colors[i]);
         }
     }
+    */
 
     private render_block(x, y, z)
     {
@@ -439,21 +404,21 @@ export class View
         // World Tile buffer
         this.worldTileBuffer = gl.createBuffer();
         gl.bindBuffer(gl.ARRAY_BUFFER, this.worldTileBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, sizeof['vec2'] * model.worldX * model.worldZ * 2 * this.verts_per_block, gl.STATIC_DRAW);
+        gl.bufferData(gl.ARRAY_BUFFER, sizeof['vec2'] * model.worldX * model.worldZ * this.worldBufferLayers, gl.STATIC_DRAW);
         gl.vertexAttribPointer(this.vTile, 4, gl.FLOAT, false, 0, 0);
         gl.enableVertexAttribArray(this.vTile);
         var worldTileBufferSize = Math.round(gl.getBufferParameter(gl.ARRAY_BUFFER, gl.BUFFER_SIZE) / 1000 / 1000);
         // World Translate buffer
         this.worldTranslateBuffer = gl.createBuffer();
         gl.bindBuffer(gl.ARRAY_BUFFER, this.worldTranslateBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, sizeof['vec3'] * model.worldX * model.worldZ * 2 * this.verts_per_block, gl.STATIC_DRAW);
+        gl.bufferData(gl.ARRAY_BUFFER, sizeof['vec3'] * model.worldX * model.worldZ * this.worldBufferLayers, gl.STATIC_DRAW);
         gl.vertexAttribPointer(this.vTranslate, 3, gl.FLOAT, false, 0, 0);
         gl.enableVertexAttribArray(this.vTranslate);
         var worldTranslateBufferSize = Math.round(gl.getBufferParameter(gl.ARRAY_BUFFER, gl.BUFFER_SIZE) / 1000 / 1000);
         // World Destroyed buffer
         this.worldDBuffer = gl.createBuffer();
         gl.bindBuffer(gl.ARRAY_BUFFER, this.worldDBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, Float32Array.BYTES_PER_ELEMENT * model.worldX * model.worldZ * 2 * this.verts_per_block, gl.STATIC_DRAW);
+        gl.bufferData(gl.ARRAY_BUFFER, Float32Array.BYTES_PER_ELEMENT * model.worldX * model.worldZ * this.worldBufferLayers, gl.STATIC_DRAW);
         gl.vertexAttribPointer(this.vDestroyed, 1, gl.FLOAT, false, 0, 0);
         gl.enableVertexAttribArray(this.vDestroyed);
         var worldDBufferSize = Math.round(gl.getBufferParameter(gl.ARRAY_BUFFER, gl.BUFFER_SIZE) / 1000 / 1000);
@@ -552,10 +517,8 @@ export class View
 
         //this.vec_to_offset = {};
 
-        var x = 0;
-        var y = 0;
-        var z = 0;
         this.blocks = 0;
+
         var start = new Date().getTime();
         for (var x = 0; x < model.worldX; x++)
         {
@@ -566,22 +529,17 @@ export class View
                     if(this.render_block(x, y, z) == false)
                         continue;
 
-                    // Get the start offset into world_colors
-                    //var offset = this.idx_to_offset(vec3(x,y,z));
-                    //var offset = 24 * bx;
                     this.blocks = this.blocks + 1;
-                    //console.log(offset);
 
                     //this.vec_to_offset[vec3(x,y,z)] = offset;
                     //this.gen_indicies(world_indices, offset);
 
-                    var tile = model.get_tile(vec3(x, y, z));
-                    //var tile_color = this.tile_to_color(tile);
-                    //this.gen_colors(world_colors, tile_color);
+                    var pos = vec3(x, y, z);
+                    var tile = model.get_tile(pos);
 
                     world_tile.push(this.tile_to_texture_coord(tile));
-                    world_translate.push(vec3(x,y,z));
-                    world_destroyed.push(model.get_destroyed(vec3(x,y,z)) ? 1. : 0.);
+                    world_translate.push(pos);
+                    world_destroyed.push(model.get_destroyed(pos) ? 1. : 0.);
                 }
             }
         }
@@ -607,9 +565,12 @@ export class View
         gl.bufferSubData(gl.ARRAY_BUFFER, 0, flatten(world_points));
 
         var world_texture = [];
-        for(var i = 0; i < this.verts_per_block; i++)
+        for(var i = 0; i < this.verts_per_block/6; i++)
         {
-            world_texture.push(vec2(textureCoords[i]));
+            for(var j = 0; j < this.verts_per_block/6; j++)
+            {
+                world_texture.push(vec2(textureCoords[j]));
+            }
         }
         // Buffer Texture
         gl.bindBuffer(gl.ARRAY_BUFFER, this.cubeTextureBuffer);
@@ -1114,19 +1075,19 @@ export class View
         var gl = this.gl;
 
         gl.bindBuffer(gl.ARRAY_BUFFER, this.worldTileBuffer);
-        var usage = sizeof['vec4'] * this.blocks * 6;
+        var usage = sizeof['vec2'] * this.blocks;
         var percentage = usage / gl.getBufferParameter(gl.ARRAY_BUFFER, gl.BUFFER_SIZE);
-        console.log("vertex buffer usage: ", Math.round(percentage * 100), "%");
+        console.log("Tile buffer usage: ", Math.round(percentage * 100), "%");
 
         gl.bindBuffer(gl.ARRAY_BUFFER, this.worldTranslateBuffer);
-        var usage = sizeof['vec3'] * this.blocks * 6;
+        var usage = sizeof['vec3'] * this.blocks;
         var percentage = usage / gl.getBufferParameter(gl.ARRAY_BUFFER, gl.BUFFER_SIZE);
-        console.log("translate buffer usage: ", Math.round(percentage * 100), "%");
+        console.log("Translate buffer usage: ", Math.round(percentage * 100), "%");
 
         gl.bindBuffer(gl.ARRAY_BUFFER, this.worldDBuffer);
         var usage = Float32Array.BYTES_PER_ELEMENT * this.blocks;
         var percentage = usage / gl.getBufferParameter(gl.ARRAY_BUFFER, gl.BUFFER_SIZE);
-        console.log("destroyed buffer usage: ", Math.round(percentage * 100), "%");
+        console.log("Destroyed buffer usage: ", Math.round(percentage * 100), "%");
 
         var perspectiveMatrix = perspective(60, canvas.clientWidth / canvas.clientHeight, 0.1, 100.0);
         gl.uniformMatrix4fv(this.uPMatrix, false, flatten(perspectiveMatrix));
