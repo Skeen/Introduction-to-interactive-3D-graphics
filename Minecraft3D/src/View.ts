@@ -8,8 +8,10 @@ declare var vec4: any;
 declare var flatten: any;
 declare var add: any;
 declare var scale: any;
-
+declare var rotate: any;
 declare var sizeof: any;
+declare var mult: any;
+declare var subtract: any;
 
 declare var WebGLUtils: any;
 declare var initShaders: any;
@@ -167,6 +169,7 @@ export class View
     private stickCBuffer : WebGLBuffer;
     private stickTranslateBuffer : WebGLBuffer;
     private stickIndexBuffer : WebGLBuffer;
+
     // Mouse
     private mouseVBuffer : WebGLBuffer;
     private mouseCBuffer : WebGLBuffer;
@@ -619,56 +622,215 @@ export class View
     {
         var gl = this.gl;
         var height : number = 1.0 ;
-        var back : number = 0.3;
+        var width : number = 0.3;
         var front : number = 0.1;
         var feet : number = 0.2;
         var stick_points = [];
-
+        var torch_points = [];
+        //body
          // Front face
-        stick_points.push(vec3(-back, feet,  front));
-        stick_points.push(vec3(front, feet,  front));
-        stick_points.push(vec3(front,  height,  front));
-        stick_points.push(vec3(-back,  height,  front));
+        stick_points.push(vec3(-width, feet,  front));
+        stick_points.push(vec3(width, feet,  front));
+        stick_points.push(vec3(width,  height,  front));
+        stick_points.push(vec3(width,  height,  front));
+        stick_points.push(vec3(-width,  height,  front));
+        stick_points.push(vec3(-width, feet,  front));
 
         // Back face
-        stick_points.push(vec3(-back, feet, -back));
-        stick_points.push(vec3(-back,  height, -back));
-        stick_points.push(vec3(front,  height, -back));
-        stick_points.push(vec3(front, feet, -back));
+        stick_points.push(vec3(-width, feet, -front));
+        stick_points.push(vec3(-width,  height, -front));
+        stick_points.push(vec3(width,  height, -front));
+        stick_points.push(vec3(width,  height, -front));
+        stick_points.push(vec3(width, feet, -front));
+        stick_points.push(vec3(-width, feet, -front));
 
         // Top face
-        stick_points.push(vec3(-back,  height, -back));
-        stick_points.push(vec3(-back,  height,  front));
-        stick_points.push(vec3(front,  height,  front));
-        stick_points.push(vec3(front,  height, -back));
+        stick_points.push(vec3(-width,  height, -front));
+        stick_points.push(vec3(-width,  height,  front));
+        stick_points.push(vec3(width,  height,  front));
+        stick_points.push(vec3(width,  height,  front));
+        stick_points.push(vec3(width,  height, -front));
+        stick_points.push(vec3(-width,  height, -front));
 
             // Bottom face
-        stick_points.push(vec3(-back, feet, -back));
-        stick_points.push(vec3(front, feet, -back));
-        stick_points.push(vec3(front, feet,  front));
-        stick_points.push(vec3(-back, feet,  front));
+        stick_points.push(vec3(-width, feet, -front));
+        stick_points.push(vec3(width, feet, -front));
+        stick_points.push(vec3(width, feet,  front));
+        stick_points.push(vec3(width, feet,  front));
+        stick_points.push(vec3(-width, feet,  front));
+        stick_points.push(vec3(-width, feet, -front));
 
         // Right face
-        stick_points.push(vec3(front, feet, -back));
-        stick_points.push(vec3(front,  height, -back));
-        stick_points.push(vec3(front,  height,  front));
-        stick_points.push(vec3(front, feet,  front));
+        stick_points.push(vec3(width, feet, -front));
+        stick_points.push(vec3(width,  height, -front));
+        stick_points.push(vec3(width,  height,  front));
+        stick_points.push(vec3(width,  height,  front));
+        stick_points.push(vec3(width, feet,  front));
+        stick_points.push(vec3(width, feet, -front));
 
         // Left face
-        stick_points.push(vec3(-back, feet, -back));
-        stick_points.push(vec3(-back, feet,  front));
-        stick_points.push(vec3(-back,  height,  front));
-        stick_points.push(vec3(-back,  height, -back));
+        stick_points.push(vec3(-width, feet, -front));
+        stick_points.push(vec3(-width, feet,  front));
+        stick_points.push(vec3(-width,  height,  front));
+        stick_points.push(vec3(-width,  height,  front));
+        stick_points.push(vec3(-width,  height, -front));
+        stick_points.push(vec3(-width, feet, -front));
+
+        var p = rotate(90,vec3(1,0,0));
+        var shoulder = vec4(0.4,0.7,0.1,0);
+        //var tp = subtract(p-shoulder);
+
+        //Torch
+        //Front face
+        //console.log(p);
+        var p1 = vec4(0.3, 0.4,  0.1,1);
+        var p2 = vec4(0.4, 0.4,  0.1,1);
+        var p3 = (vec4(0.4,  0.7,  0.1,1));
+        var p4 = (vec4(0.4,  0.7,  0.1,1));
+        var p5 = (vec4(0.3,  0.7,  0.1,1));
+        var p6 = (vec4(0.3, 0.4,  0.1,1));
+/*
+        stick_points.push(vec3(mult(vec4(0.3, 0.4,  0.1,1),p)));
+        stick_points.push(vec3(mult(vec4(0.4, 0.4,  0.1,1),p)));
+        stick_points.push(vec3(mult(vec4(0.4,  0.7,  0.1,1),p)));
+        stick_points.push(vec3(mult(vec4(0.4,  0.7,  0.1,1),p)));
+        stick_points.push(vec3(mult(vec4(0.3,  0.7,  0.1,1),p)));
+        stick_points.push(vec3(mult(vec4(0.3, 0.4,  0.1,1),p)));
+        */
+        //console.log(mult(p1,p));
+        //console.log(mult(p,p1));
+        //console.log(mult(p1,p2));
+
+        stick_points.push(vec3(add(mult(p,subtract(p1,shoulder)), shoulder)));
+        stick_points.push(vec3(add(mult(p,subtract(p2,shoulder)), shoulder)));
+        stick_points.push(vec3(add(mult(p,subtract(p3,shoulder)), shoulder)));
+        stick_points.push(vec3(add(mult(p,subtract(p4,shoulder)), shoulder)));
+        stick_points.push(vec3(add(mult(p,subtract(p5,shoulder)), shoulder)));
+        stick_points.push(vec3(add(mult(p,subtract(p6,shoulder)), shoulder)));
+
+        // Back face
+        var p7 = (vec4(0.3, 0.4, 0.0,1));
+        var p8 = (vec4(0.3,  0.7, 0.0,1));
+        var p9 = (vec4(0.4,  0.7, 0.0,1));
+        var p10 = (vec4(0.4,  0.7, 0.0,1));
+        var p11 = (vec4(0.4, 0.4, 0.0,1));
+        var p12 = (vec4(0.3, 0.4, 0.0,1));
+/*
+        stick_points.push(vec3(vec4(0.3, 0.4, 0.0,1)*p));
+        stick_points.push(vec3(vec4(0.3,  0.7, 0.0,1)*p));
+        stick_points.push(vec3(vec4(0.4,  0.7, 0.0,1)*p));
+        stick_points.push(vec3(vec4(0.4,  0.7, 0.0,1)*p));
+        stick_points.push(vec3(vec4(0.4, 0.4, 0.0,1)*p));
+        stick_points.push(vec3(vec4(0.3, 0.4, 0.0,1)*p));
+ */
+        stick_points.push(vec3(add(mult(p,subtract(p7,shoulder)), shoulder)));
+        stick_points.push(vec3(add(mult(p,subtract(p8,shoulder)), shoulder)));
+        stick_points.push(vec3(add(mult(p,subtract(p9,shoulder)), shoulder)));
+        stick_points.push(vec3(add(mult(p,subtract(p10,shoulder)), shoulder)));
+        stick_points.push(vec3(add(mult(p,subtract(p11,shoulder)), shoulder)));
+        stick_points.push(vec3(add(mult(p,subtract(p12,shoulder)), shoulder)));
+        // Top face
+        var p13 = (vec4(0.3,  0.7, 0.0,1));
+        var p14 = (vec4(0.3,  0.7,  0.1,1));
+        var p15 = (vec4(0.4,  0.7,  0.1,1));
+        var p16 =(vec4(0.4,  0.7,  0.1,1));
+        var p17 = (vec4(0.4,  0.7, 0.0,1));
+        var p18 = (vec4(0.3,  0.7, 0.0,1));
+/*
+        stick_points.push(vec3(vec4(0.3,  0.7, 0.0,1)*p));
+        stick_points.push(vec3(vec4(0.3,  0.7,  0.1,1)*p));
+        stick_points.push(vec3(vec4(0.4,  0.7,  0.1,1)*p));
+        stick_points.push(vec3(vec4(0.4,  0.7,  0.1,1)*p));
+        stick_points.push(vec3(vec4(0.4,  0.7, 0.0,1)*p));
+        stick_points.push(vec3(vec4(0.3,  0.7, 0.0,1)*p));
+*/
+        stick_points.push(vec3(add(mult(p,subtract(p13,shoulder)), shoulder)));
+        stick_points.push(vec3(add(mult(p,subtract(p14,shoulder)), shoulder)));
+        stick_points.push(vec3(add(mult(p,subtract(p15,shoulder)), shoulder)));
+        stick_points.push(vec3(add(mult(p,subtract(p16,shoulder)), shoulder)));
+        stick_points.push(vec3(add(mult(p,subtract(p17,shoulder)), shoulder)));
+        stick_points.push(vec3(add(mult(p,subtract(p18,shoulder)), shoulder)));
+
+        // Bottom face
+        var p19 = (vec4(0.3, 0.4, 0.0,1));
+        var p20 = (vec4(0.4, 0.4, 0.0,1));
+        var p21 = (vec4(0.4, 0.4,  0.1,1));
+        var p22 = (vec4(0.4, 0.4,  0.1,1));
+        var p23 = (vec4(0.3, 0.4,  0.1,1));
+        var p24 = (vec4(0.3, 0.4, 0.0,1));
+/*
+        stick_points.push(vec3(vec4(0.3, 0.4, 0.0,1)*p));
+        stick_points.push(vec3(vec4(0.3, 0.4, 0.1,1)*p));
+        stick_points.push(vec3(vec4(0.4, 0.4,  0.1,1)*p));
+        stick_points.push(vec3(vec4(0.4, 0.4,  0.1,1)*p));
+        stick_points.push(vec3(vec4(0.4, 0.4,  0.0,1)*p));
+        stick_points.push(vec3(vec4(0.3, 0.4, 0.0,1)*p));
+*/
+        stick_points.push(vec3(add(mult(p,subtract(p19,shoulder)), shoulder)));
+        stick_points.push(vec3(add(mult(p,subtract(p20,shoulder)), shoulder)));
+        stick_points.push(vec3(add(mult(p,subtract(p21,shoulder)), shoulder)));
+        stick_points.push(vec3(add(mult(p,subtract(p22,shoulder)), shoulder)));
+        stick_points.push(vec3(add(mult(p,subtract(p23,shoulder)), shoulder)));
+        stick_points.push(vec3(add(mult(p,subtract(p24,shoulder)), shoulder)));
+
+        // Right face
+        var p25 = (vec4(0.4, 0.4, 0,1));
+        var p26 = (vec4(0.4,  0.7, 0.0,1));
+        var p27 = (vec4(0.4,  0.7,  0.1,1));
+        var p28 = (vec4(0.4,  0.7,  0.1,1));
+        var p29 = (vec4(0.4, 0.4,  0.1,1));
+        var p30 = (vec4(0.4, 0.4, 0,1,1));
+/*
+        stick_points.push(vec3(vec4(0.4, 0.4, 0,1)*p));
+        stick_points.push(vec3(vec4(0.4,  0.7, 0.0,1)*p));
+        stick_points.push(vec3(vec4(0.4,  0.7,  0.1,1)*p));
+        stick_points.push(vec3(vec4(0.4,  0.7,  0.1,1)*p));
+        stick_points.push(vec3(vec4(0.4, 0.4,  0.1,1)*p));
+        stick_points.push(vec3(vec4(0.4, 0.4, 0,1)*p));
+*/
+        stick_points.push(vec3(add(mult(p,subtract(p25,shoulder)), shoulder)));
+        stick_points.push(vec3(add(mult(p,subtract(p26,shoulder)), shoulder)));
+        stick_points.push(vec3(add(mult(p,subtract(p27,shoulder)), shoulder)));
+        stick_points.push(vec3(add(mult(p,subtract(p28,shoulder)), shoulder)));
+        stick_points.push(vec3(add(mult(p,subtract(p29,shoulder)), shoulder)));
+        stick_points.push(vec3(add(mult(p,subtract(p30,shoulder)), shoulder)));
+
+        // Left face
+
+        var p31 = (vec4(0.3, 0.4, 0,1, 1));
+        var p32 = (vec4(0.3, 0.4,  0.1,1));
+        var p33 = (vec4(0.3,  0.7,  0.1,1));
+        var p34 = (vec4(0.3,  0.7,  0.1,1));
+        var p35 = (vec4(0.3,  0.7, 0,1, 1));
+        var p36 = (vec4(0.3, 0.4, 0,1, 1));
+/*
+        stick_points.push(vec3(vec4(0.3, 0.4, 0,1)*p));
+        stick_points.push(vec3(vec4(0.3, 0.4,  0.1,1)*p));
+        stick_points.push(vec3(vec4(0.3,  0.7,  0.1,1)*p));
+        stick_points.push(vec3(vec4(0.3,  0.7,  0.1,1)*p));
+        stick_points.push(vec3(vec4(0.3,  0.7, 0,1)*p));
+        stick_points.push(vec3(vec4(0.3, 0.4, 0,1)*p));
+*/
+        stick_points.push(vec3(add(mult(p,subtract(p31,shoulder)), shoulder)));
+        stick_points.push(vec3(add(mult(p,subtract(p32,shoulder)), shoulder)));
+        stick_points.push(vec3(add(mult(p,subtract(p33,shoulder)), shoulder)));
+        stick_points.push(vec3(add(mult(p,subtract(p34,shoulder)), shoulder)));
+        stick_points.push(vec3(add(mult(p,subtract(p35,shoulder)), shoulder)));
+        stick_points.push(vec3(add(mult(p,subtract(p36,shoulder)), shoulder)));
 
         var stick_colors = [];
         var stick_translate = [];
         for(var i = 0; i < stick_points.length; i++)
         {
+            //stick_translate.push(3,1,3);
             stick_translate.push(pos);
+            if(i<stick_points.length/2)
+            stick_colors.push(vec4(1,0.72,0.6,1));
             //skin color
-            stick_colors.push(vec4(1,0.68,0.38,1));
-        }
+            else stick_colors.push(vec4(0.55,0.32,0.07,1));
 
+
+        }
         gl.bindBuffer(gl.ARRAY_BUFFER, this.stickCBuffer);
         gl.bufferData(gl.ARRAY_BUFFER, flatten(stick_colors), gl.STATIC_DRAW);
 
@@ -679,6 +841,7 @@ export class View
         gl.bufferData(gl.ARRAY_BUFFER, flatten(stick_translate), gl.STATIC_DRAW);
 
         this.stickman_lines = stick_points.length;
+        //console.log("stick points length: " + stick_points.length);
     }
 
     private render() : void
@@ -707,6 +870,7 @@ export class View
         }
 
         // Draw the stickman
+        //console.log(this.stickman_lines);
         if(this.stickman_lines != 0)
         {
             gl.bindBuffer(gl.ARRAY_BUFFER, this.stickCBuffer);
@@ -718,7 +882,7 @@ export class View
             gl.bindBuffer(gl.ARRAY_BUFFER, this.stickTranslateBuffer);
             gl.vertexAttribPointer(this.vTranslate, 3, gl.FLOAT, false, 0, 0);
 
-            gl.drawArrays(gl.TRIANGLE_FAN, 0, this.stickman_lines);
+            gl.drawArrays(gl.TRIANGLES, 0, this.stickman_lines);
         }
 
         // Draw the world
@@ -928,7 +1092,7 @@ export class View
         var usage = Uint32Array.BYTES_PER_ELEMENT * this.block_indicies;
         var percentage = usage / gl.getBufferParameter(gl.ELEMENT_ARRAY_BUFFER, gl.BUFFER_SIZE);
         console.log("index buffer usage: ", Math.round(percentage * 100), "%");
-        
+
         var perspectiveMatrix = perspective(60, canvas.clientWidth / canvas.clientHeight, 0.1, 100.0);
         gl.uniformMatrix4fv(this.uPMatrix, false, flatten(perspectiveMatrix));
 
@@ -971,7 +1135,8 @@ export class View
         {
             var stick_pos = model.get_stickman_position();
             var cam_pos   = model.get_mouse_position();
-
+            //console.log("stickman pos: "+stick_pos);
+            //console.log("mouse pos: " + cam_pos);
             if(model.is_map_active())
             {
                 var modelMatrix = lookAt(vec3(stick_pos[0],
@@ -993,6 +1158,38 @@ export class View
                                               stick_pos[2] + cam_pos[2]),
                                          vec3(0,1,0));
                 gl.uniformMatrix4fv(this.uMVMatrix, false, flatten(modelMatrix));
+                //X
+                var block_pos = add(stick_pos, cam_pos);
+                //console.log("block pos: " + block_pos);
+                var x1 = stick_pos[0];
+                //console.log("stick_pos x: " + stick_pos[0]);
+                //Z
+                var x2 = stick_pos[2];
+                //console.log("Stick pos X: "+ x1);
+                //console.log("Stick pos Z: "+ x2);
+
+                var y1 = block_pos[0];
+                var y2 = block_pos[2];
+                //console.log("Cam pos X: "+ y1);
+                //console.log("Cam pos Z: "+ y2);
+
+                var angle_numinator = x1*y1+x2*y2;
+                var angle_dev1 = Math.sqrt(x1^2+x2^2);
+                var angle_dev2 = Math.sqrt(y1^2+y2^2);
+                //console.log("Squareroot1: "+angle_dev1);
+                //console.log("Squareroot2: "+angle_dev2);
+                var angle_devisor = angle_dev1*angle_dev2;
+                //console.log("Angle numinator: "+ angle_numinator);
+                //console.log("angle devisor: " + angle_devisor );
+                //console.log("Cam pos Z: "+ stick_pos[2]);
+                var angle = Math.cos(angle_numinator/angle_devisor);
+                //console.log(angle);
+                var rotation = rotate(angle,vec3(0,1,0));
+                //console.log(vec4(stick_pos,1));
+                var rot_pos = mult(rotation,vec4(stick_pos,1));
+                //console.log("Stickman position: " + stick_pos);
+                //console.log("rotation pos: " + rot_pos);
+                //this.initialize_stick_man(rot_pos);
             }
         }.bind(this);
 
@@ -1020,29 +1217,20 @@ export class View
         this.model.on("stickman_move", update_placeblock);
         this.model.on("mouse_move", update_placeblock);
 
-/*
         this.model.on("stickman_move", function(stickman_pos)
         {
             var stick_pos = model.get_stickman_position().map(Math.round);
-            var block_pos = stick_pos;
-            if(stick_pos == block_pos)
-            {
-                this.stickman_lines = 0;
-            }
-            else
-            {
-                //console.log("Block pos: " + scale(0.5,block_pos));
-                //console.log("Stickman Pos: " + model.get_stickman_position());
-                this.initialize_stick_man(scale(0.5,block_pos));
-            }
+            //console.log("stickman_move: " + stick_pos );
+            //console.log("Block pos: " + scale(0.5,block_pos));
+            //console.log("Stickman Pos: " + model.get_stickman_position());
+            this.initialize_stick_man(stick_pos);
 
         }.bind(this));
-        */
         update_camera();
 
         this.initialize_mouse(vec3(0,5,0), false);
         // Setup stickman
-        //this.initialize_stick_man(model.get_stickman_position());
+        this.initialize_stick_man(model.get_stickman_position());
 
 /*
         this.model.on("shockwave", function(pos)
