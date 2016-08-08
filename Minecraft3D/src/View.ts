@@ -971,7 +971,7 @@ export class View
                 case Tile.WOOD:
                     return vec2(4/16, 15/16);
                 case Tile.METAL:
-                    return vec2(5/16, 16/16);
+                    return vec2(5/16, 15/16);
                 case Tile.WATER:
                     return vec2(0/16, 6/16);
                 case Tile.FIRE:
