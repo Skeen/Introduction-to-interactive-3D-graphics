@@ -508,12 +508,9 @@ export class Controller
             var placeable = model.can_build(block_pos);
             if(placeable && event.shiftKey == false)
             {
-                /*
                 var block_picker : any = document.getElementById('block_picker');
-                var block_string = block_picker.options[block_picker.selectedIndex].value;
-                var block_id = TileUtil.fromString(block_string);
-                */
-                var tile_id = Tile.STONE;
+                var tile_string = block_picker.options[block_picker.selectedIndex].value;
+                var tile_id = TileUtil.fromString(tile_string);
 
                 model.update_destroyed(block_pos, 0);
                 model.update_tile(block_pos, tile_id);
