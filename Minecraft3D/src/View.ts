@@ -8,6 +8,8 @@ declare var vec4: any;
 declare var flatten: any;
 declare var add: any;
 declare var scale: any;
+declare var radians: any;
+
 declare var rotate: any;
 declare var sizeof: any;
 declare var mult: any;
@@ -133,8 +135,8 @@ export class View
     private vM_Color;
     private vM_Translate;
 
-    private uM_PMatrix; 
-    private uM_MVMatrix; 
+    private uM_PMatrix;
+    private uM_MVMatrix;
 
     // Buffers
     //--------
@@ -416,7 +418,7 @@ export class View
         gl.enableVertexAttribArray(this.vDestroyed);
         var worldDBufferSize = gl.getBufferParameter(gl.ARRAY_BUFFER, gl.BUFFER_SIZE);
 
-        function formatBytes(bytes, decimals) 
+        function formatBytes(bytes, decimals)
         {
             if(bytes == 0)
                 return [ 0, 'Byte' ];
@@ -512,8 +514,8 @@ export class View
         gl.bindTexture(gl.TEXTURE_2D, this.tileTexture);
         gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
         gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
         gl.generateMipmap(gl.TEXTURE_2D);
 
         gl.useProgram(this.boxShaderProgram);
@@ -847,7 +849,7 @@ export class View
             console.log("'ANGLE_instanced_arrays' extension not available!");
             alert("FUCK");
         }
-        
+
         // Draw the mouse block
         if(this.draw_mouse == true)
         {

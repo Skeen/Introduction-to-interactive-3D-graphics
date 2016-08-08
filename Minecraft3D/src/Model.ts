@@ -20,7 +20,7 @@ export class Model extends events.EventEmitter
 
     public worldSize : number = this.worldX * this.worldY * this.worldZ;
 
-    public worldRoughness : number = 0.1;
+    public worldRoughness : number = 0.540;
 
     public worldGenerator : TerrainGenerator;
 
@@ -227,7 +227,7 @@ export class Model extends events.EventEmitter
                 if (yHeight > this.worldY) yHeight = this.worldY;
 
                 this.set_tile(vec3(x, 0, z), Tile.BEDROCK);
-                for (var y = 1; y < yHeight-1; y++) 
+                for (var y = 1; y < yHeight-1; y++)
                 {
                     this.set_tile(vec3(x, y, z), Tile.DIRT);
                 }
@@ -302,7 +302,7 @@ export class Model extends events.EventEmitter
         return this.mouse_position;
     }
 
-    private update_mouse_position(pos)
+    public update_mouse_position(pos)
     {
         this.mouse_position = pos;
         this.emit("mouse_move", pos);

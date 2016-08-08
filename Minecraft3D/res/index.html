@@ -6,6 +6,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <!--link rel='shortcut icon' type='image/x-icon' href='/../favicon.ico' /-->
     <link href="./favicon.ico" rel="icon" type="image/x-icon" />
+    <style>
+        input {
+            margin: 10px;
+        }
+    </style>
     <script type="text/javascript" src="Common/webgl-utils.js"></script>
     <script type="text/javascript" src="Common/initShaders2.js"></script>
     <script type="text/javascript" src="Common/MV.js"></script>
@@ -35,9 +40,8 @@
         <button type="button">Right</button>
         <!--label>Daylight control: </label-->
         <input id="time_slider" type="range"/>
-
-        <input type="text" id="seed" />
-        <button id="seedClick">Generate world!</button>
+        <input type="text" id="seed" /><button id="seedClick">Generate world!</button>
+        <label for="noclip"><input id="noclip" type="checkbox" /><b>NOCLIP</b></label>
     </div>
 
     <img id="tileTextureImage" src="tileTextures.png" hidden>
