@@ -142,10 +142,9 @@ export class View
     private stickCBuffer : WebGLBuffer;
     private stickTranslateBuffer : WebGLBuffer;
     private stickIndexBuffer : WebGLBuffer;
-
     // Mouse
-    private mouseVBuffer : WebGLBuffer;
-    private mouseCBuffer : WebGLBuffer;
+    private mouseTileBuffer : WebGLBuffer;
+    private mouseDBuffer : WebGLBuffer;
     private mouseTranslateBuffer : WebGLBuffer;
 
     // Game related stuff.
@@ -156,7 +155,6 @@ export class View
     // Fix this
     private mouse_lines : number = 0;
     private blocks : number = 0;
-    //private vec_to_offset;
     private vec_to_offset;
     private theta : number = 0;
 
@@ -219,53 +217,35 @@ export class View
 
     private new_block(pos)
     {
-        /*
         var model = this.model;
         var gl = this.gl;
 
-        var points = [];
-        var colors = [];
-        var translate = [];
-        var texture = [];
-        var destroyed = [];
-        var indicies = [];
+        var block_tile = [];
+        var block_translate = [];
+        var block_destroyed = [];
 
-        //var offset = this.block_verts + this.verts_per_block;
-        //this.vec_to_offset[pos] = offset;
-        //this.block_verts = offset;
+        // Get the offset for this new block
+        var offset = this.blocks;
+        this.blocks++;
+        this.vec_to_offset[pos] = offset;
 
-        //console.log("New block at offset =", offset);
-
-        //this.gen_indicies(indicies, offset);
         var tile = model.get_tile(pos);
-        var tile_color = this.tile_to_color(tile);
-        //this.gen_buffers(points, colors, translate, tile, pos);
-        //var tile_color = this.tile_to_color(tile);
-        this.gen_buffers(points, colors, translate, texture, tile, pos);
 
-        for(var i = 0; i < this.verts_per_block; i++)
-            destroyed.push(model.get_destroyed(pos) ? 1. : 0.);
+        block_tile.push(this.tile_to_texture_coord(tile));
+        block_translate.push(pos);
+        block_destroyed.push(this.model.get_destroyed(pos));
 
-        gl.bindBuffer(gl.ARRAY_BUFFER, this.worldVBuffer);
-        gl.bufferSubData(gl.ARRAY_BUFFER, offset * sizeof['vec3'], flatten(points));
-
+        // Buffer Tile
         gl.bindBuffer(gl.ARRAY_BUFFER, this.worldTileBuffer);
-        gl.bufferSubData(gl.ARRAY_BUFFER, offset * sizeof['vec4'], flatten(colors));
+        gl.bufferSubData(gl.ARRAY_BUFFER, offset * sizeof['vec2'], flatten(block_tile));
 
+        // Buffer Translate
         gl.bindBuffer(gl.ARRAY_BUFFER, this.worldTranslateBuffer);
-        gl.bufferSubData(gl.ARRAY_BUFFER, offset * sizeof['vec3'], flatten(translate));
+        gl.bufferSubData(gl.ARRAY_BUFFER, offset * sizeof['vec3'], flatten(block_translate));
 
-        gl.bindBuffer(gl.ARRAY_BUFFER, this.worldTBuffer);
-        gl.bufferSubData(gl.ARRAY_BUFFER, offset * sizeof['vec2'], flatten(texture));
         // Buffer Destroyed
         gl.bindBuffer(gl.ARRAY_BUFFER, this.worldDBuffer);
-        gl.bufferSubData(gl.ARRAY_BUFFER, offset * Float32Array.BYTES_PER_ELEMENT, new Float32Array(destroyed));
-
-        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.worldIndexBuffer);
-        gl.bufferSubData(gl.ELEMENT_ARRAY_BUFFER, (this.block_indicies)*Uint32Array.BYTES_PER_ELEMENT, new Uint32Array(indicies));
-
-        this.block_indicies = this.block_indicies + this.indicies_per_block;
-        */
+        gl.bufferSubData(gl.ARRAY_BUFFER, offset * Float32Array.BYTES_PER_ELEMENT, new Float32Array(block_destroyed));
     }
 
     private update_block(pos)
@@ -273,8 +253,7 @@ export class View
         var model = this.model;
         var gl = this.gl;
 
-        //var offset = this.vec_to_offset[pos];
-        /*
+        var offset = this.vec_to_offset[pos];
         if(offset == undefined)
         {
             this.new_block(pos);
@@ -284,7 +263,6 @@ export class View
             // TODO: Handle this, I have no idea why or how
             console.log("Unhandled block update!");
         }
-        */
     }
 
     private rebufferBlocks(pos)
@@ -450,26 +428,27 @@ export class View
         gl.bufferData(gl.ARRAY_BUFFER, sizeof['vec3'] * 5 * 4, gl.STATIC_DRAW);
         gl.vertexAttribPointer(this.vTranslate, 3, gl.FLOAT, false, 0, 0);
         gl.enableVertexAttribArray(this.vTranslate);
+        */
 
-        // Mouse Vertex buffer
-        this.mouseVBuffer = gl.createBuffer();
-        gl.bindBuffer(gl.ARRAY_BUFFER, this.mouseVBuffer);
+        // Mouse Tile buffer
+        this.mouseTileBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.mouseTileBuffer);
         gl.bufferData(gl.ARRAY_BUFFER, sizeof['vec2'] * 5 * 2, gl.STATIC_DRAW);
-        gl.vertexAttribPointer(this.vPosition, 2, gl.FLOAT, false, 0, 0);
-        gl.enableVertexAttribArray(this.vPosition);
-        // Mouse Color buffer
-        this.mouseCBuffer = gl.createBuffer();
-        gl.bindBuffer(gl.ARRAY_BUFFER, this.mouseCBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, sizeof['vec4'] * 5 * 2, gl.STATIC_DRAW);
-        gl.vertexAttribPointer(this.vColor, 4, gl.FLOAT, false, 0, 0);
-        gl.enableVertexAttribArray(this.vColor);
+        gl.vertexAttribPointer(this.vTile, 2, gl.FLOAT, false, 0, 0);
+        gl.enableVertexAttribArray(this.vTile);
         // Mouse Translate buffer
         this.mouseTranslateBuffer = gl.createBuffer();
         gl.bindBuffer(gl.ARRAY_BUFFER, this.mouseTranslateBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, sizeof['vec2'] * 5 * 4, gl.STATIC_DRAW);
-        gl.vertexAttribPointer(this.vTranslate, 2, gl.FLOAT, false, 0, 0);
+        gl.bufferData(gl.ARRAY_BUFFER, sizeof['vec3'] * 5 * 4, gl.STATIC_DRAW);
+        gl.vertexAttribPointer(this.vTranslate, 3, gl.FLOAT, false, 0, 0);
         gl.enableVertexAttribArray(this.vTranslate);
-        */
+        // Mouse Destroyed buffer
+        this.mouseDBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.mouseDBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, Float32Array.BYTES_PER_ELEMENT * 5 * 2, gl.STATIC_DRAW);
+        gl.vertexAttribPointer(this.vDestroyed, 1, gl.FLOAT, false, 0, 0);
+        gl.enableVertexAttribArray(this.vDestroyed);
+ 
     }
 
     private idx_to_offset(pos) : number
@@ -511,11 +490,9 @@ export class View
 
         var world_tile = [];
         var world_translate = [];
-        var world_texture = [];
         var world_destroyed = [];
-        var world_indices = [];
 
-        //this.vec_to_offset = {};
+        this.vec_to_offset = {};
 
         this.blocks = 0;
 
@@ -531,8 +508,7 @@ export class View
 
                     this.blocks = this.blocks + 1;
 
-                    //this.vec_to_offset[vec3(x,y,z)] = offset;
-                    //this.gen_indicies(world_indices, offset);
+                    this.vec_to_offset[vec3(x,y,z)] = this.blocks;
 
                     var pos = vec3(x, y, z);
                     var tile = model.get_tile(pos);
@@ -826,47 +802,49 @@ export class View
 
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
+        // Instanced rendering extension
+        var ext_angle = gl.getExtension("ANGLE_instanced_arrays");
+        if(!ext_angle)
+        {
+            console.log("'ANGLE_instanced_arrays' extension not available!");
+            alert("FUCK");
+        }
+        
+        // Update theta for destroyed cubes
         this.theta += 0.1;
         gl.uniform1f(this.uTheta, this.theta);
+
+        // Load in cube buffers
+        // Reuse cube vertices for all blocks
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.cubeVertexBuffer);
+        gl.vertexAttribPointer(this.vPosition, 3, gl.FLOAT, false, 0, 0);
+        ext_angle.vertexAttribDivisorANGLE(this.vPosition, 0);
+        // Reuse texture vertices for all blocks
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.cubeTextureBuffer);
+        gl.vertexAttribPointer(this.vTexCoord, 2, gl.FLOAT, false, 0, 0);
+        ext_angle.vertexAttribDivisorANGLE(this.vTexCoord, 0);
 
         // Draw the mouse block
         if(this.mouse_lines != 0)
         {
-            /*
-            gl.bindBuffer(gl.ARRAY_BUFFER, this.worldTileBuffer);
+            gl.bindBuffer(gl.ARRAY_BUFFER, this.mouseTileBuffer);
             gl.vertexAttribPointer(this.vTile, 2, gl.FLOAT, false, 0, 0);
             ext_angle.vertexAttribDivisorANGLE(this.vTile, 1);
 
-            gl.bindBuffer(gl.ARRAY_BUFFER, this.worldTBuffer);
-            gl.vertexAttribPointer(this.vTexCoord, 2, gl.FLOAT, false, 0, 0);
-            ext_angle.vertexAttribDivisorANGLE(this.vTexCoord, 0);
-
-            gl.bindBuffer(gl.ARRAY_BUFFER, this.worldVBuffer);
-            gl.vertexAttribPointer(this.vPosition, 3, gl.FLOAT, false, 0, 0);
-            ext_angle.vertexAttribDivisorANGLE(this.vPosition, 0);
-
-            gl.bindBuffer(gl.ARRAY_BUFFER, this.worldTranslateBuffer);
+            gl.bindBuffer(gl.ARRAY_BUFFER, this.mouseTranslateBuffer);
             gl.vertexAttribPointer(this.vTranslate, 3, gl.FLOAT, false, 0, 0);
             ext_angle.vertexAttribDivisorANGLE(this.vTranslate, 1);
 
-            gl.bindBuffer(gl.ARRAY_BUFFER, this.worldDBuffer);
+            gl.bindBuffer(gl.ARRAY_BUFFER, this.mouseDBuffer);
             gl.vertexAttribPointer(this.vDestroyed, 1, gl.FLOAT, false, 0, 0);
             ext_angle.vertexAttribDivisorANGLE(this.vDestroyed, 1);
 
             gl.bindTexture(gl.TEXTURE_2D, this.tileTexture);
 
-
-            gl.bindBuffer(gl.ARRAY_BUFFER, this.mouseCBuffer);
-            gl.vertexAttribPointer(this.vColor, 4, gl.FLOAT, false, 0, 0);
-
-            gl.bindBuffer(gl.ARRAY_BUFFER, this.mouseVBuffer);
-            gl.vertexAttribPointer(this.vPosition, 3, gl.FLOAT, false, 0, 0);
-
             gl.bindBuffer(gl.ARRAY_BUFFER, this.mouseTranslateBuffer);
             gl.vertexAttribPointer(this.vTranslate, 3, gl.FLOAT, false, 0, 0);
 
             gl.drawArrays(gl.LINES, 0, this.mouse_lines);
-            */
         }
 
         // Draw the stickman
@@ -887,24 +865,7 @@ export class View
         }
         */
 
-        // Instanced rendering extension
-        var ext_angle = gl.getExtension("ANGLE_instanced_arrays");
-        if(!ext_angle)
-        {
-            console.log("'ANGLE_instanced_arrays' extension not available!");
-            alert("FUCK");
-        }
-
         // Draw the world
-        // Reuse cube vertices for all blocks
-        gl.bindBuffer(gl.ARRAY_BUFFER, this.cubeVertexBuffer);
-        gl.vertexAttribPointer(this.vPosition, 3, gl.FLOAT, false, 0, 0);
-        ext_angle.vertexAttribDivisorANGLE(this.vPosition, 0);
-        // Reuse texture vertices for all blocks
-        gl.bindBuffer(gl.ARRAY_BUFFER, this.cubeTextureBuffer);
-        gl.vertexAttribPointer(this.vTexCoord, 2, gl.FLOAT, false, 0, 0);
-        ext_angle.vertexAttribDivisorANGLE(this.vTexCoord, 0);
-
         // Use 1 tile for each block
         gl.bindBuffer(gl.ARRAY_BUFFER, this.worldTileBuffer);
         gl.vertexAttribPointer(this.vTile, 2, gl.FLOAT, false, 0, 0);
@@ -1032,31 +993,26 @@ export class View
     private initialize_mouse(pos, placeable : boolean) : void
     {
         var gl = this.gl;
-        /*
         var mouse_points = [];
 
-        var color = (placeable ? vec4(0., 0., 0., 1.) : vec4(1., 0., 0., 1.));
+        //var color = (placeable ? vec4(0., 0., 0., 1.) : vec4(1., 0., 0., 1.));
 
-        var mouse_colors = [];
+        var mouse_tile = [];
+        mouse_tile.push(this.tile_to_texture_coord(Tile.FIRE));
 
         var mouse_translate = [];
-        for(var i = 0; i < mouse_points.length; i++)
-        {
-            mouse_colors.push(color);
-            mouse_translate.push(pos);
-        }
+        mouse_translate.push(pos);
 
-        gl.bindBuffer(gl.ARRAY_BUFFER, this.mouseCBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, flatten(mouse_colors), gl.STATIC_DRAW);
-         
-        gl.bindBuffer(gl.ARRAY_BUFFER, this.mouseVBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, flatten(mouse_points), gl.STATIC_DRAW);
-         
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.mouseTileBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, flatten(mouse_tile), gl.STATIC_DRAW);
+
         gl.bindBuffer(gl.ARRAY_BUFFER, this.mouseTranslateBuffer);
         gl.bufferData(gl.ARRAY_BUFFER, flatten(mouse_translate), gl.STATIC_DRAW);
+ 
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.mouseDBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([.0]), gl.STATIC_DRAW);
 
         this.mouse_lines = mouse_points.length;
-        */
     }
 
     constructor(model : Model)
@@ -1092,7 +1048,6 @@ export class View
         var perspectiveMatrix = perspective(60, canvas.clientWidth / canvas.clientHeight, 0.1, 100.0);
         gl.uniformMatrix4fv(this.uPMatrix, false, flatten(perspectiveMatrix));
 
-        /*
         this.model.on("update_tile", function(pos, tile)
         {
             var offset = this.vec_to_offset[pos];
@@ -1102,15 +1057,13 @@ export class View
             }
             else
             {
-                // Redraw the color of a block
-                this.updateColor(offset, offset+this.verts_per_block, tile);
-                this.updateTexture(offset, offset+this.verts_per_block, tile);
+                // Redraw the tile of the block
+                this.updateTile(offset, offset + 1, tile);
                 // Update all adjacent blocks
                 this.rebufferBlocks(pos);
             }
 
         }.bind(this));
-        */
 
         this.model.on("update_destroyed", function(pos, destroyed : boolean)
         {
@@ -1122,7 +1075,7 @@ export class View
             else
             {
                 // Redraw the destroyed status of the block
-                this.updateDestroyed(offset, offset+this.verts_per_block, destroyed);
+                this.updateDestroyed(offset, offset + 1, destroyed);
                 // Update all adjacent blocks
                 this.rebufferBlocks(pos);
             }
