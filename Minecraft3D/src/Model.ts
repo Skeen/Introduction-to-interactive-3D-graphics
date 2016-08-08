@@ -7,7 +7,7 @@ declare var vec3: any;
 import { Tile } from "./Tile"
 import {TerrainGenerator, DiamondTerrainGenerator} from "./TerrainGenerator";
 
-// Math.log2 = Math.log2 || function(x){return Math.log(x)*Math.LOG2E;};
+// Math.log2 = Math.log2 || function(x) { return Math.log(x) * Math.LOG2E; };
 
 export class Model extends events.EventEmitter
 {
@@ -20,9 +20,9 @@ export class Model extends events.EventEmitter
 
     public worldSize : number = this.worldX * this.worldY * this.worldZ;
 
-    public worldRoughness : number = 0.857;
+    public worldRoughness : number = 0.1;
 
-    public worldGenerator : TerrainGenerator = new DiamondTerrainGenerator(this.worldPower);
+    public worldGenerator : TerrainGenerator;
 
     private worldGrid : any[] = [];
 
@@ -63,7 +63,7 @@ export class Model extends events.EventEmitter
         var y = pos[1];
         var z = pos[2];
 
-        return this.worldGrid[x][y][z];
+        return this.worldGrid[x][y][z].tile;
     }
 
     private set_tile(pos, tile : Tile) : void
@@ -72,7 +72,47 @@ export class Model extends events.EventEmitter
         var y = pos[1];
         var z = pos[2];
 
-        this.worldGrid[x][y][z] = tile;
+        this.worldGrid[x][y][z].tile = tile;
+    }
+
+    public update_tile(pos, tile : Tile)
+    {
+        if(this.valid_index(pos) == false)
+            return false;
+
+        this.set_tile(pos, tile);
+        this.emit("update_tile", pos, tile);
+        return true;
+    }
+
+    public get_destroyed(pos) : boolean
+    {
+        this.valid_index(pos);
+
+        var x = pos[0];
+        var y = pos[1];
+        var z = pos[2];
+
+        return this.worldGrid[x][y][z].destroyed;
+    }
+
+    private set_destroyed(pos, destroyed : boolean) : void
+    {
+        var x = pos[0];
+        var y = pos[1];
+        var z = pos[2];
+
+        this.worldGrid[x][y][z].destroyed = destroyed;
+    }
+
+    public update_destroyed(pos, destroyed : boolean)
+    {
+        if(this.valid_index(pos) == false)
+            return false;
+
+        this.set_destroyed(pos, destroyed);
+        this.emit("update_destroyed", pos, destroyed);
+        return true;
     }
 
     // Checks whether a block can be built at x,y
@@ -119,16 +159,6 @@ export class Model extends events.EventEmitter
         return false;
     }
 
-    public update_tile(pos, tile : Tile)
-    {
-        if(this.valid_index(pos) == false)
-            return false;
-
-        this.set_tile(pos, tile);
-        this.emit("update_tile", pos, tile);
-        return true;
-    }
-
     /*
     private create_stickman() : any
     {
@@ -146,7 +176,7 @@ export class Model extends events.EventEmitter
         this.emit("stickman_move", pos);
     }
 
-    private setup_world() : void
+    private setup_worldGrid() : void
     {
         function isPowerOfTwo(x : number) : boolean
         {
@@ -174,11 +204,16 @@ export class Model extends events.EventEmitter
                 this.worldGrid[x][y] = [];
                 for(var z = 0; z < this.worldZ; z++)
                 {
-                    this.worldGrid[x][y][z] = Tile.EMPTY;
+                    this.worldGrid[x][y][z] = {}
+                    this.set_tile(vec3(x, y, z), Tile.EMPTY);
+                    this.set_destroyed(vec3(x, y, z), false);
                 }
             }
         }
+    }
 
+    private setup_world() : void
+    {
         var heightmap = this.worldGenerator.generate(this.worldRoughness);
         for (var x = 0; x < this.worldX; x++)
         {
@@ -188,9 +223,10 @@ export class Model extends events.EventEmitter
                 var yHeight = Math.round((heightmap[offset] / this.worldX) * this.worldY);
                 if (yHeight > this.worldY) yHeight = this.worldY;
 
-                this.worldGrid[x][0][z] = Tile.BEDROCK;
-                for (var y = 1; y < yHeight-1; y++) {
-                    this.worldGrid[x][y][z] = Tile.DIRT;
+                this.set_tile(vec3(x, 0, z), Tile.BEDROCK);
+                for (var y = 1; y < yHeight-1; y++) 
+                {
+                    this.set_tile(vec3(x, y, z), Tile.DIRT);
                 }
             }
         }
@@ -202,8 +238,10 @@ export class Model extends events.EventEmitter
             {
                 for(var z = 0; z < this.worldZ; z++)
                 {
-                    if (this.worldGrid[x][y][z] === Tile.EMPTY)
-                        this.worldGrid[x][y][z] = Tile.WATER;
+                    if (this.get_tile(vec3(x,y,z)) == Tile.EMPTY)
+                    {
+                        this.set_tile(vec3(x,y,z), Tile.WATER);
+                    }
                 }
             }
         }
@@ -282,9 +320,12 @@ export class Model extends events.EventEmitter
         this.emit("map_active", map_active);
     }
 
-    constructor()
+    constructor(worldSeed:string)
     {
         super();
+        this.worldGenerator = new DiamondTerrainGenerator(this.worldPower, worldSeed);
+
+        this.setup_worldGrid();
         this.setup_world();
         this.update_stickman_position(vec3(this.worldX/2, this.worldY + 10, (this.worldZ - 1)/2));
         this.update_mouse_position(vec3(1, -0.5, 0));

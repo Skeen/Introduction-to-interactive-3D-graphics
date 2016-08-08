@@ -310,6 +310,8 @@ export class Controller
 
         var can_move = function(pos)
         {
+            return true;
+            /*
             // Get blocks below stickman
             var blocks = this.get_stickman_direction(vec3(Math.round(pos[0]), Math.floor(pos[1]), Math.round(pos[2])));
             if(blocks.length == 0)
@@ -321,6 +323,7 @@ export class Controller
                 all_sink = all_sink && TileUtil.is_sink_block(blocks[i]);
             }
             return all_sink;
+            */
 
         }.bind(this);
 
@@ -498,6 +501,9 @@ export class Controller
             var mouse_pos = model.get_mouse_position();
             var block_pos = add(stick_pos, mouse_pos).map(Math.round);
 
+            if(model.valid_index(block_pos) == false)
+                return;
+
             // Check if block is free
             var placeable = model.can_build(block_pos);
             if(placeable && event.shiftKey == false)
@@ -509,15 +515,32 @@ export class Controller
                 */
                 var tile_id = Tile.STONE;
 
+                model.update_destroyed(block_pos, false);
                 model.update_tile(block_pos, tile_id);
                 //shockwave();
             }
             else if(TileUtil.is_destroyable(model.get_tile(block_pos)) && event.shiftKey == true)
             {
-                model.update_tile(block_pos, Tile.EMPTY);
+                model.update_destroyed(block_pos, true);
+                //model.update_tile(block_pos, Tile.EMPTY);
                 //shockwave();
             }
         }.bind(this);
+
+        this.model.on("stickman_move", function(stickman_pos)
+        {
+            var block_pos = stickman_pos.map(Math.round);
+
+            if(model.valid_index(block_pos) == false)
+                return;
+
+            if(this.model.get_destroyed(block_pos))
+            {
+                console.log("Picked up block!");
+                this.model.update_destroyed(block_pos, false);
+                this.model.update_tile(block_pos, Tile.EMPTY);
+            }
+        }.bind(this));
 
         // Setup Printer Lock
         canvas.requestPointerLock = canvas.requestPointerLock;

@@ -8,8 +8,10 @@ declare var vec4: any;
 declare var flatten: any;
 declare var add: any;
 declare var scale: any;
-
+declare var rotate: any;
 declare var sizeof: any;
+declare var mult: any;
+declare var subtract: any;
 
 declare var WebGLUtils: any;
 declare var initShaders: any;
@@ -82,6 +84,57 @@ var vertices = [
     [-0.5,  0.5, -0.5]
 ];
 
+var textureCoords = [
+    // Front face
+    [0, 0],
+    [1, 0],
+    [1, 1],
+
+    [0, 0],
+    [1, 1],
+    [0, 1],
+    // Front face
+    [0, 0],
+    [1, 0],
+    [1, 1],
+
+    [0, 0],
+    [1, 1],
+    [0, 1],
+    // Front face
+    [0, 0],
+    [1, 0],
+    [1, 1],
+
+    [0, 0],
+    [1, 1],
+    [0, 1],
+    // Front face
+    [0, 0],
+    [1, 0],
+    [1, 1],
+
+    [0, 0],
+    [1, 1],
+    [0, 1],
+    // Front face
+    [0, 0],
+    [1, 0],
+    [1, 1],
+
+    [0, 0],
+    [1, 1],
+    [0, 1],
+    // Front face
+    [0, 0],
+    [1, 0],
+    [1, 1],
+
+    [0, 0],
+    [1, 1],
+    [0, 1],
+];
+
 export class View
 {
     private model : Model;
@@ -93,22 +146,31 @@ export class View
     //private program : any;
     private boxShaderProgram : any;
 
+    //Texture variable
+    private tileTexture : any;
+
     // Shader variables
     private vPosition;
-    private vColor;
+    private vTile;
     //private vScalePos;
     private vTranslate;
+    private vTexCoord;
+    private vDestroyed;
     //private vClickPos;
     //private vTime;
     //private vStickPos;
     private uPMatrix; 
     private uMVMatrix; 
+    private uTheta;
+    private uTextureMap;
 
     // Buffers
     //--------
     // Blocks
     private worldVBuffer : WebGLBuffer;
-    private worldCBuffer : WebGLBuffer;
+    private worldTileBuffer : WebGLBuffer;
+    private worldDBuffer : WebGLBuffer;
+    private worldTBuffer : WebGLBuffer;
     private worldTranslateBuffer : WebGLBuffer;
     //private worldIndexBuffer : WebGLBuffer;
     // Stick figure
@@ -116,6 +178,7 @@ export class View
     private stickCBuffer : WebGLBuffer;
     private stickTranslateBuffer : WebGLBuffer;
     private stickIndexBuffer : WebGLBuffer;
+
     // Mouse
     private mouseVBuffer : WebGLBuffer;
     private mouseCBuffer : WebGLBuffer;
@@ -130,6 +193,8 @@ export class View
     private mouse_lines : number = 0;
     private blocks : number = 0;
     //private vec_to_offset;
+    private vec_to_offset;
+    private theta : number = 0;
 
     private stickman_lines : number = 0;
     // Shockwave variables
@@ -138,16 +203,9 @@ export class View
 
     private gen_colors(arr_c, tile_color)
     {
-        for(var i = 0; i < this.verts_per_block; i++)
+        for(var i = 0; i < this.verts_per_block/6; i++)
         {
-            //arr_p.push(vec3(vertices[i]));
-
-            var watr = this.tile_to_color(Tile.WATER);
-            if (watr[0] == tile_color[0] && watr[1] == tile_color[1] && watr[2] == tile_color[2])
-                arr_c.push(tile_color);
-            else
-                arr_c.push(colors[Math.floor(i/6)]);
-
+            arr_c.push(colors[i]);
         }
     }
 
@@ -168,7 +226,7 @@ export class View
             if(model.valid_index(pos) == false)
                 continue;
             var tile = model.get_tile(pos);
-            empty_found = empty_found || TileUtil.is_sink_block(tile);
+            empty_found = empty_found || TileUtil.is_sink_block(tile) || model.get_destroyed(pos);
         }
         for(var j = -1; j <= 1; j+=2)
         {
@@ -176,7 +234,7 @@ export class View
             if(model.valid_index(pos) == false)
                 continue;
             var tile = model.get_tile(pos);
-            empty_found = empty_found || TileUtil.is_sink_block(tile);
+            empty_found = empty_found || TileUtil.is_sink_block(tile) || model.get_destroyed(pos);
         }
         for(var k = -1; k <= 1; k+=2)
         {
@@ -184,7 +242,7 @@ export class View
             if(model.valid_index(pos) == false)
                 continue;
             var tile = model.get_tile(pos);
-            empty_found = empty_found || TileUtil.is_sink_block(tile);
+            empty_found = empty_found || TileUtil.is_sink_block(tile) || model.get_destroyed(pos);
         }
         // No empty blocks? - Noone will see this block then, so skip it
         if(empty_found == false)
@@ -195,12 +253,15 @@ export class View
 
     private new_block(pos)
     {
+        /*
         var model = this.model;
         var gl = this.gl;
 
         var points = [];
         var colors = [];
         var translate = [];
+        var texture = [];
+        var destroyed = [];
         var indicies = [];
 
         //var offset = this.block_verts + this.verts_per_block;
@@ -213,15 +274,26 @@ export class View
         var tile = model.get_tile(pos);
         var tile_color = this.tile_to_color(tile);
         //this.gen_buffers(points, colors, translate, tile, pos);
-/*
+        //var tile_color = this.tile_to_color(tile);
+        this.gen_buffers(points, colors, translate, texture, tile, pos);
+
+        for(var i = 0; i < this.verts_per_block; i++)
+            destroyed.push(model.get_destroyed(pos) ? 1. : 0.);
+
         gl.bindBuffer(gl.ARRAY_BUFFER, this.worldVBuffer);
         gl.bufferSubData(gl.ARRAY_BUFFER, offset * sizeof['vec3'], flatten(points));
 
-        gl.bindBuffer(gl.ARRAY_BUFFER, this.worldCBuffer);
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.worldTileBuffer);
         gl.bufferSubData(gl.ARRAY_BUFFER, offset * sizeof['vec4'], flatten(colors));
 
         gl.bindBuffer(gl.ARRAY_BUFFER, this.worldTranslateBuffer);
         gl.bufferSubData(gl.ARRAY_BUFFER, offset * sizeof['vec3'], flatten(translate));
+
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.worldTBuffer);
+        gl.bufferSubData(gl.ARRAY_BUFFER, offset * sizeof['vec2'], flatten(texture));
+        // Buffer Destroyed
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.worldDBuffer);
+        gl.bufferSubData(gl.ARRAY_BUFFER, offset * Float32Array.BYTES_PER_ELEMENT, new Float32Array(destroyed));
 
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.worldIndexBuffer);
         gl.bufferSubData(gl.ELEMENT_ARRAY_BUFFER, (this.block_indicies)*Uint32Array.BYTES_PER_ELEMENT, new Uint32Array(indicies));
@@ -240,13 +312,11 @@ export class View
         if(offset == undefined)
         {
             this.new_block(pos);
-            //console.log("CRITICAL ISSUE!");
-            return;
         }
         else
         {
             // TODO: Handle this, I have no idea why or how
-            //console.log("UPDATE BLOCK!");
+            console.log("Unhandled block update!");
         }
         */
     }
@@ -275,17 +345,47 @@ export class View
         }
     }
 
-    private rebufferColor(start, end, color) : void
+    private updateColor(start, end, tile) : void
     {
         var gl = this.gl;
+
+        var color = this.tile_to_color(tile);
 
         var replace_values = [];
         for(var i = 0; i < (end - start); i++)
         {
             replace_values.push(color);
         }
-        gl.bindBuffer(gl.ARRAY_BUFFER, this.worldCBuffer);
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.worldTileBuffer);
         gl.bufferSubData(gl.ARRAY_BUFFER, start*sizeof['vec4'], flatten(replace_values));
+    }
+
+    private updateTexture(start, end, tile) : void
+    {
+        var gl = this.gl;
+
+        var texture_coord = this.tile_to_texture_coord(tile);
+
+        var replace_values = [];
+        for(var i = 0; i < (end - start); i++)
+        {
+            replace_values.push(add(texture_coord, scale(1/16, vec2(textureCoords[i]))));
+        }
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.worldTBuffer);
+        gl.bufferSubData(gl.ARRAY_BUFFER, start*sizeof['vec2'], flatten(replace_values));
+    }
+
+    private updateDestroyed(start, end, destroyed) : void
+    {
+        var gl = this.gl;
+
+        var replace_values = [];
+        for(var i = 0; i < (end - start); i++)
+        {
+            replace_values.push(destroyed ? 1. : 0.);
+        }
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.worldDBuffer);
+        gl.bufferSubData(gl.ARRAY_BUFFER, start*Float32Array.BYTES_PER_ELEMENT, flatten(replace_values));
     }
 
     // Initialize WebGL render context.
@@ -324,10 +424,14 @@ export class View
 
         // Get Shader variable positions
         this.vPosition  = gl.getAttribLocation(this.boxShaderProgram, "vPosition");
-        this.vColor     = gl.getAttribLocation(this.boxShaderProgram, "vColor");
+        this.vTile      = gl.getAttribLocation(this.boxShaderProgram, "vTile");
         this.vTranslate = gl.getAttribLocation(this.boxShaderProgram, 'vTranslate');
-        this.uPMatrix = gl.getUniformLocation(this.boxShaderProgram, "uPMatrix");
-        this.uMVMatrix = gl.getUniformLocation(this.boxShaderProgram, "uMVMatrix");
+        this.vTexCoord  = gl.getAttribLocation(this.boxShaderProgram, 'vTexCoord');
+        this.vDestroyed = gl.getAttribLocation(this.boxShaderProgram, "vDestroyed");
+        this.uPMatrix   = gl.getUniformLocation(this.boxShaderProgram, "uPMatrix");
+        this.uMVMatrix  = gl.getUniformLocation(this.boxShaderProgram, "uMVMatrix");
+        this.uTheta     = gl.getUniformLocation(this.boxShaderProgram, "uTheta");
+        this.uTextureMap = gl.getUniformLocation(this.boxShaderProgram, "uTextureMap");
 
         // World Vertex buffer
         this.worldVBuffer = gl.createBuffer();
@@ -337,12 +441,12 @@ export class View
         gl.enableVertexAttribArray(this.vPosition);
         var worldVBufferSize = Math.round(gl.getBufferParameter(gl.ARRAY_BUFFER, gl.BUFFER_SIZE) / 1000 / 1000);
         // World Color buffer
-        this.worldCBuffer = gl.createBuffer();
-        gl.bindBuffer(gl.ARRAY_BUFFER, this.worldCBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, sizeof['vec4'] * model.worldX * model.worldZ * 2 * this.verts_per_block * 6, gl.STATIC_DRAW);
-        gl.vertexAttribPointer(this.vColor, 4, gl.FLOAT, false, 0, 0);
-        gl.enableVertexAttribArray(this.vColor);
-        var worldCBufferSize = Math.round(gl.getBufferParameter(gl.ARRAY_BUFFER, gl.BUFFER_SIZE) / 1000 / 1000);
+        this.worldTileBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.worldTileBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, sizeof['vec2'] * model.worldX * model.worldZ * 2 * 6 * this.verts_per_block, gl.STATIC_DRAW);
+        gl.vertexAttribPointer(this.vTile, 4, gl.FLOAT, false, 0, 0);
+        gl.enableVertexAttribArray(this.vTile);
+        var worldTileBufferSize = Math.round(gl.getBufferParameter(gl.ARRAY_BUFFER, gl.BUFFER_SIZE) / 1000 / 1000);
         // World Translate buffer
         this.worldTranslateBuffer = gl.createBuffer();
         gl.bindBuffer(gl.ARRAY_BUFFER, this.worldTranslateBuffer);
@@ -350,20 +454,28 @@ export class View
         gl.vertexAttribPointer(this.vTranslate, 3, gl.FLOAT, false, 0, 0);
         gl.enableVertexAttribArray(this.vTranslate);
         var worldTranslateBufferSize = Math.round(gl.getBufferParameter(gl.ARRAY_BUFFER, gl.BUFFER_SIZE) / 1000 / 1000);
-        // World Index buffer
-        /*
-        this.worldIndexBuffer = gl.createBuffer();
-        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.worldIndexBuffer);
-        gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, Uint32Array.BYTES_PER_ELEMENT * model.worldSize * this.indicies_per_block / 8, gl.STATIC_DRAW);
-        var worldIndexBufferSize = Math.round(gl.getBufferParameter(gl.ELEMENT_ARRAY_BUFFER, gl.BUFFER_SIZE) / 1000 / 1000);
-        */
+        // World Texture buffer
+        this.worldTBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.worldTBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, sizeof['vec2'] * this.verts_per_block, gl.STATIC_DRAW);
+        gl.vertexAttribPointer(this.vTexCoord, 2, gl.FLOAT, false, 0, 0);
+        gl.enableVertexAttribArray(this.vTexCoord);
+        var worldTBufferSize = Math.round(gl.getBufferParameter(gl.ARRAY_BUFFER, gl.BUFFER_SIZE) / 1000 / 1000);
+        // World Destroyed buffer
+        this.worldDBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.worldDBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, Float32Array.BYTES_PER_ELEMENT * model.worldX * model.worldZ * 6 * this.verts_per_block, gl.STATIC_DRAW);
+        gl.vertexAttribPointer(this.vDestroyed, 1, gl.FLOAT, false, 0, 0);
+        gl.enableVertexAttribArray(this.vDestroyed);
+        var worldDBufferSize = Math.round(gl.getBufferParameter(gl.ARRAY_BUFFER, gl.BUFFER_SIZE) / 1000 / 1000);
 
         // Output memory usage information
         console.log("Total World Vertex memory consumption:",       worldVBufferSize,           "MB");
-        console.log("Total World Color memory consumption:",        worldCBufferSize,           "MB");
+        console.log("Total World Tile memory consumption:",         worldTileBufferSize,           "MB");
+        console.log("Total World Texture memory consumption:",      worldTBufferSize,           "MB");
+        console.log("Total World Destroyed memory consumption:",    worldDBufferSize,           "MB");
         console.log("Total World Translate memory consumption:",    worldTranslateBufferSize,   "MB");
-        //console.log("Total World Indicies memory consumption:",     worldIndexBufferSize,       "MB");
-        console.log("Total World GPU memory consumption:",          (worldVBufferSize + worldCBufferSize + worldTranslateBufferSize), "MB");
+        console.log("Total World GPU memory consumption:",          (worldVBufferSize + worldTileBufferSize + worldTBufferSize + worldDBufferSize + worldTranslateBufferSize), "MB");
 /*
         // Stick Vertex buffer
         this.stickVBuffer = gl.createBuffer();
@@ -421,14 +533,32 @@ export class View
         return offset;
     }
 
+    private initialize_textures() : void
+    {
+        var gl = this.gl;
+
+        var image = document.getElementById("tileTextureImage");
+
+        this.tileTexture = gl.createTexture();
+        gl.bindTexture(gl.TEXTURE_2D, this.tileTexture);
+        gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, image);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+
+        gl.uniform1i(this.uTextureMap, this.tileTexture);
+    }
+
     private initialize_block_world() : void
     {
         var gl = this.gl;
         var model = this.model;
 
-        var world_colors = [];
+        var world_tile = [];
         var world_translate = [];
-        //var world_indices = [];
+        var world_texture = [];
+        var world_destroyed = [];
+        var world_indices = [];
 
         //this.vec_to_offset = {};
 
@@ -456,47 +586,57 @@ export class View
                     //this.gen_indicies(world_indices, offset);
 
                     var tile = model.get_tile(vec3(x, y, z));
-                    var tile_color = this.tile_to_color(tile);
-                    this.gen_colors(world_colors, tile_color);
+                    //var tile_color = this.tile_to_color(tile);
+                    //this.gen_colors(world_colors, tile_color);
 
-                    //for(var i = 0; i < this.verts_per_block/6; i++)
+                    world_tile.push(this.tile_to_texture_coord(tile));
                     world_translate.push(vec3(x,y,z));
+                    world_destroyed.push(model.get_destroyed(vec3(x,y,z)) ? 1. : 0.);
                 }
             }
         }
-
-        //console.log(world_colors);
 
         var forLoopTs = new Date().getTime() - start;
         console.log("Buffer filling loop done. It took", forLoopTs, "ms.");
 
         //console.log("Number of rendered vertices:", world_indices.length);
-        console.log("Number of stored vertices:", world_colors.length);
+        // console.log("Number of stored vertices:", world_colors.length);
 
         //this.block_indicies = world_indices.length;
         //this.block_verts = world_colors.length;
 
         var tsStart = new Date().getTime();
         // Buffer Color
-        
         var world_points = []
         for(var i = 0; i < this.verts_per_block; i++)
         {
             world_points.push(vec3(vertices[i]));
         }
-        gl.bindBuffer(gl.ARRAY_BUFFER, this.worldTranslateBuffer);
-        gl.bufferSubData(gl.ARRAY_BUFFER, 0, flatten(world_translate));
-        // Buffer Color
-        gl.bindBuffer(gl.ARRAY_BUFFER, this.worldCBuffer);
-        gl.bufferSubData(gl.ARRAY_BUFFER, 0, flatten(world_colors));
         // Buffer Verticies
         gl.bindBuffer(gl.ARRAY_BUFFER, this.worldVBuffer);
         gl.bufferSubData(gl.ARRAY_BUFFER, 0, flatten(world_points));
-        // Buffer Indicies
-        /*
-        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.worldIndexBuffer);
-        gl.bufferSubData(gl.ELEMENT_ARRAY_BUFFER, 0, new Uint32Array(world_indices));
-        */
+
+        var world_texture = [];
+        for(var i = 0; i < this.verts_per_block; i++)
+        {
+            world_texture.push(vec2(textureCoords[i]));
+        }
+        // Buffer Texture
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.worldTBuffer);
+        gl.bufferSubData(gl.ARRAY_BUFFER, 0, flatten(world_texture));
+
+        // Buffer Color
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.worldTileBuffer);
+        gl.bufferSubData(gl.ARRAY_BUFFER, 0, flatten(world_tile));
+
+        // Buffer Translate
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.worldTranslateBuffer);
+        gl.bufferSubData(gl.ARRAY_BUFFER, 0, flatten(world_translate));
+
+        // Buffer Destroyed
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.worldDBuffer);
+        gl.bufferSubData(gl.ARRAY_BUFFER, 0, new Float32Array(world_destroyed));
+
         var tsDone = new Date().getTime() - tsStart;
         console.log('Buffer transfer finished in', tsDone, 'ms.');
     }
@@ -506,56 +646,215 @@ export class View
     {
         var gl = this.gl;
         var height : number = 1.0 ;
-        var back : number = 0.3;
+        var width : number = 0.3;
         var front : number = 0.1;
         var feet : number = 0.2;
         var stick_points = [];
-
+        var torch_points = [];
+        //body
          // Front face
-        stick_points.push(vec3(-back, feet,  front));
-        stick_points.push(vec3(front, feet,  front));
-        stick_points.push(vec3(front,  height,  front));
-        stick_points.push(vec3(-back,  height,  front));
+        stick_points.push(vec3(-width, feet,  front));
+        stick_points.push(vec3(width, feet,  front));
+        stick_points.push(vec3(width,  height,  front));
+        stick_points.push(vec3(width,  height,  front));
+        stick_points.push(vec3(-width,  height,  front));
+        stick_points.push(vec3(-width, feet,  front));
 
         // Back face
-        stick_points.push(vec3(-back, feet, -back));
-        stick_points.push(vec3(-back,  height, -back));
-        stick_points.push(vec3(front,  height, -back));
-        stick_points.push(vec3(front, feet, -back));
+        stick_points.push(vec3(-width, feet, -front));
+        stick_points.push(vec3(-width,  height, -front));
+        stick_points.push(vec3(width,  height, -front));
+        stick_points.push(vec3(width,  height, -front));
+        stick_points.push(vec3(width, feet, -front));
+        stick_points.push(vec3(-width, feet, -front));
 
         // Top face
-        stick_points.push(vec3(-back,  height, -back));
-        stick_points.push(vec3(-back,  height,  front));
-        stick_points.push(vec3(front,  height,  front));
-        stick_points.push(vec3(front,  height, -back));
+        stick_points.push(vec3(-width,  height, -front));
+        stick_points.push(vec3(-width,  height,  front));
+        stick_points.push(vec3(width,  height,  front));
+        stick_points.push(vec3(width,  height,  front));
+        stick_points.push(vec3(width,  height, -front));
+        stick_points.push(vec3(-width,  height, -front));
 
             // Bottom face
-        stick_points.push(vec3(-back, feet, -back));
-        stick_points.push(vec3(front, feet, -back));
-        stick_points.push(vec3(front, feet,  front));
-        stick_points.push(vec3(-back, feet,  front));
+        stick_points.push(vec3(-width, feet, -front));
+        stick_points.push(vec3(width, feet, -front));
+        stick_points.push(vec3(width, feet,  front));
+        stick_points.push(vec3(width, feet,  front));
+        stick_points.push(vec3(-width, feet,  front));
+        stick_points.push(vec3(-width, feet, -front));
 
         // Right face
-        stick_points.push(vec3(front, feet, -back));
-        stick_points.push(vec3(front,  height, -back));
-        stick_points.push(vec3(front,  height,  front));
-        stick_points.push(vec3(front, feet,  front));
+        stick_points.push(vec3(width, feet, -front));
+        stick_points.push(vec3(width,  height, -front));
+        stick_points.push(vec3(width,  height,  front));
+        stick_points.push(vec3(width,  height,  front));
+        stick_points.push(vec3(width, feet,  front));
+        stick_points.push(vec3(width, feet, -front));
 
         // Left face
-        stick_points.push(vec3(-back, feet, -back));
-        stick_points.push(vec3(-back, feet,  front));
-        stick_points.push(vec3(-back,  height,  front));
-        stick_points.push(vec3(-back,  height, -back));
+        stick_points.push(vec3(-width, feet, -front));
+        stick_points.push(vec3(-width, feet,  front));
+        stick_points.push(vec3(-width,  height,  front));
+        stick_points.push(vec3(-width,  height,  front));
+        stick_points.push(vec3(-width,  height, -front));
+        stick_points.push(vec3(-width, feet, -front));
+
+        var p = rotate(90,vec3(1,0,0));
+        var shoulder = vec4(0.4,0.7,0.1,0);
+        //var tp = subtract(p-shoulder);
+
+        //Torch
+        //Front face
+        //console.log(p);
+        var p1 = vec4(0.3, 0.4,  0.1,1);
+        var p2 = vec4(0.4, 0.4,  0.1,1);
+        var p3 = (vec4(0.4,  0.7,  0.1,1));
+        var p4 = (vec4(0.4,  0.7,  0.1,1));
+        var p5 = (vec4(0.3,  0.7,  0.1,1));
+        var p6 = (vec4(0.3, 0.4,  0.1,1));
+/*
+        stick_points.push(vec3(mult(vec4(0.3, 0.4,  0.1,1),p)));
+        stick_points.push(vec3(mult(vec4(0.4, 0.4,  0.1,1),p)));
+        stick_points.push(vec3(mult(vec4(0.4,  0.7,  0.1,1),p)));
+        stick_points.push(vec3(mult(vec4(0.4,  0.7,  0.1,1),p)));
+        stick_points.push(vec3(mult(vec4(0.3,  0.7,  0.1,1),p)));
+        stick_points.push(vec3(mult(vec4(0.3, 0.4,  0.1,1),p)));
+        */
+        //console.log(mult(p1,p));
+        //console.log(mult(p,p1));
+        //console.log(mult(p1,p2));
+
+        stick_points.push(vec3(add(mult(p,subtract(p1,shoulder)), shoulder)));
+        stick_points.push(vec3(add(mult(p,subtract(p2,shoulder)), shoulder)));
+        stick_points.push(vec3(add(mult(p,subtract(p3,shoulder)), shoulder)));
+        stick_points.push(vec3(add(mult(p,subtract(p4,shoulder)), shoulder)));
+        stick_points.push(vec3(add(mult(p,subtract(p5,shoulder)), shoulder)));
+        stick_points.push(vec3(add(mult(p,subtract(p6,shoulder)), shoulder)));
+
+        // Back face
+        var p7 = (vec4(0.3, 0.4, 0.0,1));
+        var p8 = (vec4(0.3,  0.7, 0.0,1));
+        var p9 = (vec4(0.4,  0.7, 0.0,1));
+        var p10 = (vec4(0.4,  0.7, 0.0,1));
+        var p11 = (vec4(0.4, 0.4, 0.0,1));
+        var p12 = (vec4(0.3, 0.4, 0.0,1));
+/*
+        stick_points.push(vec3(vec4(0.3, 0.4, 0.0,1)*p));
+        stick_points.push(vec3(vec4(0.3,  0.7, 0.0,1)*p));
+        stick_points.push(vec3(vec4(0.4,  0.7, 0.0,1)*p));
+        stick_points.push(vec3(vec4(0.4,  0.7, 0.0,1)*p));
+        stick_points.push(vec3(vec4(0.4, 0.4, 0.0,1)*p));
+        stick_points.push(vec3(vec4(0.3, 0.4, 0.0,1)*p));
+ */
+        stick_points.push(vec3(add(mult(p,subtract(p7,shoulder)), shoulder)));
+        stick_points.push(vec3(add(mult(p,subtract(p8,shoulder)), shoulder)));
+        stick_points.push(vec3(add(mult(p,subtract(p9,shoulder)), shoulder)));
+        stick_points.push(vec3(add(mult(p,subtract(p10,shoulder)), shoulder)));
+        stick_points.push(vec3(add(mult(p,subtract(p11,shoulder)), shoulder)));
+        stick_points.push(vec3(add(mult(p,subtract(p12,shoulder)), shoulder)));
+        // Top face
+        var p13 = (vec4(0.3,  0.7, 0.0,1));
+        var p14 = (vec4(0.3,  0.7,  0.1,1));
+        var p15 = (vec4(0.4,  0.7,  0.1,1));
+        var p16 =(vec4(0.4,  0.7,  0.1,1));
+        var p17 = (vec4(0.4,  0.7, 0.0,1));
+        var p18 = (vec4(0.3,  0.7, 0.0,1));
+/*
+        stick_points.push(vec3(vec4(0.3,  0.7, 0.0,1)*p));
+        stick_points.push(vec3(vec4(0.3,  0.7,  0.1,1)*p));
+        stick_points.push(vec3(vec4(0.4,  0.7,  0.1,1)*p));
+        stick_points.push(vec3(vec4(0.4,  0.7,  0.1,1)*p));
+        stick_points.push(vec3(vec4(0.4,  0.7, 0.0,1)*p));
+        stick_points.push(vec3(vec4(0.3,  0.7, 0.0,1)*p));
+*/
+        stick_points.push(vec3(add(mult(p,subtract(p13,shoulder)), shoulder)));
+        stick_points.push(vec3(add(mult(p,subtract(p14,shoulder)), shoulder)));
+        stick_points.push(vec3(add(mult(p,subtract(p15,shoulder)), shoulder)));
+        stick_points.push(vec3(add(mult(p,subtract(p16,shoulder)), shoulder)));
+        stick_points.push(vec3(add(mult(p,subtract(p17,shoulder)), shoulder)));
+        stick_points.push(vec3(add(mult(p,subtract(p18,shoulder)), shoulder)));
+
+        // Bottom face
+        var p19 = (vec4(0.3, 0.4, 0.0,1));
+        var p20 = (vec4(0.4, 0.4, 0.0,1));
+        var p21 = (vec4(0.4, 0.4,  0.1,1));
+        var p22 = (vec4(0.4, 0.4,  0.1,1));
+        var p23 = (vec4(0.3, 0.4,  0.1,1));
+        var p24 = (vec4(0.3, 0.4, 0.0,1));
+/*
+        stick_points.push(vec3(vec4(0.3, 0.4, 0.0,1)*p));
+        stick_points.push(vec3(vec4(0.3, 0.4, 0.1,1)*p));
+        stick_points.push(vec3(vec4(0.4, 0.4,  0.1,1)*p));
+        stick_points.push(vec3(vec4(0.4, 0.4,  0.1,1)*p));
+        stick_points.push(vec3(vec4(0.4, 0.4,  0.0,1)*p));
+        stick_points.push(vec3(vec4(0.3, 0.4, 0.0,1)*p));
+*/
+        stick_points.push(vec3(add(mult(p,subtract(p19,shoulder)), shoulder)));
+        stick_points.push(vec3(add(mult(p,subtract(p20,shoulder)), shoulder)));
+        stick_points.push(vec3(add(mult(p,subtract(p21,shoulder)), shoulder)));
+        stick_points.push(vec3(add(mult(p,subtract(p22,shoulder)), shoulder)));
+        stick_points.push(vec3(add(mult(p,subtract(p23,shoulder)), shoulder)));
+        stick_points.push(vec3(add(mult(p,subtract(p24,shoulder)), shoulder)));
+
+        // Right face
+        var p25 = (vec4(0.4, 0.4, 0,1));
+        var p26 = (vec4(0.4,  0.7, 0.0,1));
+        var p27 = (vec4(0.4,  0.7,  0.1,1));
+        var p28 = (vec4(0.4,  0.7,  0.1,1));
+        var p29 = (vec4(0.4, 0.4,  0.1,1));
+        var p30 = (vec4(0.4, 0.4, 0,1,1));
+/*
+        stick_points.push(vec3(vec4(0.4, 0.4, 0,1)*p));
+        stick_points.push(vec3(vec4(0.4,  0.7, 0.0,1)*p));
+        stick_points.push(vec3(vec4(0.4,  0.7,  0.1,1)*p));
+        stick_points.push(vec3(vec4(0.4,  0.7,  0.1,1)*p));
+        stick_points.push(vec3(vec4(0.4, 0.4,  0.1,1)*p));
+        stick_points.push(vec3(vec4(0.4, 0.4, 0,1)*p));
+*/
+        stick_points.push(vec3(add(mult(p,subtract(p25,shoulder)), shoulder)));
+        stick_points.push(vec3(add(mult(p,subtract(p26,shoulder)), shoulder)));
+        stick_points.push(vec3(add(mult(p,subtract(p27,shoulder)), shoulder)));
+        stick_points.push(vec3(add(mult(p,subtract(p28,shoulder)), shoulder)));
+        stick_points.push(vec3(add(mult(p,subtract(p29,shoulder)), shoulder)));
+        stick_points.push(vec3(add(mult(p,subtract(p30,shoulder)), shoulder)));
+
+        // Left face
+
+        var p31 = (vec4(0.3, 0.4, 0,1, 1));
+        var p32 = (vec4(0.3, 0.4,  0.1,1));
+        var p33 = (vec4(0.3,  0.7,  0.1,1));
+        var p34 = (vec4(0.3,  0.7,  0.1,1));
+        var p35 = (vec4(0.3,  0.7, 0,1, 1));
+        var p36 = (vec4(0.3, 0.4, 0,1, 1));
+/*
+        stick_points.push(vec3(vec4(0.3, 0.4, 0,1)*p));
+        stick_points.push(vec3(vec4(0.3, 0.4,  0.1,1)*p));
+        stick_points.push(vec3(vec4(0.3,  0.7,  0.1,1)*p));
+        stick_points.push(vec3(vec4(0.3,  0.7,  0.1,1)*p));
+        stick_points.push(vec3(vec4(0.3,  0.7, 0,1)*p));
+        stick_points.push(vec3(vec4(0.3, 0.4, 0,1)*p));
+*/
+        stick_points.push(vec3(add(mult(p,subtract(p31,shoulder)), shoulder)));
+        stick_points.push(vec3(add(mult(p,subtract(p32,shoulder)), shoulder)));
+        stick_points.push(vec3(add(mult(p,subtract(p33,shoulder)), shoulder)));
+        stick_points.push(vec3(add(mult(p,subtract(p34,shoulder)), shoulder)));
+        stick_points.push(vec3(add(mult(p,subtract(p35,shoulder)), shoulder)));
+        stick_points.push(vec3(add(mult(p,subtract(p36,shoulder)), shoulder)));
 
         var stick_colors = [];
         var stick_translate = [];
         for(var i = 0; i < stick_points.length; i++)
         {
+            //stick_translate.push(3,1,3);
             stick_translate.push(pos);
+            if(i<stick_points.length/2)
+            stick_colors.push(vec4(1,0.72,0.6,1));
             //skin color
-            stick_colors.push(vec4(1,0.68,0.38,1));
-        }
+            else stick_colors.push(vec4(0.55,0.32,0.07,1));
 
+
+        }
         gl.bindBuffer(gl.ARRAY_BUFFER, this.stickCBuffer);
         gl.bufferData(gl.ARRAY_BUFFER, flatten(stick_colors), gl.STATIC_DRAW);
 
@@ -566,6 +865,7 @@ export class View
         gl.bufferData(gl.ARRAY_BUFFER, flatten(stick_translate), gl.STATIC_DRAW);
 
         this.stickman_lines = stick_points.length;
+        //console.log("stick points length: " + stick_points.length);
     }
 
     private render() : void
@@ -574,7 +874,11 @@ export class View
         var canvas = this.canvas;
 
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-/*
+
+        this.theta += 0.1;
+        gl.uniform1f(this.uTheta, this.theta);
+
+        /*
         // Draw the mouse block
         if(this.mouse_lines != 0)
         {
@@ -591,6 +895,8 @@ export class View
         }
 
         // Draw the stickman
+        //console.log(this.stickman_lines);
+        /*
         if(this.stickman_lines != 0)
         {
             gl.bindBuffer(gl.ARRAY_BUFFER, this.stickCBuffer);
@@ -602,19 +908,9 @@ export class View
             gl.bindBuffer(gl.ARRAY_BUFFER, this.stickTranslateBuffer);
             gl.vertexAttribPointer(this.vTranslate, 3, gl.FLOAT, false, 0, 0);
 
-            gl.drawArrays(gl.TRIANGLE_FAN, 0, this.stickman_lines);
+            gl.drawArrays(gl.TRIANGLES, 0, this.stickman_lines);
         }
-*/
-        // Draw the world
-        gl.bindBuffer(gl.ARRAY_BUFFER, this.worldCBuffer);
-        gl.vertexAttribPointer(this.vColor, 4, gl.FLOAT, false, 0, 0);
-
-        gl.bindBuffer(gl.ARRAY_BUFFER, this.worldVBuffer);
-        gl.vertexAttribPointer(this.vPosition, 3, gl.FLOAT, false, 0, 0);
-
-        gl.bindBuffer(gl.ARRAY_BUFFER, this.worldTranslateBuffer);
-        gl.vertexAttribPointer(this.vTranslate, 3, gl.FLOAT, false, 0, 0);
-
+        */
         var ext_angle = gl.getExtension("ANGLE_instanced_arrays");
         if(!ext_angle)
         {
@@ -622,14 +918,31 @@ export class View
             alert("FUCK");
         }
 
-        ext_angle.vertexAttribDivisorANGLE(this.vTranslate, 1);
-        ext_angle.vertexAttribDivisorANGLE(this.vColor, 0);
+        // Draw the world
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.worldTileBuffer);
+        gl.vertexAttribPointer(this.vTile, 2, gl.FLOAT, false, 0, 0);
+        ext_angle.vertexAttribDivisorANGLE(this.vTile, 1);
+
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.worldTBuffer);
+        gl.vertexAttribPointer(this.vTexCoord, 2, gl.FLOAT, false, 0, 0);
+        ext_angle.vertexAttribDivisorANGLE(this.vTexCoord, 0);
+
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.worldVBuffer);
+        gl.vertexAttribPointer(this.vPosition, 3, gl.FLOAT, false, 0, 0);
         ext_angle.vertexAttribDivisorANGLE(this.vPosition, 0);
-        for(var i = 0; i < 6; i++)
-        {
-            //ext_angle.drawArraysInstancedANGLE(gl.TRIANGLES, i*6, 6, this.blocks);
-        }
-        ext_angle.drawArraysInstancedANGLE(gl.TRIANGLES, 0, 36, this.blocks);
+
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.worldTranslateBuffer);
+        gl.vertexAttribPointer(this.vTranslate, 3, gl.FLOAT, false, 0, 0);
+        ext_angle.vertexAttribDivisorANGLE(this.vTranslate, 1);
+
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.worldDBuffer);
+        gl.vertexAttribPointer(this.vDestroyed, 1, gl.FLOAT, false, 0, 0);
+        ext_angle.vertexAttribDivisorANGLE(this.vDestroyed, 1);
+
+        gl.bindTexture(gl.TEXTURE_2D, this.tileTexture);
+
+        ext_angle.drawArraysInstancedANGLE(gl.TRIANGLES, 0, this.verts_per_block, this.blocks);
+
         (<any>window).requestAnimFrame(this.render.bind(this), this.canvas);
     }
 
@@ -657,6 +970,33 @@ export class View
                 return vec4(1., 1., 1., 1.);
             default:
                 alert("Invalid tile, cannot convert to color!");
+        }
+    }
+
+    private tile_to_texture_coord(tile : Tile) : any
+    {
+        switch(tile)
+        {
+            case Tile.EMPTY:
+                return vec2(13/16, 0/16);
+            case Tile.STONE:
+                return vec2(0/16, 14/16);
+            case Tile.GRASS:
+                return vec2(3/16, 15/16);
+            case Tile.DIRT:
+                return vec2(2/16, 15/16);
+            case Tile.WOOD:
+                return vec2(4/16, 15/16);
+            case Tile.METAL:
+                return vec2(6/16, 15/16);
+            case Tile.WATER:
+                return vec2(0/16, 6/16);
+            case Tile.FIRE:
+                return vec2(14/16, 0/16);
+            case Tile.BEDROCK:
+                return vec2(7/16, 4/16);
+            default:
+                alert("Invalid tile, cannot convert to texture!");
         }
     }
 
@@ -780,25 +1120,32 @@ export class View
         this.initBuffers();
         // Setup world
         this.initialize_block_world();
+        // Setup textures
+        this.initialize_textures();
 
         var canvas = this.canvas;
         var gl = this.gl;
 
-        gl.bindBuffer(gl.ARRAY_BUFFER, this.worldCBuffer);
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.worldTileBuffer);
         var usage = sizeof['vec4'] * this.blocks * 6;
         var percentage = usage / gl.getBufferParameter(gl.ARRAY_BUFFER, gl.BUFFER_SIZE);
-        console.log("color buffer usage: ", Math.round(percentage * 100), "%");
+        console.log("vertex buffer usage: ", Math.round(percentage * 100), "%");
 
         gl.bindBuffer(gl.ARRAY_BUFFER, this.worldTranslateBuffer);
         var usage = sizeof['vec3'] * this.blocks * 6;
         var percentage = usage / gl.getBufferParameter(gl.ARRAY_BUFFER, gl.BUFFER_SIZE);
         console.log("translate buffer usage: ", Math.round(percentage * 100), "%");
-/*
-        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.worldIndexBuffer);
-        var usage = Uint32Array.BYTES_PER_ELEMENT * this.block_indicies;
-        var percentage = usage / gl.getBufferParameter(gl.ELEMENT_ARRAY_BUFFER, gl.BUFFER_SIZE);
-        console.log("index buffer usage: ", Math.round(percentage * 100), "%");
-        */
+
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.worldTBuffer);
+        var usage = sizeof['vec2'] * this.blocks;
+        var percentage = usage / gl.getBufferParameter(gl.ARRAY_BUFFER, gl.BUFFER_SIZE);
+        console.log("texture buffer usage: ", Math.round(percentage * 100), "%");
+
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.worldDBuffer);
+        var usage = Float32Array.BYTES_PER_ELEMENT * this.blocks;
+        var percentage = usage / gl.getBufferParameter(gl.ARRAY_BUFFER, gl.BUFFER_SIZE);
+        console.log("destroyed buffer usage: ", Math.round(percentage * 100), "%");
+
         var perspectiveMatrix = perspective(60, canvas.clientWidth / canvas.clientHeight, 0.1, 100.0);
         gl.uniformMatrix4fv(this.uPMatrix, false, flatten(perspectiveMatrix));
 
@@ -813,8 +1160,8 @@ export class View
             else
             {
                 // Redraw the color of a block
-                var tile_color = this.tile_to_color(tile);
-                this.rebufferColor(offset, offset+this.verts_per_block, tile_color);
+                this.updateColor(offset, offset+this.verts_per_block, tile);
+                this.updateTexture(offset, offset+this.verts_per_block, tile);
                 // Update all adjacent blocks
                 this.rebufferBlocks(pos);
             }
@@ -822,12 +1169,29 @@ export class View
         }.bind(this));
         */
 
+        this.model.on("update_destroyed", function(pos, destroyed : boolean)
+        {
+            var offset = this.vec_to_offset[pos];
+            if(offset == undefined)
+            {
+                this.new_block(pos);
+            }
+            else
+            {
+                // Redraw the destroyed status of the block
+                this.updateDestroyed(offset, offset+this.verts_per_block, destroyed);
+                // Update all adjacent blocks
+                this.rebufferBlocks(pos);
+            }
+        }.bind(this));
+
         var height = 1;
         var update_camera = function() : void
         {
             var stick_pos = model.get_stickman_position();
             var cam_pos   = model.get_mouse_position();
-
+            //console.log("stickman pos: "+stick_pos);
+            //console.log("mouse pos: " + cam_pos);
             if(model.is_map_active())
             {
                 var modelMatrix = lookAt(vec3(stick_pos[0],
@@ -849,6 +1213,38 @@ export class View
                                               stick_pos[2] + cam_pos[2]),
                                          vec3(0,1,0));
                 gl.uniformMatrix4fv(this.uMVMatrix, false, flatten(modelMatrix));
+                //X
+                var block_pos = add(stick_pos, cam_pos);
+                //console.log("block pos: " + block_pos);
+                var x1 = stick_pos[0];
+                //console.log("stick_pos x: " + stick_pos[0]);
+                //Z
+                var x2 = stick_pos[2];
+                //console.log("Stick pos X: "+ x1);
+                //console.log("Stick pos Z: "+ x2);
+
+                var y1 = block_pos[0];
+                var y2 = block_pos[2];
+                //console.log("Cam pos X: "+ y1);
+                //console.log("Cam pos Z: "+ y2);
+
+                var angle_numinator = x1*y1+x2*y2;
+                var angle_dev1 = Math.sqrt(x1^2+x2^2);
+                var angle_dev2 = Math.sqrt(y1^2+y2^2);
+                //console.log("Squareroot1: "+angle_dev1);
+                //console.log("Squareroot2: "+angle_dev2);
+                var angle_devisor = angle_dev1*angle_dev2;
+                //console.log("Angle numinator: "+ angle_numinator);
+                //console.log("angle devisor: " + angle_devisor );
+                //console.log("Cam pos Z: "+ stick_pos[2]);
+                var angle = Math.cos(angle_numinator/angle_devisor);
+                //console.log(angle);
+                var rotation = rotate(angle,vec3(0,1,0));
+                //console.log(vec4(stick_pos,1));
+                var rot_pos = mult(rotation,vec4(stick_pos,1));
+                //console.log("Stickman position: " + stick_pos);
+                //console.log("rotation pos: " + rot_pos);
+                //this.initialize_stick_man(rot_pos);
             }
         }.bind(this);
 
@@ -856,14 +1252,10 @@ export class View
         this.model.on("mouse_move", update_camera);
         this.model.on("map_active", update_camera);
 
-        this.model.on("stickman_move", function(pos)
-        {
-            //this.model.update_tile(vec3(Math.round(pos[0]), Math.round(pos[1])-1, Math.round(pos[2])), Tile.STONE);
-        }.bind(this));
-/*
-        this.model.on("mouse_move", function(mouse_pos)
+        var update_placeblock = function() : void
         {
             var stick_pos = model.get_stickman_position().map(Math.round);
+            var mouse_pos   = model.get_mouse_position();
             var block_pos = add(stick_pos, mouse_pos).map(Math.round);
             if(stick_pos == block_pos)
             {
@@ -875,32 +1267,26 @@ export class View
                 var placeable = this.model.can_build(block_pos);
                 this.initialize_mouse(block_pos, placeable);
             }
-
-        }.bind(this));
-        */
+        }.bind(this);
 /*
+        this.model.on("stickman_move", update_placeblock);
+        this.model.on("mouse_move", update_placeblock);
+        */
+        /*
         this.model.on("stickman_move", function(stickman_pos)
         {
             var stick_pos = model.get_stickman_position().map(Math.round);
-            var block_pos = add(stick_pos, stickman_pos).map(Math.round);
-            if(stick_pos == block_pos)
-            {
-                this.stickman_lines = 0;
-            }
-            else
-            {
-                //console.log("Block pos: " + scale(0.5,block_pos));
-                //console.log("Stickman Pos: " + model.get_stickman_position());
-                this.initialize_stick_man(scale(0.5,block_pos));
-            }
+            //console.log("stickman_move: " + stick_pos );
+            //console.log("Block pos: " + scale(0.5,block_pos));
+            //console.log("Stickman Pos: " + model.get_stickman_position());
+            this.initialize_stick_man(stick_pos);
 
         }.bind(this));
-        */
         update_camera();
 
         //this.initialize_mouse(vec3(0,5,0), false);
         // Setup stickman
-        //this.initialize_stick_man(model.get_stickman_position());
+        this.initialize_stick_man(model.get_stickman_position());
 
 /*
         this.model.on("shockwave", function(pos)
