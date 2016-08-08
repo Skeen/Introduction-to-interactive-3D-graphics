@@ -112,7 +112,7 @@ export class View
     private tileTexture : any;
 
     // Number of full world lines to buffer
-    private worldBufferLayers = 4;
+    private worldBufferLayers = 10;
 
     // Shader variables
     //-----------------
@@ -416,7 +416,7 @@ export class View
         gl.enableVertexAttribArray(this.vDestroyed);
         var worldDBufferSize = gl.getBufferParameter(gl.ARRAY_BUFFER, gl.BUFFER_SIZE);
 
-        function formatBytes(bytes,decimals) 
+        function formatBytes(bytes, decimals) 
         {
             if(bytes == 0)
                 return [ 0, 'Byte' ];
@@ -435,11 +435,11 @@ export class View
         }
 
         // Output memory usage information
-        output(["Total World Vertex memory consumption:",       formatBytes(cubeVertexBufferSize, 2)]);
-        output(["Total World Texture memory consumption:",      formatBytes(cubeTextureBufferSize, 2)]);
-        output(["Total World Tile memory consumption:",         formatBytes(worldTileBufferSize, 2)]);
-        output(["Total World Destroyed memory consumption:",    formatBytes(worldDBufferSize, 2)]);
-        output(["Total World Translate memory consumption:",    formatBytes(worldTranslateBufferSize, 2)]);
+        output(["Total World Vertex memory consumption:",       formatBytes(cubeVertexBufferSize, 1)]);
+        output(["Total World Texture memory consumption:",      formatBytes(cubeTextureBufferSize, 1)]);
+        output(["Total World Tile memory consumption:",         formatBytes(worldTileBufferSize, 1)]);
+        output(["Total World Destroyed memory consumption:",    formatBytes(worldDBufferSize, 1)]);
+        output(["Total World Translate memory consumption:",    formatBytes(worldTranslateBufferSize, 1)]);
         output(["Total World GPU memory consumption:",          formatBytes(worldTileBufferSize + worldDBufferSize + worldTranslateBufferSize, 2)]);
 /*
         // Stick Vertex buffer
@@ -514,6 +514,7 @@ export class View
         gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+        gl.generateMipmap(gl.TEXTURE_2D);
 
         gl.useProgram(this.boxShaderProgram);
         gl.uniform1i(this.uTextureMap, this.tileTexture);
@@ -955,29 +956,38 @@ export class View
 
     private tile_to_texture_coord(tile : Tile) : any
     {
-        switch(tile)
+        function tile_to_texture_coord_worker(tile : Tile) : any
         {
-            case Tile.EMPTY:
-                return vec2(-1, -1);
-            case Tile.STONE:
-                return vec2(0/16, 14/16);
-            case Tile.GRASS:
-                return vec2(3/16, 15/16);
-            case Tile.DIRT:
-                return vec2(2/16, 15/16);
-            case Tile.WOOD:
-                return vec2(4/16, 15/16);
-            case Tile.METAL:
-                return vec2(6/16, 15/16);
-            case Tile.WATER:
-                return vec2(0/16, 6/16);
-            case Tile.FIRE:
-                return vec2(14/16, 0/16);
-            case Tile.BEDROCK:
-                return vec2(7/16, 4/16);
-            default:
-                alert("Invalid tile, cannot convert to texture!");
+            switch(tile)
+            {
+                case Tile.EMPTY:
+                    return vec2(-1, -1);
+                case Tile.STONE:
+                    return vec2(0/16, 14/16);
+                case Tile.GRASS:
+                    return vec2(3/16, 15/16);
+                case Tile.DIRT:
+                    return vec2(2/16, 15/16);
+                case Tile.WOOD:
+                    return vec2(4/16, 15/16);
+                case Tile.METAL:
+                    return vec2(5/16, 16/16);
+                case Tile.WATER:
+                    return vec2(0/16, 6/16);
+                case Tile.FIRE:
+                    return vec2(14/16, 0/16);
+                case Tile.BEDROCK:
+                    return vec2(7/16, 4/16);
+                default:
+                    console.log("Invalid tile, cannot convert to texture!");
+                    // Purple tile
+                    return vec2(10/16, 2/16);
+            }
         }
+        var optimal = tile_to_texture_coord_worker(tile);
+        var offset = 1 / 16 / 16 / 2;
+        //var offset = 0;
+        return vec2(optimal[0] + offset, optimal[1] - offset);
     }
 
     private index_to_position(x, y, z) : any
