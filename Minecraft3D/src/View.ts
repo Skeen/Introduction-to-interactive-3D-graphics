@@ -766,6 +766,7 @@ export class View
         gl.bufferData(gl.ARRAY_BUFFER, flatten(stick_translate), gl.STATIC_DRAW);
 
         this.stickman_lines = stick_points.length;
+        //console.log("stick points length: " + stick_points.length);
     }
 
     private render() : void
@@ -794,6 +795,7 @@ export class View
         }
 
         // Draw the stickman
+        //console.log(this.stickman_lines);
         if(this.stickman_lines != 0)
         {
             gl.bindBuffer(gl.ARRAY_BUFFER, this.stickCBuffer);
@@ -1045,7 +1047,8 @@ export class View
         {
             var stick_pos = model.get_stickman_position();
             var cam_pos   = model.get_mouse_position();
-
+            //console.log("stickman pos: "+stick_pos);
+            //console.log("mouse pos: " + cam_pos);
             if(model.is_map_active())
             {
                 var modelMatrix = lookAt(vec3(stick_pos[0],
@@ -1067,6 +1070,38 @@ export class View
                                               stick_pos[2] + cam_pos[2]),
                                          vec3(0,1,0));
                 gl.uniformMatrix4fv(this.uMVMatrix, false, flatten(modelMatrix));
+                //X
+                var block_pos = add(stick_pos, cam_pos);
+                //console.log("block pos: " + block_pos);
+                var x1 = stick_pos[0];
+                //console.log("stick_pos x: " + stick_pos[0]);
+                //Z
+                var x2 = stick_pos[2];
+                //console.log("Stick pos X: "+ x1);
+                //console.log("Stick pos Z: "+ x2);
+
+                var y1 = block_pos[0];
+                var y2 = block_pos[2];
+                //console.log("Cam pos X: "+ y1);
+                //console.log("Cam pos Z: "+ y2);
+
+                var angle_numinator = x1*y1+x2*y2;
+                var angle_dev1 = Math.sqrt(x1^2+x2^2);
+                var angle_dev2 = Math.sqrt(y1^2+y2^2);
+                //console.log("Squareroot1: "+angle_dev1);
+                //console.log("Squareroot2: "+angle_dev2);
+                var angle_devisor = angle_dev1*angle_dev2;
+                //console.log("Angle numinator: "+ angle_numinator);
+                //console.log("angle devisor: " + angle_devisor );
+                //console.log("Cam pos Z: "+ stick_pos[2]);
+                var angle = Math.cos(angle_numinator/angle_devisor);
+                //console.log(angle);
+                var rotation = rotate(angle,vec3(0,1,0));
+                //console.log(vec4(stick_pos,1));
+                var rot_pos = mult(rotation,vec4(stick_pos,1));
+                //console.log("Stickman position: " + stick_pos);
+                //console.log("rotation pos: " + rot_pos);
+                //this.initialize_stick_man(rot_pos);
             }
         }.bind(this);
 
@@ -1088,30 +1123,19 @@ export class View
                 //console.log(block_pos);
                 var placeable = this.model.can_build(block_pos);
                 this.initialize_mouse(block_pos, placeable);
-                //var p = rotate(90,vec3(0,1,0));
-                //console.log(vec4(stick_pos,1));
-
-                //this.initialize_stick_man(mult(vec4(stick_pos,1),p));
             }
         }.bind(this);
 
-        //this.model.on("stickman_move", update_placeblock);
+        this.model.on("stickman_move", update_placeblock);
         this.model.on("mouse_move", update_placeblock);
 
         this.model.on("stickman_move", function(stickman_pos)
         {
             var stick_pos = model.get_stickman_position().map(Math.round);
-            var block_pos = stick_pos;
-            if(stick_pos == block_pos)
-            {
-                this.stickman_lines = 0;
-            }
-            else
-            {
-                //console.log("Block pos: " + scale(0.5,block_pos));
-                //console.log("Stickman Pos: " + model.get_stickman_position());
-                this.initialize_stick_man(block_pos);
-            }
+            //console.log("stickman_move: " + stick_pos );
+            //console.log("Block pos: " + scale(0.5,block_pos));
+            //console.log("Stickman Pos: " + model.get_stickman_position());
+            this.initialize_stick_man(stick_pos);
 
         }.bind(this));
         update_camera();
