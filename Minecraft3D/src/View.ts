@@ -334,7 +334,7 @@ export class View
         for(var i = 0; i < (end - start); i++)
         {
             replace_values.push(destroyed ? 1. : 0.);
-                   
+
         }
         gl.bindBuffer(gl.ARRAY_BUFFER, this.worldDBuffer);
         gl.bufferSubData(gl.ARRAY_BUFFER, start*Float32Array.BYTES_PER_ELEMENT, flatten(replace_values));
@@ -1129,6 +1129,21 @@ export class View
         }.bind(this));
 
         var height = 1;
+
+        var dot = function(a, b) {
+            return (a[0] * b[0] + a[1] * b[1] + a[2] * b[2]);
+        };
+
+        var normalize = function(a) {
+            var term = 1.0 / Math.sqrt(a[0] * a[0] + a[1] * a[1] + a[2] * a[2]);
+            var b = vec3(a[0] * term, a[1] * term, a[2] * term);
+            return b;
+        };
+        var vsub = function(a,b){
+        var result = vec3(a[0]-b[0],a[1]-b[1],a[2]-b[2]);
+        return result;
+        };
+
         var update_camera = function() : void
         {
             var stick_pos = model.get_stickman_position();
@@ -1156,39 +1171,66 @@ export class View
                                               stick_pos[2] + cam_pos[2]),
                                          vec3(0,1,0));
                 gl.uniformMatrix4fv(this.uMVMatrix, false, flatten(modelMatrix));
-                //X
-                var block_pos = add(stick_pos, cam_pos);
-                //console.log("block pos: " + block_pos);
-                var x1 = stick_pos[0];
-                //console.log("stick_pos x: " + stick_pos[0]);
-                //Z
-                var x2 = stick_pos[2];
-                //console.log("Stick pos X: "+ x1);
-                //console.log("Stick pos Z: "+ x2);
-
-                var y1 = block_pos[0];
-                var y2 = block_pos[2];
-                //console.log("Cam pos X: "+ y1);
-                //console.log("Cam pos Z: "+ y2);
-
-                var angle_numinator = x1*y1+x2*y2;
-                var angle_dev1 = Math.sqrt(x1^2+x2^2);
-                var angle_dev2 = Math.sqrt(y1^2+y2^2);
-                //console.log("Squareroot1: "+angle_dev1);
-                //console.log("Squareroot2: "+angle_dev2);
-                var angle_devisor = angle_dev1*angle_dev2;
-                //console.log("Angle numinator: "+ angle_numinator);
-                //console.log("angle devisor: " + angle_devisor );
-                //console.log("Cam pos Z: "+ stick_pos[2]);
-                var angle = Math.cos(angle_numinator/angle_devisor);
-                //console.log(angle);
-                var rotation = rotate(angle,vec3(0,1,0));
-                //console.log(vec4(stick_pos,1));
-                var rot_pos = mult(rotation,vec4(stick_pos,1));
-                //console.log("Stickman position: " + stick_pos);
-                //console.log("rotation pos: " + rot_pos);
-                //this.initialize_stick_man(rot_pos);
             }
+        }.bind(this);
+
+        this.model.on("stickman_move", update_camera);
+        this.model.on("mouse_move", update_camera);
+        this.model.on("map_active", update_camera);
+
+        var update_placeblock = function() : void
+        {
+            var stick_pos = model.get_stickman_position().map(Math.round);
+            var mouse_pos   = model.get_mouse_position();
+            var block_pos = add(stick_pos, mouse_pos).map(Math.round);
+            if(stick_pos == block_pos)
+            {
+                this.mouse_lines = 0;
+            }
+            else
+            {
+                //console.log(block_pos);
+                var placeable = this.model.can_build(block_pos);
+                this.initialize_mouse(block_pos, placeable);
+            }
+        }.bind(this);
+
+        var rotate_stickman = function() : void{
+            var stick_pos = model.get_stickman_position().map(Math.round);
+            var cam_pos = model.get_mouse_position();
+            //X
+            var block_pos = add(stick_pos, cam_pos);
+            //console.log("block pos: " + block_pos);
+            var x1 = stick_pos[0];
+            //console.log("stick_pos x: " + stick_pos[0]);
+            //Z
+            var x2 = stick_pos[2];
+            //console.log("Stick pos X: "+ x1);
+            //console.log("Stick pos Z: "+ x2);
+
+            var y1 = block_pos[0];
+            var y2 = block_pos[2];
+            //console.log("Cam pos X: "+ y1);
+            //console.log("Cam pos Z: "+ y2);
+
+            var angle_numinator = x1*y1+x2*y2;
+            var angle_dev1 = Math.sqrt(x1*x1+x2*x2);
+            var angle_dev2 = Math.sqrt(y1*y1+y2*y2);
+            //console.log("Squareroot1: "+angle_dev1);
+            //console.log("Squareroot2: "+angle_dev2);
+            var angle_devisor = angle_dev1*angle_dev2;
+            //console.log("Angle numinator: "+ angle_numinator);
+            //console.log("angle devisor: " + angle_devisor );
+            //console.log("Cam pos Z: "+ stick_pos[2]);
+            var angle = Math.cos(angle_numinator/angle_devisor);
+            //console.log("rotation angle: "+angle);
+            var rotation = rotate(angle,vec3(0,1,0));
+            //console.log(vec4(stick_pos,1));
+            var rot_pos = mult(rotation,vec4(stick_pos,1));
+            //console.log("Stickman position: " + stick_pos);
+            //console.log("rotation pos: " + rot_pos);
+            this.initialize_stick_man(vec3(rot_pos));
+            //this.initialize_stick_man(stick_pos);
         }.bind(this);
 
         this.model.on("stickman_move", update_camera);
@@ -1219,9 +1261,6 @@ export class View
         this.model.on("stickman_move", function(stickman_pos)
         {
             var stick_pos = model.get_stickman_position().map(Math.round);
-            //console.log("stickman_move: " + stick_pos );
-            //console.log("Block pos: " + scale(0.5,block_pos));
-            //console.log("Stickman Pos: " + model.get_stickman_position());
             this.initialize_stick_man(stick_pos);
 
         }.bind(this));
