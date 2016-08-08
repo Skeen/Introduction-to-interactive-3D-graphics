@@ -197,7 +197,7 @@ export class View
             if(model.valid_index(pos) == false)
                 continue;
             var tile = model.get_tile(pos);
-            empty_found = empty_found || TileUtil.is_sink_block(tile) || model.get_destroyed(pos);
+            empty_found = empty_found || TileUtil.is_sink_block(tile) || (model.get_destroyed(pos) == 10);
         }
         for(var j = -1; j <= 1; j+=2)
         {
@@ -205,7 +205,7 @@ export class View
             if(model.valid_index(pos) == false)
                 continue;
             var tile = model.get_tile(pos);
-            empty_found = empty_found || TileUtil.is_sink_block(tile) || model.get_destroyed(pos);
+            empty_found = empty_found || TileUtil.is_sink_block(tile) || (model.get_destroyed(pos) == 10);
         }
         for(var k = -1; k <= 1; k+=2)
         {
@@ -213,7 +213,7 @@ export class View
             if(model.valid_index(pos) == false)
                 continue;
             var tile = model.get_tile(pos);
-            empty_found = empty_found || TileUtil.is_sink_block(tile) || model.get_destroyed(pos);
+            empty_found = empty_found || TileUtil.is_sink_block(tile) || (model.get_destroyed(pos) == 10);
         }
         // No empty blocks? - Noone will see this block then, so skip it
         if(empty_found == false)
@@ -268,7 +268,7 @@ export class View
         else
         {
             // Redraw the destroyed status of the block
-            var destroyed : boolean = model.get_destroyed(pos);
+            var destroyed : number = model.get_destroyed(pos);
             this.updateDestroyed(offset, offset + 1, destroyed);
             // Redraw the tile of the block
             var tile : Tile = model.get_tile(pos);
@@ -315,14 +315,14 @@ export class View
         gl.bufferSubData(gl.ARRAY_BUFFER, start*sizeof['vec2'], flatten(replace_values));
     }
 
-    private updateDestroyed(start, end, destroyed) : void
+    private updateDestroyed(start, end, destroyed : number) : void
     {
         var gl = this.gl;
 
         var replace_values = [];
         for(var i = 0; i < (end - start); i++)
         {
-            replace_values.push(destroyed ? 1. : 0.);
+            replace_values.push(destroyed);
 
         }
         gl.bindBuffer(gl.ARRAY_BUFFER, this.worldDBuffer);
@@ -511,7 +511,7 @@ export class View
         this.tileTexture = gl.createTexture();
         gl.bindTexture(gl.TEXTURE_2D, this.tileTexture);
         gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
-        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, image);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
 
@@ -1179,7 +1179,7 @@ export class View
         }.bind(this));
 
         // Whenever a block is destroyed
-        this.model.on("update_destroyed", function(pos, destroyed : boolean)
+        this.model.on("update_destroyed", function(pos, destroyed : number)
         {
             // Get the offset for this block
             var offset = this.vec_to_offset[pos];
@@ -1190,6 +1190,7 @@ export class View
             }
             else
             {
+                console.log(pos, destroyed);
                 // Update the destroyed status of the block
                 this.updateDestroyed(offset, offset + 1, destroyed);
                 // Notify all adjacent blocks

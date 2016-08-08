@@ -11,6 +11,7 @@ uniform float uTheta;
 
 varying vec2 fTile;
 varying vec2 fTexCoord;
+varying float fPicking;
 
 mat4 rotMat(vec3 axis, float angle)
 {
@@ -35,13 +36,17 @@ mat4 scaleMat(vec3 scale)
 
 void main(void) 
 {
+    // Is the block fully destroyed?
+    float destroyed = (vDestroyed == 10. ? 1. : 0.);
+
     vec4 pos = vec4(vPosition, 1.);
-    vec4 scale_pos = pos * scaleMat(vec3(1.0 - 0.5 * vDestroyed));
-    vec4 prerotated_pos = scale_pos * rotMat(vec3(1., 0., 1.), radians(45. * vDestroyed));
-    vec4 rotated_pos = prerotated_pos * rotMat(vec3(0., 1., 0.), uTheta * vDestroyed);
+    vec4 scale_pos = pos * scaleMat(vec3(1.0 - 0.5 * destroyed));
+    vec4 prerotated_pos = scale_pos * rotMat(vec3(1., 0., 1.), radians(45. * destroyed));
+    vec4 rotated_pos = prerotated_pos * rotMat(vec3(0., 1., 0.), uTheta * destroyed);
     vec4 translated_pos = rotated_pos + vec4(vTranslate, 0.);
     gl_Position = uPMatrix * uMVMatrix * translated_pos;
 
     fTile = vTile;
     fTexCoord = vTexCoord;
+    fPicking = vDestroyed;
 }

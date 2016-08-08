@@ -11,7 +11,7 @@ import {TerrainGenerator, DiamondTerrainGenerator} from "./TerrainGenerator";
 
 export class Model extends events.EventEmitter
 {
-    public worldPower : number = 8;
+    public worldPower : number = 6;
 
     public worldXZ : number = Math.pow(2, this.worldPower) + 1;
     public worldX : number = this.worldXZ;
@@ -85,7 +85,7 @@ export class Model extends events.EventEmitter
         return true;
     }
 
-    public get_destroyed(pos) : boolean
+    public get_destroyed(pos) : number
     {
         this.valid_index(pos);
 
@@ -96,7 +96,7 @@ export class Model extends events.EventEmitter
         return this.worldGrid[x][y][z].destroyed;
     }
 
-    private set_destroyed(pos, destroyed : boolean) : void
+    private set_destroyed(pos, destroyed : number) : void
     {
         var x = pos[0];
         var y = pos[1];
@@ -105,7 +105,7 @@ export class Model extends events.EventEmitter
         this.worldGrid[x][y][z].destroyed = destroyed;
     }
 
-    public update_destroyed(pos, destroyed : boolean)
+    public update_destroyed(pos, destroyed : number)
     {
         if(this.valid_index(pos) == false)
             return false;
@@ -207,7 +207,7 @@ export class Model extends events.EventEmitter
                     this.worldGrid[x][y][z] = {}
                     var pos = vec3(x, y, z);
                     this.set_tile(pos, Tile.EMPTY);
-                    this.set_destroyed(pos, false);
+                    this.set_destroyed(pos, 0);
                 }
             }
         }
@@ -227,7 +227,7 @@ export class Model extends events.EventEmitter
                 this.set_tile(vec3(x, 0, z), Tile.BEDROCK);
                 for (var y = 1; y < yHeight-1; y++) 
                 {
-                    this.set_tile(vec3(x, y, z), Tile.DIRT);
+                    this.set_tile(vec3(x, y, z), Tile.METAL);
                 }
             }
         }

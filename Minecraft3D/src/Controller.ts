@@ -515,15 +515,21 @@ export class Controller
                 */
                 var tile_id = Tile.STONE;
 
-                model.update_destroyed(block_pos, false);
+                model.update_destroyed(block_pos, 0);
                 model.update_tile(block_pos, tile_id);
                 //shockwave();
             }
             else if(TileUtil.is_destroyable(model.get_tile(block_pos)) && event.shiftKey == true)
             {
-                model.update_destroyed(block_pos, true);
+                model.update_destroyed(block_pos, 10);
                 //model.update_tile(block_pos, Tile.EMPTY);
                 //shockwave();
+            }
+            else
+            {
+                var current_destroyed = model.get_destroyed(block_pos);
+                if(current_destroyed != 10)
+                    model.update_destroyed(block_pos, current_destroyed + 1);
             }
         }.bind(this);
 
@@ -534,10 +540,10 @@ export class Controller
             if(model.valid_index(block_pos) == false)
                 return;
 
-            if(this.model.get_destroyed(block_pos))
+            if(this.model.get_destroyed(block_pos) == 10)
             {
                 console.log("Picked up block!");
-                this.model.update_destroyed(block_pos, false);
+                this.model.update_destroyed(block_pos, 0);
                 this.model.update_tile(block_pos, Tile.EMPTY);
             }
         }.bind(this));
