@@ -37,7 +37,7 @@ mat4 scaleMat(vec3 scale)
 void main(void) 
 {
     // Is the block fully destroyed?
-    float destroyed = (vDestroyed == 10. ? 1. : 0.);
+    float destroyed = (vDestroyed > 10. ? 1. : 0.);
 
     vec4 pos = vec4(vPosition, 1.);
     vec4 scale_pos = pos * scaleMat(vec3(1.0 - 0.5 * destroyed));

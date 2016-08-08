@@ -15,12 +15,12 @@ void main()
     vec2 tex_scale = fTexCoord * (1. / 16.);
     vec2 tex_adjust = tex_scale + fTile;
     
-    vec2 tex_pick_adjust = tex_scale + vec2(fPicking / 16., 0.);
+    vec2 tex_pick_adjust = tex_scale + vec2((fPicking - 1.) / 16., 0.);
 
     vec4 block_texture = texture2D(uTextureMap, tex_adjust);
     vec4 overlay_texture = texture2D(uTextureMap, tex_pick_adjust);
 
-    if(fPicking < 1. || fPicking > 9.)
+    if(fPicking < 1. || fPicking > 10.)
         gl_FragColor = block_texture;
     else
         gl_FragColor = mix(block_texture, overlay_texture, overlay_texture.a);

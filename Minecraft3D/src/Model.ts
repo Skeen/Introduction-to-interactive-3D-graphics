@@ -30,6 +30,8 @@ export class Model extends events.EventEmitter
     private mouse_position;
     private map_active : boolean = false;
 
+    public FULLY_DESTROYED : number = 11;
+
     // Checks whether x and y are valid indicies
     // TODO: Make private
     public valid_index(pos) : boolean
@@ -227,7 +229,7 @@ export class Model extends events.EventEmitter
                 this.set_tile(vec3(x, 0, z), Tile.BEDROCK);
                 for (var y = 1; y < yHeight-1; y++) 
                 {
-                    this.set_tile(vec3(x, y, z), Tile.METAL);
+                    this.set_tile(vec3(x, y, z), Tile.DIRT);
                 }
             }
         }

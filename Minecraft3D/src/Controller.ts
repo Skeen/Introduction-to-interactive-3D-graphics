@@ -525,7 +525,7 @@ export class Controller
             else
             {
                 var current_destroyed = model.get_destroyed(block_pos);
-                if(current_destroyed != 10)
+                if(current_destroyed != model.FULLY_DESTROYED)
                     model.update_destroyed(block_pos, current_destroyed + 1);
             }
         }.bind(this);
@@ -537,7 +537,7 @@ export class Controller
             if(model.valid_index(block_pos) == false)
                 return;
 
-            if(this.model.get_destroyed(block_pos) == 10)
+            if(this.model.get_destroyed(block_pos) == model.FULLY_DESTROYED)
             {
                 console.log("Picked up block!");
                 this.model.update_destroyed(block_pos, 0);

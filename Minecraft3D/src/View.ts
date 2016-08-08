@@ -197,7 +197,7 @@ export class View
             if(model.valid_index(pos) == false)
                 continue;
             var tile = model.get_tile(pos);
-            empty_found = empty_found || TileUtil.is_sink_block(tile) || (model.get_destroyed(pos) == 10);
+            empty_found = empty_found || TileUtil.is_sink_block(tile) || (model.get_destroyed(pos) == model.FULLY_DESTROYED);
         }
         for(var j = -1; j <= 1; j+=2)
         {
@@ -205,7 +205,7 @@ export class View
             if(model.valid_index(pos) == false)
                 continue;
             var tile = model.get_tile(pos);
-            empty_found = empty_found || TileUtil.is_sink_block(tile) || (model.get_destroyed(pos) == 10);
+            empty_found = empty_found || TileUtil.is_sink_block(tile) || (model.get_destroyed(pos) == model.FULLY_DESTROYED);
         }
         for(var k = -1; k <= 1; k+=2)
         {
@@ -213,7 +213,7 @@ export class View
             if(model.valid_index(pos) == false)
                 continue;
             var tile = model.get_tile(pos);
-            empty_found = empty_found || TileUtil.is_sink_block(tile) || (model.get_destroyed(pos) == 10);
+            empty_found = empty_found || TileUtil.is_sink_block(tile) || (model.get_destroyed(pos) == model.FULLY_DESTROYED);
         }
         // No empty blocks? - Noone will see this block then, so skip it
         if(empty_found == false)
@@ -551,7 +551,7 @@ export class View
 
                     world_tile.push(this.tile_to_texture_coord(tile));
                     world_translate.push(pos);
-                    world_destroyed.push(model.get_destroyed(pos) ? 1. : 0.);
+                    world_destroyed.push(model.get_destroyed(pos));
                 }
             }
         }
