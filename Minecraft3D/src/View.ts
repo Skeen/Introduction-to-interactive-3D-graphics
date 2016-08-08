@@ -166,11 +166,12 @@ export class View
 
     // Buffers
     //--------
+    // Shared
+    private cubeVertexBuffer : WebGLBuffer;
+    private cubeTextureBuffer : WebGLBuffer;
     // Blocks
-    private worldVBuffer : WebGLBuffer;
     private worldTileBuffer : WebGLBuffer;
     private worldDBuffer : WebGLBuffer;
-    private worldTBuffer : WebGLBuffer;
     private worldTranslateBuffer : WebGLBuffer;
     //private worldIndexBuffer : WebGLBuffer;
     // Stick figure
@@ -345,33 +346,18 @@ export class View
         }
     }
 
-    private updateColor(start, end, tile) : void
+    private updateTile(start, end, tile) : void
     {
         var gl = this.gl;
 
-        var color = this.tile_to_color(tile);
+        var texture_offset = this.tile_to_texture_coord(tile);
 
         var replace_values = [];
         for(var i = 0; i < (end - start); i++)
         {
-            replace_values.push(color);
+            replace_values.push(texture_offset);
         }
         gl.bindBuffer(gl.ARRAY_BUFFER, this.worldTileBuffer);
-        gl.bufferSubData(gl.ARRAY_BUFFER, start*sizeof['vec4'], flatten(replace_values));
-    }
-
-    private updateTexture(start, end, tile) : void
-    {
-        var gl = this.gl;
-
-        var texture_coord = this.tile_to_texture_coord(tile);
-
-        var replace_values = [];
-        for(var i = 0; i < (end - start); i++)
-        {
-            replace_values.push(add(texture_coord, scale(1/16, vec2(textureCoords[i]))));
-        }
-        gl.bindBuffer(gl.ARRAY_BUFFER, this.worldTBuffer);
         gl.bufferSubData(gl.ARRAY_BUFFER, start*sizeof['vec2'], flatten(replace_values));
     }
 
@@ -383,6 +369,7 @@ export class View
         for(var i = 0; i < (end - start); i++)
         {
             replace_values.push(destroyed ? 1. : 0.);
+                   
         }
         gl.bindBuffer(gl.ARRAY_BUFFER, this.worldDBuffer);
         gl.bufferSubData(gl.ARRAY_BUFFER, start*Float32Array.BYTES_PER_ELEMENT, flatten(replace_values));
@@ -433,17 +420,26 @@ export class View
         this.uTheta     = gl.getUniformLocation(this.boxShaderProgram, "uTheta");
         this.uTextureMap = gl.getUniformLocation(this.boxShaderProgram, "uTextureMap");
 
-        // World Vertex buffer
-        this.worldVBuffer = gl.createBuffer();
-        gl.bindBuffer(gl.ARRAY_BUFFER, this.worldVBuffer);
+        // Cube Vertex buffer
+        this.cubeVertexBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.cubeVertexBuffer);
         gl.bufferData(gl.ARRAY_BUFFER, sizeof['vec3'] * this.verts_per_block, gl.STATIC_DRAW);
         gl.vertexAttribPointer(this.vPosition, 3, gl.FLOAT, false, 0, 0);
         gl.enableVertexAttribArray(this.vPosition);
-        var worldVBufferSize = Math.round(gl.getBufferParameter(gl.ARRAY_BUFFER, gl.BUFFER_SIZE) / 1000 / 1000);
-        // World Color buffer
+        var cubeVertexBufferSize = gl.getBufferParameter(gl.ARRAY_BUFFER, gl.BUFFER_SIZE);
+        // Cube Texture buffer
+        this.cubeTextureBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.cubeTextureBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, sizeof['vec2'] * this.verts_per_block, gl.STATIC_DRAW);
+        gl.vertexAttribPointer(this.vTexCoord, 2, gl.FLOAT, false, 0, 0);
+        gl.enableVertexAttribArray(this.vTexCoord);
+        var cubeTextureBufferSize = gl.getBufferParameter(gl.ARRAY_BUFFER, gl.BUFFER_SIZE);
+
+
+        // World Tile buffer
         this.worldTileBuffer = gl.createBuffer();
         gl.bindBuffer(gl.ARRAY_BUFFER, this.worldTileBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, sizeof['vec2'] * model.worldX * model.worldZ * 2 * 6 * this.verts_per_block, gl.STATIC_DRAW);
+        gl.bufferData(gl.ARRAY_BUFFER, sizeof['vec2'] * model.worldX * model.worldZ * 2 * this.verts_per_block, gl.STATIC_DRAW);
         gl.vertexAttribPointer(this.vTile, 4, gl.FLOAT, false, 0, 0);
         gl.enableVertexAttribArray(this.vTile);
         var worldTileBufferSize = Math.round(gl.getBufferParameter(gl.ARRAY_BUFFER, gl.BUFFER_SIZE) / 1000 / 1000);
@@ -454,28 +450,22 @@ export class View
         gl.vertexAttribPointer(this.vTranslate, 3, gl.FLOAT, false, 0, 0);
         gl.enableVertexAttribArray(this.vTranslate);
         var worldTranslateBufferSize = Math.round(gl.getBufferParameter(gl.ARRAY_BUFFER, gl.BUFFER_SIZE) / 1000 / 1000);
-        // World Texture buffer
-        this.worldTBuffer = gl.createBuffer();
-        gl.bindBuffer(gl.ARRAY_BUFFER, this.worldTBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, sizeof['vec2'] * this.verts_per_block, gl.STATIC_DRAW);
-        gl.vertexAttribPointer(this.vTexCoord, 2, gl.FLOAT, false, 0, 0);
-        gl.enableVertexAttribArray(this.vTexCoord);
-        var worldTBufferSize = Math.round(gl.getBufferParameter(gl.ARRAY_BUFFER, gl.BUFFER_SIZE) / 1000 / 1000);
         // World Destroyed buffer
         this.worldDBuffer = gl.createBuffer();
         gl.bindBuffer(gl.ARRAY_BUFFER, this.worldDBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, Float32Array.BYTES_PER_ELEMENT * model.worldX * model.worldZ * 6 * this.verts_per_block, gl.STATIC_DRAW);
+        gl.bufferData(gl.ARRAY_BUFFER, Float32Array.BYTES_PER_ELEMENT * model.worldX * model.worldZ * 2 * this.verts_per_block, gl.STATIC_DRAW);
         gl.vertexAttribPointer(this.vDestroyed, 1, gl.FLOAT, false, 0, 0);
         gl.enableVertexAttribArray(this.vDestroyed);
         var worldDBufferSize = Math.round(gl.getBufferParameter(gl.ARRAY_BUFFER, gl.BUFFER_SIZE) / 1000 / 1000);
 
         // Output memory usage information
-        console.log("Total World Vertex memory consumption:",       worldVBufferSize,           "MB");
-        console.log("Total World Tile memory consumption:",         worldTileBufferSize,           "MB");
-        console.log("Total World Texture memory consumption:",      worldTBufferSize,           "MB");
+        console.log("Total World Vertex memory consumption:",       cubeVertexBufferSize,       "Bytes");
+        console.log("Total World Texture memory consumption:",      cubeTextureBufferSize,      "Bytes");
+
+        console.log("Total World Tile memory consumption:",         worldTileBufferSize,        "MB");
         console.log("Total World Destroyed memory consumption:",    worldDBufferSize,           "MB");
         console.log("Total World Translate memory consumption:",    worldTranslateBufferSize,   "MB");
-        console.log("Total World GPU memory consumption:",          (worldVBufferSize + worldTileBufferSize + worldTBufferSize + worldDBufferSize + worldTranslateBufferSize), "MB");
+        console.log("Total World GPU memory consumption:",          (worldTileBufferSize + worldDBufferSize + worldTranslateBufferSize), "MB");
 /*
         // Stick Vertex buffer
         this.stickVBuffer = gl.createBuffer();
@@ -613,7 +603,7 @@ export class View
             world_points.push(vec3(vertices[i]));
         }
         // Buffer Verticies
-        gl.bindBuffer(gl.ARRAY_BUFFER, this.worldVBuffer);
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.cubeVertexBuffer);
         gl.bufferSubData(gl.ARRAY_BUFFER, 0, flatten(world_points));
 
         var world_texture = [];
@@ -622,7 +612,7 @@ export class View
             world_texture.push(vec2(textureCoords[i]));
         }
         // Buffer Texture
-        gl.bindBuffer(gl.ARRAY_BUFFER, this.worldTBuffer);
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.cubeTextureBuffer);
         gl.bufferSubData(gl.ARRAY_BUFFER, 0, flatten(world_texture));
 
         // Buffer Color
@@ -878,10 +868,33 @@ export class View
         this.theta += 0.1;
         gl.uniform1f(this.uTheta, this.theta);
 
-        /*
         // Draw the mouse block
         if(this.mouse_lines != 0)
         {
+            /*
+            gl.bindBuffer(gl.ARRAY_BUFFER, this.worldTileBuffer);
+            gl.vertexAttribPointer(this.vTile, 2, gl.FLOAT, false, 0, 0);
+            ext_angle.vertexAttribDivisorANGLE(this.vTile, 1);
+
+            gl.bindBuffer(gl.ARRAY_BUFFER, this.worldTBuffer);
+            gl.vertexAttribPointer(this.vTexCoord, 2, gl.FLOAT, false, 0, 0);
+            ext_angle.vertexAttribDivisorANGLE(this.vTexCoord, 0);
+
+            gl.bindBuffer(gl.ARRAY_BUFFER, this.worldVBuffer);
+            gl.vertexAttribPointer(this.vPosition, 3, gl.FLOAT, false, 0, 0);
+            ext_angle.vertexAttribDivisorANGLE(this.vPosition, 0);
+
+            gl.bindBuffer(gl.ARRAY_BUFFER, this.worldTranslateBuffer);
+            gl.vertexAttribPointer(this.vTranslate, 3, gl.FLOAT, false, 0, 0);
+            ext_angle.vertexAttribDivisorANGLE(this.vTranslate, 1);
+
+            gl.bindBuffer(gl.ARRAY_BUFFER, this.worldDBuffer);
+            gl.vertexAttribPointer(this.vDestroyed, 1, gl.FLOAT, false, 0, 0);
+            ext_angle.vertexAttribDivisorANGLE(this.vDestroyed, 1);
+
+            gl.bindTexture(gl.TEXTURE_2D, this.tileTexture);
+
+
             gl.bindBuffer(gl.ARRAY_BUFFER, this.mouseCBuffer);
             gl.vertexAttribPointer(this.vColor, 4, gl.FLOAT, false, 0, 0);
 
@@ -892,6 +905,7 @@ export class View
             gl.vertexAttribPointer(this.vTranslate, 3, gl.FLOAT, false, 0, 0);
 
             gl.drawArrays(gl.LINES, 0, this.mouse_lines);
+            */
         }
 
         // Draw the stickman
@@ -911,6 +925,8 @@ export class View
             gl.drawArrays(gl.TRIANGLES, 0, this.stickman_lines);
         }
         */
+
+        // Instanced rendering extension
         var ext_angle = gl.getExtension("ANGLE_instanced_arrays");
         if(!ext_angle)
         {
@@ -919,30 +935,34 @@ export class View
         }
 
         // Draw the world
-        gl.bindBuffer(gl.ARRAY_BUFFER, this.worldTileBuffer);
-        gl.vertexAttribPointer(this.vTile, 2, gl.FLOAT, false, 0, 0);
-        ext_angle.vertexAttribDivisorANGLE(this.vTile, 1);
-
-        gl.bindBuffer(gl.ARRAY_BUFFER, this.worldTBuffer);
+        // Reuse cube vertices for all blocks
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.cubeVertexBuffer);
+        gl.vertexAttribPointer(this.vPosition, 3, gl.FLOAT, false, 0, 0);
+        ext_angle.vertexAttribDivisorANGLE(this.vPosition, 0);
+        // Reuse texture vertices for all blocks
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.cubeTextureBuffer);
         gl.vertexAttribPointer(this.vTexCoord, 2, gl.FLOAT, false, 0, 0);
         ext_angle.vertexAttribDivisorANGLE(this.vTexCoord, 0);
 
-        gl.bindBuffer(gl.ARRAY_BUFFER, this.worldVBuffer);
-        gl.vertexAttribPointer(this.vPosition, 3, gl.FLOAT, false, 0, 0);
-        ext_angle.vertexAttribDivisorANGLE(this.vPosition, 0);
-
+        // Use 1 tile for each block
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.worldTileBuffer);
+        gl.vertexAttribPointer(this.vTile, 2, gl.FLOAT, false, 0, 0);
+        ext_angle.vertexAttribDivisorANGLE(this.vTile, 1);
+        // Use 1 translate for each block
         gl.bindBuffer(gl.ARRAY_BUFFER, this.worldTranslateBuffer);
         gl.vertexAttribPointer(this.vTranslate, 3, gl.FLOAT, false, 0, 0);
         ext_angle.vertexAttribDivisorANGLE(this.vTranslate, 1);
-
+        // Use 1 destroyed status for each block
         gl.bindBuffer(gl.ARRAY_BUFFER, this.worldDBuffer);
         gl.vertexAttribPointer(this.vDestroyed, 1, gl.FLOAT, false, 0, 0);
         ext_angle.vertexAttribDivisorANGLE(this.vDestroyed, 1);
-
+        // Bind the texture
         gl.bindTexture(gl.TEXTURE_2D, this.tileTexture);
 
+        // Draw all the blocks!
         ext_angle.drawArraysInstancedANGLE(gl.TRIANGLES, 0, this.verts_per_block, this.blocks);
 
+        // Request new frame
         (<any>window).requestAnimFrame(this.render.bind(this), this.canvas);
     }
 
@@ -1051,47 +1071,13 @@ export class View
     private initialize_mouse(pos, placeable : boolean) : void
     {
         var gl = this.gl;
-
+        /*
         var mouse_points = [];
-        // Left edge
-        mouse_points.push(vec3(- 0.5, - 0.5, - 0.5));
-        mouse_points.push(vec3(- 0.5, + 0.5, - 0.5));
-        // Right edge
-        mouse_points.push(vec3(+ 0.5, + 0.5, - 0.5));
-        mouse_points.push(vec3(+ 0.5, - 0.5, - 0.5));
-        // Top edge
-        mouse_points.push(vec3(- 0.5, + 0.5, - 0.5));
-        mouse_points.push(vec3(+ 0.5, + 0.5, - 0.5));
-        // Bot edge
-        mouse_points.push(vec3(- 0.5, - 0.5, - 0.5));
-        mouse_points.push(vec3(+ 0.5, - 0.5, - 0.5));
-
-        // Left edge
-        mouse_points.push(vec3(- 0.5, - 0.5, + 0.5));
-        mouse_points.push(vec3(- 0.5, + 0.5, + 0.5));
-        // Right edge
-        mouse_points.push(vec3(+ 0.5, + 0.5, + 0.5));
-        mouse_points.push(vec3(+ 0.5, - 0.5, + 0.5));
-        // Top edge
-        mouse_points.push(vec3(- 0.5, + 0.5, + 0.5));
-        mouse_points.push(vec3(+ 0.5, + 0.5, + 0.5));
-        // Bot edge
-        mouse_points.push(vec3(- 0.5, - 0.5, + 0.5));
-        mouse_points.push(vec3(+ 0.5, - 0.5, + 0.5));
-
-        // Edges
-        mouse_points.push(vec3(- 0.5, - 0.5, - 0.5));
-        mouse_points.push(vec3(- 0.5, - 0.5, + 0.5));
-        mouse_points.push(vec3(+ 0.5, - 0.5, - 0.5));
-        mouse_points.push(vec3(+ 0.5, - 0.5, + 0.5));
-        mouse_points.push(vec3(+ 0.5, + 0.5, - 0.5));
-        mouse_points.push(vec3(+ 0.5, + 0.5, + 0.5));
-        mouse_points.push(vec3(- 0.5, + 0.5, - 0.5));
-        mouse_points.push(vec3(- 0.5, + 0.5, + 0.5));
 
         var color = (placeable ? vec4(0., 0., 0., 1.) : vec4(1., 0., 0., 1.));
 
         var mouse_colors = [];
+
         var mouse_translate = [];
         for(var i = 0; i < mouse_points.length; i++)
         {
@@ -1109,6 +1095,7 @@ export class View
         gl.bufferData(gl.ARRAY_BUFFER, flatten(mouse_translate), gl.STATIC_DRAW);
 
         this.mouse_lines = mouse_points.length;
+        */
     }
 
     constructor(model : Model)
@@ -1135,11 +1122,6 @@ export class View
         var usage = sizeof['vec3'] * this.blocks * 6;
         var percentage = usage / gl.getBufferParameter(gl.ARRAY_BUFFER, gl.BUFFER_SIZE);
         console.log("translate buffer usage: ", Math.round(percentage * 100), "%");
-
-        gl.bindBuffer(gl.ARRAY_BUFFER, this.worldTBuffer);
-        var usage = sizeof['vec2'] * this.blocks;
-        var percentage = usage / gl.getBufferParameter(gl.ARRAY_BUFFER, gl.BUFFER_SIZE);
-        console.log("texture buffer usage: ", Math.round(percentage * 100), "%");
 
         gl.bindBuffer(gl.ARRAY_BUFFER, this.worldDBuffer);
         var usage = Float32Array.BYTES_PER_ELEMENT * this.blocks;
@@ -1268,10 +1250,10 @@ export class View
                 this.initialize_mouse(block_pos, placeable);
             }
         }.bind(this);
-/*
+
         this.model.on("stickman_move", update_placeblock);
         this.model.on("mouse_move", update_placeblock);
-        */
+
         /*
         this.model.on("stickman_move", function(stickman_pos)
         {

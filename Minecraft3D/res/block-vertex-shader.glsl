@@ -1,5 +1,5 @@
 attribute vec3 vPosition;
-attribute vec4 vColor;
+attribute vec2 vTile;
 attribute vec3 vTranslate;
 attribute vec2 vTexCoord;
 attribute float vDestroyed;
@@ -9,7 +9,7 @@ uniform mat4 uPMatrix;
 
 uniform float uTheta;
 
-varying vec4 fColor;
+varying vec2 fTile;
 varying vec2 fTexCoord;
 
 mat4 rotMat(vec3 axis, float angle)
@@ -42,6 +42,6 @@ void main(void)
     vec4 translated_pos = rotated_pos + vec4(vTranslate, 0.);
     gl_Position = uPMatrix * uMVMatrix * translated_pos;
 
-    fColor = vColor;
+    fTile = vTile;
     fTexCoord = vTexCoord;
 }
