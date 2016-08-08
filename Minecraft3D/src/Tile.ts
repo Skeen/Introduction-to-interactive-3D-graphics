@@ -27,7 +27,7 @@ export class TileUtil
 
     public static is_sink_block(tile : Tile) : boolean
     {
-        return tile == Tile.EMPTY || tile == Tile.WATER;
+        return tile == Tile.EMPTY || tile == Tile.WATER || tile == Tile.FIRE;
     }
 
     public static is_jump_block(tile : Tile) : boolean

@@ -289,20 +289,29 @@ export class Controller
         var placeable = model.can_build(block_pos);
         if(placeable && e.shiftKey == false)
         {
-            /*
+
             var block_picker : any = document.getElementById('block_picker');
             var block_string = block_picker.options[block_picker.selectedIndex].value;
-            var block_id = TileUtil.fromString(block_string);
-            */
-            var tile_id = Tile.STONE;
+            var tile_id = TileUtil.fromString(block_string);
 
+            model.update_destroyed(block_pos, 0);
             model.update_tile(block_pos, tile_id);
-            //shockwave();
         }
         else if(TileUtil.is_destroyable(model.get_tile(block_pos)) && e.shiftKey == true)
         {
-            model.update_tile(block_pos, Tile.EMPTY);
-            //shockwave();
+            model.update_destroyed(block_pos, 10);
+        }
+         else
+         {
+             var current_destroyed = model.get_destroyed(block_pos);
+             if(current_destroyed != 10)
+                model.update_destroyed(block_pos, current_destroyed + 1);
+         }
+        if(this.model.get_destroyed(block_pos) == 10)
+        {
+            console.log("Picked up block!");
+            this.model.update_destroyed(block_pos, 0);
+            this.model.update_tile(block_pos, Tile.EMPTY);
         }
     }
 
@@ -848,52 +857,7 @@ export class KeyboardController {
 }
 
 /*
- var place_block = function(event)
- {
- var model = this.model;
- /*
- function shockwave()
- {
- model.update_shockwave(vec3(x, y,z));
- }
 
- // Get block coordinates
- var blockX = Math.floor(x);
- var blockY = Math.floor(y);
- var blockZ = Math.floor(z);
-
- var stick_pos = model.get_stickman_position().map(Math.round);
- var mouse_pos = model.get_mouse_position();
- var block_pos = add(stick_pos, mouse_pos).map(Math.round);
-
- if(model.valid_index(block_pos) == false)
- return;
-
- // Check if block is free
- var placeable = model.can_build(block_pos);
- if(placeable && event.shiftKey == false)
- {
- var block_picker : any = document.getElementById('block_picker');
- var tile_string = block_picker.options[block_picker.selectedIndex].value;
- var tile_id = TileUtil.fromString(tile_string);
-
- model.update_destroyed(block_pos, 0);
- model.update_tile(block_pos, tile_id);
- //shockwave();
- }
- else if(TileUtil.is_destroyable(model.get_tile(block_pos)) && event.shiftKey == true)
- {
- model.update_destroyed(block_pos, 10);
- //model.update_tile(block_pos, Tile.EMPTY);
- //shockwave();
- }
- else
- {
- var current_destroyed = model.get_destroyed(block_pos);
- if(current_destroyed != 10)
- model.update_destroyed(block_pos, current_destroyed + 1);
- }
- }.bind(this);
                 model.update_destroyed(block_pos, 0);
                 model.update_tile(block_pos, tile_id);
                 //shockwave();
@@ -912,12 +876,6 @@ export class KeyboardController {
             }
         }.bind(this);
 
- this.model.on("stickman_move", function(stickman_pos)
- {
- var block_pos = stickman_pos.map(Math.round);
-
- if(model.valid_index(block_pos) == false)
- return;
 
             if(this.model.get_destroyed(block_pos) == model.FULLY_DESTROYED)
             {
@@ -930,11 +888,6 @@ export class KeyboardController {
 
 
 };
- if(this.model.get_destroyed(block_pos) == 10)
- {
- console.log("Picked up block!");
- this.model.update_destroyed(block_pos, 0);
- this.model.update_tile(block_pos, Tile.EMPTY);
- }
+
  }.bind(this));
  */

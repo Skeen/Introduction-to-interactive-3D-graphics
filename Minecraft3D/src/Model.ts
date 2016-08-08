@@ -229,7 +229,7 @@ export class Model extends events.EventEmitter
                 this.set_tile(vec3(x, 0, z), Tile.BEDROCK);
                 for (var y = 1; y < yHeight-1; y++)
                 {
-                    this.set_tile(vec3(x, y, z), Tile.DIRT);
+                    this.set_tile(vec3(x, y, z), Tile.METAL);
                 }
             }
         }
@@ -244,7 +244,7 @@ export class Model extends events.EventEmitter
                     var pos = vec3(x, y, z);
                     if (this.get_tile(pos) == Tile.EMPTY)
                     {
-                        this.set_tile(pos, Tile.WATER);
+                        this.set_tile(pos, Tile.FIRE);
                     }
                 }
             }
