@@ -10,6 +10,7 @@ void main() {
     if (fColor.a < 0.1) 
         discard;
 
-    gl_FragColor = fColor * texture2D(uTextureMap, fTexCoord);
+    //gl_FragColor = fColor * texture2D(uTextureMap, fTexCoord);
+    gl_FragColor = texture2D(uTextureMap, fTexCoord);
 }
 

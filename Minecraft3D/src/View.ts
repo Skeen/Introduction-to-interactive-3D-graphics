@@ -203,18 +203,19 @@ export class View
         }
     }
 
-    private gen_buffers(arr_p, arr_c, arr_t, arr_tex, tile_color, pos)
+    private gen_buffers(arr_p, arr_c, arr_t, arr_tex, tile, pos)
     {
         for(var i = 0; i < this.verts_per_block; i++)
         {
             arr_p.push(vec3(vertices[i]));
-            arr_tex.push(vec2(textureCoords[i]));
-
+            arr_tex.push(add(this.tile_to_texture_coord(tile), scale(1/16, vec2(textureCoords[i]))));
+            /*
             var watr = this.tile_to_color(Tile.WATER);
             if (watr[0] == tile_color[0] && watr[1] == tile_color[1] && watr[2] == tile_color[2])
                 arr_c.push(tile_color);
             else
-                arr_c.push(colors[i]);
+            */
+            arr_c.push(colors[i]);
             arr_t.push(pos);
         }
     }
@@ -281,7 +282,7 @@ export class View
 
         this.gen_indicies(indicies, offset);
         var tile = model.get_tile(pos);
-        var tile_color = this.tile_to_color(tile);
+        //var tile_color = this.tile_to_color(tile);
         this.gen_buffers(points, colors, translate, texture, tile, pos);
 
         for(var i = 0; i < this.verts_per_block; i++)
@@ -577,8 +578,7 @@ export class View
                     this.gen_indicies(world_indices, offset);
 
                     var tile = model.get_tile(vec3(x, y, z));
-                    var tile_color = this.tile_to_color(tile);
-                    this.gen_buffers(world_points, world_colors, world_translate, world_texture, tile_color, vec3(x,y,z));
+                    this.gen_buffers(world_points, world_colors, world_translate, world_texture, tile, vec3(x,y,z));
 
                     for(var i = 0; i < this.verts_per_block; i++)
                         world_destroyed.push(model.get_destroyed(vec3(x,y,z)) ? 1. : 0.);
@@ -871,6 +871,7 @@ export class View
 
         // Draw the stickman
         //console.log(this.stickman_lines);
+        /*
         if(this.stickman_lines != 0)
         {
             gl.bindBuffer(gl.ARRAY_BUFFER, this.stickCBuffer);
@@ -884,6 +885,7 @@ export class View
 
             gl.drawArrays(gl.TRIANGLES, 0, this.stickman_lines);
         }
+        */
 
         // Draw the world
         gl.bindBuffer(gl.ARRAY_BUFFER, this.worldCBuffer);
@@ -933,6 +935,33 @@ export class View
                 return vec4(1., 1., 1., 1.);
             default:
                 alert("Invalid tile, cannot convert to color!");
+        }
+    }
+
+    private tile_to_texture_coord(tile : Tile) : any
+    {
+        switch(tile)
+        {
+            case Tile.EMPTY:
+                return vec2(13/16, 0/16);
+            case Tile.STONE:
+                return vec2(0/16, 14/16);
+            case Tile.GRASS:
+                return vec2(3/16, 15/16);
+            case Tile.DIRT:
+                return vec2(2/16, 15/16);
+            case Tile.WOOD:
+                return vec2(4/16, 15/16);
+            case Tile.METAL:
+                return vec2(6/16, 15/16);
+            case Tile.WATER:
+                return vec2(0/16, 6/16);
+            case Tile.FIRE:
+                return vec2(14/16, 0/16);
+            case Tile.BEDROCK:
+                return vec2(7/16, 4/16);
+            default:
+                alert("Invalid tile, cannot convert to texture!");
         }
     }
 
