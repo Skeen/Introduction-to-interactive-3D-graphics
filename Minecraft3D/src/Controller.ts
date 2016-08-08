@@ -299,20 +299,22 @@ export class Controller
         }
         else if(TileUtil.is_destroyable(model.get_tile(block_pos)) && e.shiftKey == true)
         {
-            model.update_destroyed(block_pos, 10);
+            model.update_destroyed(block_pos, model.FULLY_DESTROYED);
         }
-         else
-         {
-             var current_destroyed = model.get_destroyed(block_pos);
-             if(current_destroyed != 10)
+        else
+        {
+            var current_destroyed = model.get_destroyed(block_pos);
+            if(current_destroyed != model.FULLY_DESTROYED)
                 model.update_destroyed(block_pos, current_destroyed + 1);
-         }
-        if(this.model.get_destroyed(block_pos) == 10)
+        }
+        /* // TODO: Fix
+        if(this.model.get_destroyed(block_pos) == model.FULLY_DESTROYED)
         {
             console.log("Picked up block!");
             this.model.update_destroyed(block_pos, 0);
             this.model.update_tile(block_pos, Tile.EMPTY);
         }
+        */
     }
 
     private get_stickman_blocks(pos)
