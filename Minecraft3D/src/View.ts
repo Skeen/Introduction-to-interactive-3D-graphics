@@ -400,30 +400,47 @@ export class View
         gl.bufferData(gl.ARRAY_BUFFER, sizeof['vec2'] * model.worldX * model.worldZ * this.worldBufferLayers, gl.STATIC_DRAW);
         gl.vertexAttribPointer(this.vTile, 4, gl.FLOAT, false, 0, 0);
         gl.enableVertexAttribArray(this.vTile);
-        var worldTileBufferSize = Math.round(gl.getBufferParameter(gl.ARRAY_BUFFER, gl.BUFFER_SIZE) / 1000 / 1000);
+        var worldTileBufferSize = gl.getBufferParameter(gl.ARRAY_BUFFER, gl.BUFFER_SIZE);
         // World Translate buffer
         this.worldTranslateBuffer = gl.createBuffer();
         gl.bindBuffer(gl.ARRAY_BUFFER, this.worldTranslateBuffer);
         gl.bufferData(gl.ARRAY_BUFFER, sizeof['vec3'] * model.worldX * model.worldZ * this.worldBufferLayers, gl.STATIC_DRAW);
         gl.vertexAttribPointer(this.vTranslate, 3, gl.FLOAT, false, 0, 0);
         gl.enableVertexAttribArray(this.vTranslate);
-        var worldTranslateBufferSize = Math.round(gl.getBufferParameter(gl.ARRAY_BUFFER, gl.BUFFER_SIZE) / 1000 / 1000);
+        var worldTranslateBufferSize = gl.getBufferParameter(gl.ARRAY_BUFFER, gl.BUFFER_SIZE);
         // World Destroyed buffer
         this.worldDBuffer = gl.createBuffer();
         gl.bindBuffer(gl.ARRAY_BUFFER, this.worldDBuffer);
         gl.bufferData(gl.ARRAY_BUFFER, Float32Array.BYTES_PER_ELEMENT * model.worldX * model.worldZ * this.worldBufferLayers, gl.STATIC_DRAW);
         gl.vertexAttribPointer(this.vDestroyed, 1, gl.FLOAT, false, 0, 0);
         gl.enableVertexAttribArray(this.vDestroyed);
-        var worldDBufferSize = Math.round(gl.getBufferParameter(gl.ARRAY_BUFFER, gl.BUFFER_SIZE) / 1000 / 1000);
+        var worldDBufferSize = gl.getBufferParameter(gl.ARRAY_BUFFER, gl.BUFFER_SIZE);
+
+        function formatBytes(bytes,decimals) 
+        {
+            if(bytes == 0)
+                return [ 0, 'Byte' ];
+
+            var k = 1000; // or 1024 for binary
+            var dm = decimals + 1 || 3;
+            var sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
+            var i = Math.floor(Math.log(bytes) / Math.log(k));
+            return [ parseFloat((bytes / Math.pow(k, i)).toFixed(dm)), sizes[i] ];
+        }
+
+        function output(array)
+        {
+            var array = [].concat.apply([], array);
+            console.log.apply(console, array);
+        }
 
         // Output memory usage information
-        console.log("Total World Vertex memory consumption:",       cubeVertexBufferSize,       "Bytes");
-        console.log("Total World Texture memory consumption:",      cubeTextureBufferSize,      "Bytes");
-
-        console.log("Total World Tile memory consumption:",         worldTileBufferSize,        "MB");
-        console.log("Total World Destroyed memory consumption:",    worldDBufferSize,           "MB");
-        console.log("Total World Translate memory consumption:",    worldTranslateBufferSize,   "MB");
-        console.log("Total World GPU memory consumption:",          (worldTileBufferSize + worldDBufferSize + worldTranslateBufferSize), "MB");
+        output(["Total World Vertex memory consumption:",       formatBytes(cubeVertexBufferSize, 2)]);
+        output(["Total World Texture memory consumption:",      formatBytes(cubeTextureBufferSize, 2)]);
+        output(["Total World Tile memory consumption:",         formatBytes(worldTileBufferSize, 2)]);
+        output(["Total World Destroyed memory consumption:",    formatBytes(worldDBufferSize, 2)]);
+        output(["Total World Translate memory consumption:",    formatBytes(worldTranslateBufferSize, 2)]);
+        output(["Total World GPU memory consumption:",          formatBytes(worldTileBufferSize + worldDBufferSize + worldTranslateBufferSize, 2)]);
 /*
         // Stick Vertex buffer
         this.stickVBuffer = gl.createBuffer();
