@@ -277,6 +277,33 @@ export class Controller
         if (document.pointerLockElement != this.canvas) {
             this.canvas.requestPointerLock();
         }
+        var model = this.model;
+        var stick_pos = model.get_stickman_position().map(Math.round);
+        var mouse_pos = model.get_mouse_position();
+        var block_pos = add(stick_pos, mouse_pos).map(Math.round);
+
+        if(model.valid_index(block_pos) == false)
+            return;
+
+        // Check if block is free
+        var placeable = model.can_build(block_pos);
+        if(placeable && e.shiftKey == false)
+        {
+            /*
+            var block_picker : any = document.getElementById('block_picker');
+            var block_string = block_picker.options[block_picker.selectedIndex].value;
+            var block_id = TileUtil.fromString(block_string);
+            */
+            var tile_id = Tile.STONE;
+
+            model.update_tile(block_pos, tile_id);
+            //shockwave();
+        }
+        else if(TileUtil.is_destroyable(model.get_tile(block_pos)) && e.shiftKey == true)
+        {
+            model.update_tile(block_pos, Tile.EMPTY);
+            //shockwave();
+        }
     }
 
     private get_stickman_blocks(pos)
