@@ -352,7 +352,7 @@ export class View
         gl.enable(gl.CULL_FACE);
         gl.cullFace(gl.BACK);
 
-        gl.lineWidth(5);
+        gl.lineWidth(2);
 
         this.boxShaderProgram   = initShaders(gl, "block-vertex-shader.glsl", "block-fragment-shader.glsl");
         this.mouseShaderProgram = initShaders(gl, "mouse-vertex-shader.glsl", "mouse-fragment-shader.glsl");
@@ -1010,6 +1010,7 @@ export class View
         }
         var optimal = tile_to_texture_coord_worker(tile);
         //var offset = 1 / 16 / 16 / 2;
+        //var offset = 0;
         var offset = 0;
         return vec2(optimal[0] + offset, optimal[1] - offset);
     }
@@ -1067,7 +1068,7 @@ export class View
         var gl = this.gl;
         var mouse_points = [];
 
-        var color = (placeable ? vec4(0., 0., 0., 1.) : vec4(1., 0., 0., 1.));
+        var color = (placeable ? vec4(0.5, 0.5, 0.5, 1.) : vec4(1., 0., 0., 0.));
 
         var mouse_color = [];
         mouse_color.push(color);

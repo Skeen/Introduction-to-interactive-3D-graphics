@@ -11,11 +11,11 @@ import {TerrainGenerator, DiamondTerrainGenerator} from "./TerrainGenerator";
 
 export class Model extends events.EventEmitter
 {
-    public worldPower : number = 6;
+    public worldPower : number = 5;
 
     public worldXZ : number = Math.pow(2, this.worldPower) + 1;
     public worldX : number = this.worldXZ;
-    public worldY : number = 25;
+    public worldY : number = 50;
     public worldZ : number = this.worldXZ;
 
     public worldSize : number = this.worldX * this.worldY * this.worldZ;
