@@ -542,6 +542,8 @@ export class View
         var forLoopTs = new Date().getTime() - start;
         console.log("Buffer filling loop done. It took", forLoopTs, "ms.");
 
+        console.log("Rendering:", this.blocks, "blocks");
+
         //console.log("Number of rendered vertices:", world_indices.length);
         // console.log("Number of stored vertices:", world_colors.length);
 
