@@ -486,6 +486,27 @@ export class View
         gl.bufferData(gl.ARRAY_BUFFER, sizeof['vec4'], gl.STATIC_DRAW);
         gl.vertexAttribPointer(this.vM_Color, 4, gl.FLOAT, false, 0, 0);
         gl.enableVertexAttribArray(this.vM_Color);
+        // Mouse Index buffer
+        this.mouseIndexBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.mouseIndexBuffer);
+        var mouseVertexIndices = [
+        // Bottom
+            18, 19,
+            18, 23,
+            19, 20,
+            20, 23,
+        // Top
+            12, 13,
+            12, 17,
+            13, 14,
+            14, 17,
+        // Corners
+            6, 12,
+            11, 17,
+            0, 5,
+            1, 4
+        ];
+        gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint8Array(mouseVertexIndices), gl.STATIC_DRAW);
     }
 
     private idx_to_offset(pos) : number
@@ -868,7 +889,8 @@ export class View
             ext_angle.vertexAttribDivisorANGLE(this.vM_Color, 1);
 
             // Draw all the blocks!
-            ext_angle.drawArraysInstancedANGLE(gl.LINE_STRIP, 0, this.verts_per_block, 1);
+            gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.mouseIndexBuffer);
+            ext_angle.drawElementsInstancedANGLE(gl.LINES, 12 * 2, gl.UNSIGNED_BYTE, 0, 1);
         }
 
 
