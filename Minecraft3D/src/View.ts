@@ -1190,7 +1190,7 @@ export class View
             }
             else
             {
-                console.log(pos, destroyed);
+                //console.log(pos, destroyed);
                 // Update the destroyed status of the block
                 this.updateDestroyed(offset, offset + 1, destroyed);
                 // Notify all adjacent blocks
