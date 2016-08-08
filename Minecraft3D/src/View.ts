@@ -91,6 +91,39 @@ var vertices = [
     [-0.5,  0.5, -0.5]
 ];
 
+var textureCoords = [
+    // Front face
+    [0, 0],
+    [1, 0],
+    [1, 1],
+    [0, 1],
+    // Front face
+    [0, 0],
+    [1, 0],
+    [1, 1],
+    [0, 1],
+    // Front face
+    [0, 0],
+    [1, 0],
+    [1, 1],
+    [0, 1],
+    // Front face
+    [0, 0],
+    [1, 0],
+    [1, 1],
+    [0, 1],
+    // Front face
+    [0, 0],
+    [1, 0],
+    [1, 1],
+    [0, 1],
+    // Front face
+    [0, 0],
+    [1, 0],
+    [1, 1],
+    [0, 1]
+];
+
 export class View
 {
     private model : Model;
@@ -102,11 +135,15 @@ export class View
     //private program : any;
     private boxShaderProgram : any;
 
+    //Texture variable
+    private tileTexture : any;
+
     // Shader variables
     private vPosition;
     private vColor;
     //private vScalePos;
     private vTranslate;
+    private vTexCoord;
     private vDestroyed;
     //private vClickPos;
     //private vTime;
@@ -114,6 +151,7 @@ export class View
     private uPMatrix; 
     private uMVMatrix; 
     private uTheta;
+    private uTextureMap;
 
     // Buffers
     //--------
@@ -121,6 +159,7 @@ export class View
     private worldVBuffer : WebGLBuffer;
     private worldCBuffer : WebGLBuffer;
     private worldDBuffer : WebGLBuffer;
+    private worldTBuffer : WebGLBuffer;
     private worldTranslateBuffer : WebGLBuffer;
     private worldIndexBuffer : WebGLBuffer;
     // Stick figure
@@ -161,11 +200,12 @@ export class View
         }
     }
 
-    private gen_buffers(arr_p, arr_c, arr_t, tile_color, pos)
+    private gen_buffers(arr_p, arr_c, arr_t, arr_tex, tile_color, pos)
     {
         for(var i = 0; i < this.verts_per_block; i++)
         {
             arr_p.push(vec3(vertices[i]));
+            arr_tex.push(vec2(textureCoords[i]));
 
             var watr = this.tile_to_color(Tile.WATER);
             if (watr[0] == tile_color[0] && watr[1] == tile_color[1] && watr[2] == tile_color[2])
@@ -226,6 +266,7 @@ export class View
         var points = [];
         var colors = [];
         var translate = [];
+        var texture = [];
         var destroyed = [];
         var indicies = [];
 
@@ -238,7 +279,7 @@ export class View
         this.gen_indicies(indicies, offset);
         var tile = model.get_tile(pos);
         var tile_color = this.tile_to_color(tile);
-        this.gen_buffers(points, colors, translate, tile, pos);
+        this.gen_buffers(points, colors, translate, texture, tile, pos);
 
         for(var i = 0; i < this.verts_per_block; i++)
             destroyed.push(model.get_destroyed(pos) ? 1. : 0.);
@@ -251,6 +292,9 @@ export class View
 
         gl.bindBuffer(gl.ARRAY_BUFFER, this.worldTranslateBuffer);
         gl.bufferSubData(gl.ARRAY_BUFFER, offset * sizeof['vec3'], flatten(translate));
+
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.worldTBuffer);
+        gl.bufferSubData(gl.ARRAY_BUFFER, offset * sizeof['vec2'], flatten(texture));
         // Buffer Destroyed
         gl.bindBuffer(gl.ARRAY_BUFFER, this.worldDBuffer);
         gl.bufferSubData(gl.ARRAY_BUFFER, offset * Float32Array.BYTES_PER_ELEMENT, new Float32Array(destroyed));
@@ -366,10 +410,12 @@ export class View
         this.vPosition  = gl.getAttribLocation(this.boxShaderProgram, "vPosition");
         this.vColor     = gl.getAttribLocation(this.boxShaderProgram, "vColor");
         this.vTranslate = gl.getAttribLocation(this.boxShaderProgram, 'vTranslate');
+        this.vTexCoord  = gl.getAttribLocation(this.boxShaderProgram, 'vTexCoord');
         this.vDestroyed = gl.getAttribLocation(this.boxShaderProgram, "vDestroyed");
-        this.uPMatrix = gl.getUniformLocation(this.boxShaderProgram, "uPMatrix");
-        this.uMVMatrix = gl.getUniformLocation(this.boxShaderProgram, "uMVMatrix");
+        this.uPMatrix   = gl.getUniformLocation(this.boxShaderProgram, "uPMatrix");
+        this.uMVMatrix  = gl.getUniformLocation(this.boxShaderProgram, "uMVMatrix");
         this.uTheta     = gl.getUniformLocation(this.boxShaderProgram, "uTheta");
+        this.uTextureMap = gl.getUniformLocation(this.boxShaderProgram, "uTextureMap");
 
         // World Vertex buffer
         this.worldVBuffer = gl.createBuffer();
@@ -392,6 +438,13 @@ export class View
         gl.vertexAttribPointer(this.vTranslate, 3, gl.FLOAT, false, 0, 0);
         gl.enableVertexAttribArray(this.vTranslate);
         var worldTranslateBufferSize = Math.round(gl.getBufferParameter(gl.ARRAY_BUFFER, gl.BUFFER_SIZE) / 1000 / 1000);
+        // World Texture buffer
+        this.worldTBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.worldTBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, sizeof['vec2'] * model.worldX * model.worldZ * 6 * this.verts_per_block, gl.STATIC_DRAW);
+        gl.vertexAttribPointer(this.vTexCoord, 2, gl.FLOAT, false, 0, 0);
+        gl.enableVertexAttribArray(this.vTexCoord);
+        var worldTBufferSize = Math.round(gl.getBufferParameter(gl.ARRAY_BUFFER, gl.BUFFER_SIZE) / 1000 / 1000);
         // World Destroyed buffer
         this.worldDBuffer = gl.createBuffer();
         gl.bindBuffer(gl.ARRAY_BUFFER, this.worldDBuffer);
@@ -408,9 +461,11 @@ export class View
         // Output memory usage information
         console.log("Total World Vertex memory consumption:",       worldVBufferSize,           "MB");
         console.log("Total World Color memory consumption:",        worldCBufferSize,           "MB");
+        console.log("Total World Texture memory consumption:",      worldTBufferSize,           "MB");
+        console.log("Total World Destroyed memory consumption:",    worldDBufferSize,           "MB");
         console.log("Total World Translate memory consumption:",    worldTranslateBufferSize,   "MB");
         console.log("Total World Indicies memory consumption:",     worldIndexBufferSize,       "MB");
-        console.log("Total World GPU memory consumption:",          (worldVBufferSize + worldCBufferSize + worldTranslateBufferSize + worldIndexBufferSize), "MB");
+        console.log("Total World GPU memory consumption:",          (worldVBufferSize + worldCBufferSize + worldTBufferSize + worldDBufferSize + worldTranslateBufferSize + worldIndexBufferSize), "MB");
 
         // Stick Vertex buffer
         this.stickVBuffer = gl.createBuffer();
@@ -467,6 +522,22 @@ export class View
         return offset;
     }
 
+    private initialize_textures() : void
+    {
+        var gl = this.gl;
+
+        var image = document.getElementById("tileTextureImage");
+
+        this.tileTexture = gl.createTexture();
+        gl.bindTexture(gl.TEXTURE_2D, this.tileTexture);
+        gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, image);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+
+        gl.uniform1i(this.uTextureMap, this.tileTexture);
+    }
+
     private initialize_block_world() : void
     {
         var gl = this.gl;
@@ -475,6 +546,7 @@ export class View
         var world_points = [];
         var world_colors = [];
         var world_translate = [];
+        var world_texture = [];
         var world_destroyed = [];
         var world_indices = [];
 
@@ -503,7 +575,7 @@ export class View
 
                     var tile = model.get_tile(vec3(x, y, z));
                     var tile_color = this.tile_to_color(tile);
-                    this.gen_buffers(world_points, world_colors, world_translate, tile_color, vec3(x,y,z));
+                    this.gen_buffers(world_points, world_colors, world_translate, world_texture, tile_color, vec3(x,y,z));
 
                     for(var i = 0; i < this.verts_per_block; i++)
                         world_destroyed.push(model.get_destroyed(vec3(x,y,z)) ? 1. : 0.);
@@ -529,6 +601,9 @@ export class View
         // Buffer Translate
         gl.bindBuffer(gl.ARRAY_BUFFER, this.worldTranslateBuffer);
         gl.bufferSubData(gl.ARRAY_BUFFER, 0, flatten(world_translate));
+        // Buffer Texture
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.worldTBuffer);
+        gl.bufferSubData(gl.ARRAY_BUFFER, 0, flatten(world_texture));
         // Buffer Destroyed
         gl.bindBuffer(gl.ARRAY_BUFFER, this.worldDBuffer);
         gl.bufferSubData(gl.ARRAY_BUFFER, 0, new Float32Array(world_destroyed));
@@ -663,6 +738,7 @@ export class View
         // TODO: Check availability
         var ext = gl.getExtension("OES_element_index_uint");
 
+        gl.bindTexture(gl.TEXTURE_2D, this.tileTexture);
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.worldIndexBuffer);
         gl.drawElements(gl.TRIANGLES, this.block_indicies, gl.UNSIGNED_INT, 0);
 
@@ -816,6 +892,8 @@ export class View
         this.initBuffers();
         // Setup world
         this.initialize_block_world();
+        // Setup textures
+        this.initialize_textures();
 
 
         var canvas = this.canvas;
@@ -835,6 +913,16 @@ export class View
         var usage = sizeof['vec3'] * this.block_verts;
         var percentage = usage / gl.getBufferParameter(gl.ARRAY_BUFFER, gl.BUFFER_SIZE);
         console.log("translate buffer usage: ", Math.round(percentage * 100), "%");
+
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.worldTBuffer);
+        var usage = sizeof['vec2'] * this.block_verts;
+        var percentage = usage / gl.getBufferParameter(gl.ARRAY_BUFFER, gl.BUFFER_SIZE);
+        console.log("texture buffer usage: ", Math.round(percentage * 100), "%");
+
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.worldDBuffer);
+        var usage = Float32Array.BYTES_PER_ELEMENT * this.block_verts;
+        var percentage = usage / gl.getBufferParameter(gl.ARRAY_BUFFER, gl.BUFFER_SIZE);
+        console.log("destroyed buffer usage: ", Math.round(percentage * 100), "%");
 
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.worldIndexBuffer);
         var usage = Uint32Array.BYTES_PER_ELEMENT * this.block_indicies;
