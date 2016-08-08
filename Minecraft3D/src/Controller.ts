@@ -54,6 +54,60 @@ export class Controller
     private canJump:boolean = false;
     private jumpStartHeight:any;
 
+    // Let blocks flow onto empty blocks
+    private block_flow() : void
+    {
+        var model = this.model;
+
+        // Array to buffer changes
+        // (We cannot change the world while processing it)
+        var changes = [];
+        // Loop through the world
+        for (var x = 0; x < model.worldX; x++) 
+        {
+            for (var y = 0; y < model.worldY; y++)
+            {
+                for (var z = 0; z < model.worldZ; z++)
+                {
+                    var tile = model.get_tile(vec3(x, y, z));
+
+                    if(TileUtil.is_flow_block(tile) == false)
+                        continue;
+                    //x-1
+                    if(model.valid_index(vec3(x-1, y, z)) && model.get_tile(vec3(x-1, y, z)) == Tile.EMPTY)
+                    {
+                        changes.push({'x': x-1, 'y': y, 'z': z, 'tile': tile});
+                    }
+                    //x+1
+                    if(model.valid_index(vec3(x+1, y, z)) && model.get_tile(vec3(x+1, y, z)) == Tile.EMPTY)
+                    {
+                        changes.push({'x': x+1, 'y': y, 'z': z, 'tile': tile});
+                    }
+                    //y-1
+                    if(model.valid_index(vec3(x, y-1, z)) && model.get_tile(vec3(x, y-1, z)) == Tile.EMPTY)
+                    {
+                        changes.push({'x': x, 'y': y-1, 'z': z, 'tile': tile});
+                    }
+                    //z-1
+                    if(model.valid_index(vec3(x, y, z-1)) && model.get_tile(vec3(x, y, z-1)) == Tile.EMPTY)
+                    {
+                        changes.push({'x': x, 'y': y, 'z': z-1, 'tile': tile});
+                    }
+                    //z+1
+                    if(model.valid_index(vec3(x, y, z+1)) && model.get_tile(vec3(x, y, z+1)) == Tile.EMPTY)
+                    {
+                        changes.push({'x': x, 'y': y, 'z': z+1, 'tile': tile});
+                    }
+                }
+            }
+        }
+        // Apply any changes required
+        for(var change of changes)
+        {
+            model.update_tile(vec3(change.x, change.y, change.z), change.tile);
+        }
+    }
+
     private physics():void {
         var deltaTime = this.deltaS;
         if (this.noClip) {
