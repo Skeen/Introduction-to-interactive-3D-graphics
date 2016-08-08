@@ -18,16 +18,6 @@ declare var initShaders: any;
 
 declare var perspective: any;
 declare var lookAt: any;
-/*
-var colors = [
-    [0.0,  1.0,  1.0,  1.0],    // Front face: cyan
-    [1.0,  0.0,  0.0,  1.0],    // Back face: red
-    [0.0,  1.0,  0.0,  1.0],    // Top face: green
-    [0.0,  0.0,  1.0,  1.0],    // Bottom face: blue
-    [1.0,  1.0,  0.0,  1.0],    // Right face: yellow
-    [1.0,  0.0,  1.0,  1.0]     // Left face: purple
-];
-*/
 
 var vertices = [
     // Front face (1)
@@ -518,75 +508,88 @@ export class View
         var start = new Date().getTime();
         for (var x = 0; x < model.worldX; x++)
         {
-            for (var y = 0; y < model.worldY; y++)
+            function closure(in_x)
             {
-                for (var z = 0; z < model.worldZ; z++)
+                function fill_world()
                 {
-                    if(this.render_block(x, y, z) == false)
-                        continue;
+                    for (var y = 0; y < model.worldY; y++)
+                    {
+                        for (var z = 0; z < model.worldZ; z++)
+                        {
+                            if(this.render_block(x, y, z) == false)
+                                continue;
 
-                    this.blocks = this.blocks + 1;
+                            this.blocks = this.blocks + 1;
 
-                    this.vec_to_offset[vec3(x,y,z)] = this.blocks;
+                            this.vec_to_offset[vec3(x,y,z)] = this.blocks;
 
-                    var pos = vec3(x, y, z);
-                    var tile = model.get_tile(pos);
+                            var pos = vec3(x, y, z);
+                            var tile = model.get_tile(pos);
 
-                    world_tile.push(this.tile_to_texture_coord(tile));
-                    world_translate.push(pos);
-                    world_destroyed.push(model.get_destroyed(pos) ? 1. : 0.);
+                            world_tile.push(this.tile_to_texture_coord(tile));
+                            world_translate.push(pos);
+                            world_destroyed.push(model.get_destroyed(pos) ? 1. : 0.);
+                        }
+                    }
+                }
+
+                var x = in_x;
+                setTimeout(fill_world.bind(this), 0);
+            }
+            closure.bind(this)(x);
+        }
+
+        setTimeout(function()
+        {
+            var forLoopTs = new Date().getTime() - start;
+            console.log("Buffer filling loop done. It took", forLoopTs, "ms.");
+
+            console.log("Rendering:", this.blocks, "blocks");
+
+            //console.log("Number of rendered vertices:", world_indices.length);
+            // console.log("Number of stored vertices:", world_colors.length);
+
+            //this.block_indicies = world_indices.length;
+            //this.block_verts = world_colors.length;
+
+            var tsStart = new Date().getTime();
+            // Buffer Color
+            var world_points = []
+            for(var i = 0; i < this.verts_per_block; i++)
+            {
+                world_points.push(vec3(vertices[i]));
+            }
+            // Buffer Verticies
+            gl.bindBuffer(gl.ARRAY_BUFFER, this.cubeVertexBuffer);
+            gl.bufferSubData(gl.ARRAY_BUFFER, 0, flatten(world_points));
+
+            var world_texture = [];
+            for(var i = 0; i < this.verts_per_block/6; i++)
+            {
+                for(var j = 0; j < this.verts_per_block/6; j++)
+                {
+                    world_texture.push(vec2(textureCoords[j]));
                 }
             }
-        }
+            // Buffer Texture
+            gl.bindBuffer(gl.ARRAY_BUFFER, this.cubeTextureBuffer);
+            gl.bufferSubData(gl.ARRAY_BUFFER, 0, flatten(world_texture));
 
-        var forLoopTs = new Date().getTime() - start;
-        console.log("Buffer filling loop done. It took", forLoopTs, "ms.");
+            // Buffer Color
+            gl.bindBuffer(gl.ARRAY_BUFFER, this.worldTileBuffer);
+            gl.bufferSubData(gl.ARRAY_BUFFER, 0, flatten(world_tile));
 
-        console.log("Rendering:", this.blocks, "blocks");
+            // Buffer Translate
+            gl.bindBuffer(gl.ARRAY_BUFFER, this.worldTranslateBuffer);
+            gl.bufferSubData(gl.ARRAY_BUFFER, 0, flatten(world_translate));
 
-        //console.log("Number of rendered vertices:", world_indices.length);
-        // console.log("Number of stored vertices:", world_colors.length);
+            // Buffer Destroyed
+            gl.bindBuffer(gl.ARRAY_BUFFER, this.worldDBuffer);
+            gl.bufferSubData(gl.ARRAY_BUFFER, 0, new Float32Array(world_destroyed));
 
-        //this.block_indicies = world_indices.length;
-        //this.block_verts = world_colors.length;
-
-        var tsStart = new Date().getTime();
-        // Buffer Color
-        var world_points = []
-        for(var i = 0; i < this.verts_per_block; i++)
-        {
-            world_points.push(vec3(vertices[i]));
-        }
-        // Buffer Verticies
-        gl.bindBuffer(gl.ARRAY_BUFFER, this.cubeVertexBuffer);
-        gl.bufferSubData(gl.ARRAY_BUFFER, 0, flatten(world_points));
-
-        var world_texture = [];
-        for(var i = 0; i < this.verts_per_block/6; i++)
-        {
-            for(var j = 0; j < this.verts_per_block/6; j++)
-            {
-                world_texture.push(vec2(textureCoords[j]));
-            }
-        }
-        // Buffer Texture
-        gl.bindBuffer(gl.ARRAY_BUFFER, this.cubeTextureBuffer);
-        gl.bufferSubData(gl.ARRAY_BUFFER, 0, flatten(world_texture));
-
-        // Buffer Color
-        gl.bindBuffer(gl.ARRAY_BUFFER, this.worldTileBuffer);
-        gl.bufferSubData(gl.ARRAY_BUFFER, 0, flatten(world_tile));
-
-        // Buffer Translate
-        gl.bindBuffer(gl.ARRAY_BUFFER, this.worldTranslateBuffer);
-        gl.bufferSubData(gl.ARRAY_BUFFER, 0, flatten(world_translate));
-
-        // Buffer Destroyed
-        gl.bindBuffer(gl.ARRAY_BUFFER, this.worldDBuffer);
-        gl.bufferSubData(gl.ARRAY_BUFFER, 0, new Float32Array(world_destroyed));
-
-        var tsDone = new Date().getTime() - tsStart;
-        console.log('Buffer transfer finished in', tsDone, 'ms.');
+            var tsDone = new Date().getTime() - tsStart;
+            console.log('Buffer transfer finished in', tsDone, 'ms.');
+        }.bind(this), 0);
     }
 
     // Stickman stuff
@@ -1123,7 +1126,7 @@ export class View
         update_uniforms.bind(this)(modelview_matrix);
     }
 
-    constructor(model : Model)
+    constructor(model : Model, callback)
     {
         this.model = model;
         // Setup WebGL context
@@ -1250,9 +1253,12 @@ export class View
                 this.initialize_mouse(block_pos, placeable);
             }
         }.bind(this);
-
+/*
         this.model.on("stickman_move", update_placeblock);
         this.model.on("mouse_move", update_placeblock);
+*/
+        window.mouse_update = this.initialize_mouse.bind(this);
+        window.get_position = this.model.get_stickman_position.bind(this.model);
 
         /*
         this.model.on("stickman_move", function(stickman_pos)
@@ -1265,5 +1271,10 @@ export class View
 
         // Setup stickman
         //this.initialize_stick_man(model.get_stickman_position());
+        
+        setTimeout(function()
+        {
+            callback(this);
+        }.bind(this), 0);
     }
 };

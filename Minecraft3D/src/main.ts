@@ -7,30 +7,60 @@ import { View } from "./View";
 import { Controller } from "./Controller";
 import { Tile, TileUtil } from "./Tile"
 
-function time(func, str_start : string, str_end : string)
+function time(func, str_start : string, str_end : string, callback)
 {
     console.log(str_start);
     var start = new Date().getTime();
-    var return_value = func();
-    var elapsed = new Date().getTime() - start;
-    console.log("");
-    console.log(str_end, "It took", elapsed, "ms.");
-    return return_value;
+    func(function(result)
+    {
+        var elapsed = new Date().getTime() - start;
+        console.log("");
+        console.log(str_end, "It took", elapsed, "ms.");
+        callback(result);
+    });
 }
 
-function initGame(optionalSeed?: string) {
-    var model, view, controller;
-
-    time(function()
+function initGame(optionalSeed?: string) 
+{
+    time(function(outer_callback)
     {
-        model = time(function() { return new Model(optionalSeed); }, "Generating Model\n----------------", "Done generating model.");
-        console.log("");
-        view = time(function() { return new View(model); }, "Generating View\n---------------", "Done generating view.");
-        console.log("");
-        controller = time(function() { return new Controller(model); }, "Generating Controller\n---------------------", "Done generating controller.");
-    }, "Loading game...", "Load complete! Ready to rock!");
+        time(function(callback) 
+            { new Model(optionalSeed, callback);},
+        "Generating Model\n----------------", 
+        "Done generating model.",
+        function(model)
+        {
+            console.log("");
 
-    view.run();
+            time(function(callback) 
+                { new View(model, callback);}, 
+            "Generating View\n---------------",
+            "Done generating view.",
+            function(view)
+            {
+                console.log("");
+
+                time(function(callback)
+                    { new Controller(model, callback); },
+                "Generating Controller\n---------------------", 
+                "Done generating controller.",
+                function(controller)
+                {
+                    outer_callback([model, view, controller]);
+                });
+            });
+        });
+    }, 
+    "Loading game...", 
+    "Load complete! Ready to rock!",
+    function(input)
+    {
+        var model = input[0];
+        var view  = input[1];
+        var ctrl  = input[2];
+
+        view.run();
+    });
 }
 
 var getUrlParameter = function getUrlParameter(sParam) {
@@ -49,6 +79,28 @@ var getUrlParameter = function getUrlParameter(sParam) {
 };
 
 $(function( ) {
+
+    (function() {
+        // milliseconds
+        var lastTime = (new Date).getTime()
+        ,   acceptableDelta = 500
+        ,   tick = 1000
+        ,   hung = false;
+
+        function hangman() {
+            var now = (new Date).getTime();
+            if(now - lastTime > (tick + acceptableDelta)) {
+                hung = true;
+            } else if(hung) {
+                hung = false;
+                console.warn('Possible browser hangup detected.');
+            }
+            lastTime = now;
+        }
+
+        setInterval(hangman, tick);
+    }());
+
     var seed = getUrlParameter('world');
     if (!seed) {
         seed = String(Math.random());

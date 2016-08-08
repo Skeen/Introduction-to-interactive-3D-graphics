@@ -261,7 +261,7 @@ export class Controller
 
     private flyMode:boolean = false;
 
-    constructor(model : Model)
+    constructor(model : Model, callback)
     {
         this.model = model;
         var self:any = this;
@@ -613,5 +613,7 @@ export class Controller
 
             //console.log(vec3(x,y,z));
         }
+
+        callback(this);
     }
 };

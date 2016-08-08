@@ -218,34 +218,53 @@ export class Model extends events.EventEmitter
         var heightmap = this.worldGenerator.generate(this.worldRoughness);
         for (var x = 0; x < this.worldX; x++)
         {
-            for(var z = 0; z < this.worldZ; z++)
+            function closure(in_x)
             {
-                var offset = z + (x * this.worldZ);
-                var yHeight = Math.round((heightmap[offset] / this.worldX) * this.worldY);
-                if (yHeight > this.worldY) yHeight = this.worldY;
-
-                this.set_tile(vec3(x, 0, z), Tile.BEDROCK);
-                for (var y = 1; y < yHeight-1; y++) 
+                function fill_dirt()
                 {
-                    this.set_tile(vec3(x, y, z), Tile.DIRT);
+                    for(var z = 0; z < this.worldZ; z++)
+                    {
+                        var offset = z + (x * this.worldZ);
+                        var yHeight = Math.round((heightmap[offset] / this.worldX) * this.worldY);
+                        if (yHeight > this.worldY) yHeight = this.worldY;
+
+                        this.set_tile(vec3(x, 0, z), Tile.BEDROCK);
+                        for (var y = 1; y < yHeight-1; y++) 
+                        {
+                            this.set_tile(vec3(x, y, z), Tile.DIRT);
+                        }
+                    }
                 }
+
+                var x = in_x;
+                setTimeout(fill_dirt.bind(this), 0);
             }
+            closure.bind(this)(x);
         }
 
         // Add water
         for (var x = 0; x < this.worldX; x++)
         {
-            for (var y = 0; y < Math.round(this.worldY / 3); y++)
+            function closure_water(in_x)
             {
-                for(var z = 0; z < this.worldZ; z++)
+                function fill_water()
                 {
-                    var pos = vec3(x, y, z);
-                    if (this.get_tile(pos) == Tile.EMPTY)
+                    for (var y = 0; y < Math.round(this.worldY / 3); y++)
                     {
-                        this.set_tile(pos, Tile.WATER);
+                        for(var z = 0; z < this.worldZ; z++)
+                        {
+                            var pos = vec3(x, y, z);
+                            if (this.get_tile(pos) == Tile.EMPTY)
+                            {
+                                this.set_tile(pos, Tile.WATER);
+                            }
+                        }
                     }
                 }
+                var x = in_x;
+                setTimeout(fill_water.bind(this), 0);
             }
+            closure_water.bind(this)(x);
         }
 
         // // ------------ //
@@ -322,7 +341,7 @@ export class Model extends events.EventEmitter
         this.emit("map_active", map_active);
     }
 
-    constructor(worldSeed:string)
+    constructor(worldSeed : string, callback)
     {
         super();
         this.worldGenerator = new DiamondTerrainGenerator(this.worldPower, worldSeed);
@@ -333,5 +352,10 @@ export class Model extends events.EventEmitter
         this.update_mouse_position(vec3(1, -0.5, 0));
 
         this.emit('ready');
+
+        setTimeout(function()
+        {
+            callback(this);
+        }.bind(this), 0);
     }
 };
