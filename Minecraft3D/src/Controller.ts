@@ -67,11 +67,10 @@ export class Controller
             }
         }
     }
-
+*/
     // Let blocks flow onto empty blocks
     private block_flow() : void
     {
-        /*
         var model = this.model;
 
         // Array to buffer changes
@@ -82,41 +81,37 @@ export class Controller
         {
             for (var y = 0; y < model.worldY; y++)
             {
-                for (var z = 0; y < model.worldZ; z++)
+                for (var z = 0; z < model.worldZ; z++)
                 {
-                    /*
-                    var tile = model.get_tile(x, y, z);
+                    var tile = model.get_tile(vec3(x, y, z));
 
                     if(TileUtil.is_flow_block(tile) == false)
                         continue;
-                        */
                     //x-1
-                    /*
-                    if(model.valid_index(x-1, y,z) && model.get_tile(x-1, y, z) == Tile.EMPTY)
+                    if(model.valid_index(vec3(x-1, y, z)) && model.get_tile(vec3(x-1, y, z)) == Tile.EMPTY)
                     {
                         changes.push({'x': x-1, 'y': y, 'z': z, 'tile': tile});
                     }
                     //x+1
-                    if(model.valid_index(x+1, y,z) && model.get_tile(x+1,y,z) == Tile.EMPTY)
+                    if(model.valid_index(vec3(x+1, y, z)) && model.get_tile(vec3(x+1, y, z)) == Tile.EMPTY)
                     {
                         changes.push({'x': x+1, 'y': y, 'z': z, 'tile': tile});
                     }
                     //y-1
-                    if(model.valid_index(x, y-1, z) && model.get_tile(x, y-1, z) == Tile.EMPTY)
+                    if(model.valid_index(vec3(x, y-1, z)) && model.get_tile(vec3(x, y-1, z)) == Tile.EMPTY)
                     {
                         changes.push({'x': x, 'y': y-1, 'z': z, 'tile': tile});
                     }
-                    */
-                    /*
-                    if(model.valid_index(x, y,z-1) && model.get_tile(x+1,y,z-1) == Tile.EMPTY)
+                    //z-1
+                    if(model.valid_index(vec3(x, y, z-1)) && model.get_tile(vec3(x, y, z-1)) == Tile.EMPTY)
                     {
                         changes.push({'x': x, 'y': y, 'z': z-1, 'tile': tile});
                     }
-                    if(model.valid_index(x, y-1, z) && model.get_tile(x, y-1, z) == Tile.EMPTY)
+                    //z+1
+                    if(model.valid_index(vec3(x, y, z+1)) && model.get_tile(vec3(x, y, z+1)) == Tile.EMPTY)
                     {
-                        changes.push({'x': x, 'y': y-1, 'z': z, 'tile': tile});
+                        changes.push({'x': x, 'y': y, 'z': z+1, 'tile': tile});
                     }
-
                 }
 
             }
@@ -125,11 +120,11 @@ export class Controller
         // Apply any changes required
         for(var change of changes)
         {
-            model.update_tile(change.x, change.y, change.z, change.tile);
+            model.update_tile(vec3(change.x, change.y, change.z), change.tile);
         }
-
     }
 
+/*
     // stick-man variables  
     private move_length : number = 0.5;
     private jump_height : number = 5;
