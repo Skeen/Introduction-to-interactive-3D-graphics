@@ -155,6 +155,7 @@ export class View
     // Mouse
     private mouseColorBuffer : WebGLBuffer;
     private mouseTranslateBuffer : WebGLBuffer;
+    private mouseIndexBuffer : WebGLBuffer;
 
     // Game related stuff.
     // world variables
