@@ -289,7 +289,6 @@ export class Controller
         var placeable = model.can_build(block_pos);
         if(placeable && e.shiftKey == false)
         {
-
             var block_picker : any = document.getElementById('block_picker');
             var block_string = block_picker.options[block_picker.selectedIndex].value;
             var tile_id = TileUtil.fromString(block_string);
@@ -307,14 +306,6 @@ export class Controller
             if(current_destroyed != model.FULLY_DESTROYED)
                 model.update_destroyed(block_pos, current_destroyed + 1);
         }
-        /* // TODO: Fix
-        if(this.model.get_destroyed(block_pos) == model.FULLY_DESTROYED)
-        {
-            console.log("Picked up block!");
-            this.model.update_destroyed(block_pos, 0);
-            this.model.update_tile(block_pos, Tile.EMPTY);
-        }
-        */
     }
 
     private get_stickman_blocks(pos)
@@ -398,6 +389,17 @@ export class Controller
         // Configure update loop.
         this.previousTime = new Date().getTime();
         this.updateTimer = setInterval(this.update.bind(this), 0);
+
+        this.model.on("stickman_move", function(pos)
+        {
+            var block_pos = vec3(Math.round(pos[0]), Math.round(pos[1]), Math.round(pos[2]));
+            if(this.model.get_destroyed(block_pos) == model.FULLY_DESTROYED)
+            {
+                console.log("Picked up block!");
+                this.model.update_destroyed(block_pos, 0);
+                this.model.update_tile(block_pos, Tile.EMPTY);
+            }
+        }.bind(this));
 
 
         //
