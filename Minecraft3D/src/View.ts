@@ -350,9 +350,11 @@ export class View
         }
     }
 
-    private updateColor(start, end, color) : void
+    private updateColor(start, end, tile) : void
     {
         var gl = this.gl;
+
+        var color = this.tile_to_color(tile);
 
         var replace_values = [];
         for(var i = 0; i < (end - start); i++)
@@ -361,6 +363,21 @@ export class View
         }
         gl.bindBuffer(gl.ARRAY_BUFFER, this.worldCBuffer);
         gl.bufferSubData(gl.ARRAY_BUFFER, start*sizeof['vec4'], flatten(replace_values));
+    }
+
+    private updateTexture(start, end, tile) : void
+    {
+        var gl = this.gl;
+
+        var texture_coord = this.tile_to_texture_coord(tile);
+
+        var replace_values = [];
+        for(var i = 0; i < (end - start); i++)
+        {
+            replace_values.push(add(texture_coord, scale(1/16, vec2(textureCoords[i]))));
+        }
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.worldTBuffer);
+        gl.bufferSubData(gl.ARRAY_BUFFER, start*sizeof['vec2'], flatten(replace_values));
     }
 
     private updateDestroyed(start, end, destroyed) : void
@@ -1135,8 +1152,8 @@ export class View
             else
             {
                 // Redraw the color of a block
-                var tile_color = this.tile_to_color(tile);
-                this.updateColor(offset, offset+this.verts_per_block, tile_color);
+                this.updateColor(offset, offset+this.verts_per_block, tile);
+                this.updateTexture(offset, offset+this.verts_per_block, tile);
                 // Update all adjacent blocks
                 this.rebufferBlocks(pos);
             }
