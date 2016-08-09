@@ -11,7 +11,7 @@ import {TerrainGenerator, DiamondTerrainGenerator} from "./TerrainGenerator";
 
 export class Model extends events.EventEmitter
 {
-    public worldPower : number = 6;
+    public worldPower : number = 5;
 
     public worldXZ : number = Math.pow(2, this.worldPower) + 1;
     public worldX : number = this.worldXZ;
@@ -19,7 +19,7 @@ export class Model extends events.EventEmitter
     public worldZ : number = this.worldXZ;
 
     public worldSize : number = this.worldX * this.worldY * this.worldZ;
-    public worldRoughness : number = 0.8;
+    public worldRoughness : number = 0.1;
     public worldGenerator : TerrainGenerator;
     private worldGrid : any[] = [];
 
@@ -257,6 +257,23 @@ export class Model extends events.EventEmitter
             }
         }
 
+        // Add water
+        for (var x = 0; x < this.worldX; x++)
+        {
+            for (var y = 0; y < Math.round(this.worldY / 3); y++)
+            {
+                for(var z = 0; z < this.worldZ; z++)
+                {
+                    var pos = vec3(x, y, z);
+                    if (this.get_tile(pos) == Tile.EMPTY)
+                    {
+                        this.set_tile(pos, Tile.WATER);
+                    }
+                }
+            }
+        }
+
+
         // // ------------ //
         // // Update tiles //
         // // ------------ //
@@ -282,7 +299,10 @@ export class Model extends events.EventEmitter
         //         this.set_tile(vec3(x, y+1, z), Tile.GRASS);
         //     }
         // }
-        //
+        // Test of tiles
+        //this.set_tile(vec3(2, 15, 2), Tile.FIRE);
+        //this.set_tile(vec3(3, 15, 3), Tile.GRASS);
+        //this.set_tile(vec3(4, 15, 4), Tile.METAL);
         // // Create lake
         // for (var x = Math.floor(this.worldX/4*2); x < Math.floor(this.worldX/4*3); x++)
         // {
