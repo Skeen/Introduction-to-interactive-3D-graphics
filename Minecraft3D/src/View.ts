@@ -719,10 +719,9 @@ export class View
     // Stickman stuff
     private initialize_stick_man(pos, rotation) : any
     {
-
         var gl = this.gl;
-        var height : number = 1.0 ;
-        var width : number = 0.2;
+        var height : number = 1.0;
+        var width : number = 0.1;
         var front : number = 0.1;
         var feet : number = 0.2;
         var stick_points = [];
@@ -829,31 +828,13 @@ export class View
         torch_points.push(vec4(width,  0.7,  0.1,1));
         torch_points.push(vec4(width,  0.7, 0,1, 1));
         torch_points.push(vec4(width, 0.4, 0,1, 1));
-        if(rotation !== 0.0)
-        {
-            console.log("Rotation : "+ rotation);
-        }
-        var rotation_stick = this.rotation_stick_man + Math.round(rotation*100)/100;
-        var clockwise = true;
-        if(this.rotation_stick_man > rotation && rotation > 0 || this.rotation_stick_man < rotation && rotation < 0)
-        {
-            clockwise = false;
-        }
-        if(clockwise)
-        {
-            rotation_stick *= -1;
-        }
-        //this.rotation_stick_man += (rotation_stick)/10;
-        if(rotation_stick >= 500*Math.PI || rotation_stick <= -(500*Math.PI)){
-            this.rotation_stick_man = 0.0;
-        }
-        var mouse_rot = rotate(rotation_stick*100,vec3(0,1,0));
-        console.log("stick rotation: "+ rotation_stick*100);
-        //console.log("mouse rotation: "+mouse_rot);
+
+        var rotation_stick = rotation * (180/Math.PI);
+
+        var mouse_rot = rotate(-rotation_stick + 270,vec3(0,1,0));
         for(var i = 0; i < torch_points.length; i++)
         {
             stick_points.push(vec3(add(mult(p,subtract(torch_points[i],shoulder)), shoulder)));
-            //stick_points.push(vec3(add(mult(mouse_rot,subtract(torch_points[i],shoulder)), shoulder)));
         }
         var stick_colors = [];
         var stick_translate = [];
@@ -862,26 +843,23 @@ export class View
         {
             console.log("Odd stick points length: "+stick_points.length);
         }
+        var fix_point = vec4(0.0, 0.2, 0., 0.);
         for(var i = 0; i < stick_points.length; i++)
         {
-            //stick_translate.push(3,1,3);
-            var new_pos = vec3(pos[0]-0.4, pos[1], pos[2]);
-            //stick_translate.push(vec3(3,10,3));
+            var new_pos = vec3(pos[0], pos[1], pos[2]);
+            //var new_pos = vec3(0,1,0);
             stick_translate.push(new_pos);
-            stick_points[i] = (vec3(add(mult(mouse_rot,subtract(vec4(stick_points[i],1),rot_point)), rot_point)));
+            stick_points[i] = (vec3(add(mult(mouse_rot,subtract(vec4(stick_points[i],1),rot_point)), fix_point)));
             if(i<stick_points.length/2)
             {
                 stick_colors.push(vec4(1,0.72,0.6,1));
             }
             //skin color
-
             else
             {
                 //console.log("Else branch: " + i);
                 stick_colors.push(vec4(0.55,0.32,0.07,1));
             }
-
-
         }
         //console.log("Stick colors: " + stick_colors);
         gl.bindBuffer(gl.ARRAY_BUFFER, this.stickCBuffer);
@@ -1352,34 +1330,23 @@ export class View
 
         //var previous_cam_pos = vec3(0.0,0.0,0.0);
 
-        var rotate_stickman = function(angle) : void{
-            var stick_pos = model.get_stickman_position().map(Math.round);
-            var cam_pos = model.get_mouse_position();
-            var x1 = cam_pos[0];
-            var acos : number = Math.acos(x1);
-            //console.log("acos: "+acos);
-            var degrees : number = acos * (180/Math.PI);
-            var x1 = cam_pos[0];
-            var z1 = cam_pos[2];
-
-            //var x2 = previous_cam_pos[0];
-            //var z2 = previous_cam_pos[2];
-            //var dist =
-            //previous_cam_pos = cam_pos;
-            //console.log("cam pos x: " + x1);
-            //console.log("cam pos z: " + z1);
-            //console.log("Rotation angle: " + angle);
+        var rotate_stickman = function(angle) : void
+        {
+            var stick_pos = model.get_stickman_position();
             this.initialize_stick_man(stick_pos, angle);
-            //previous_cam_pos = cam_pos;
         }.bind(this);
 
-        this.model.on("stickman_move", update_camera);
+        var camera_yaw;
+        this.model.on("stickman_move", function()
+        {
+            rotate_stickman(camera_yaw);
+        });
+
         this.model.on("mouse_move", function(pos, yaw)
         {
-            rotate_stickman(yaw);
+            camera_yaw = yaw;
+            rotate_stickman(camera_yaw);
         });
-        this.model.on("mouse_move", update_camera);
-        this.model.on("map_active", update_camera);
 
         var update_placeblock = function() : void
         {
@@ -1400,15 +1367,5 @@ export class View
 
         this.model.on("stickman_move", update_placeblock);
         this.model.on("mouse_move", update_placeblock);
-
-        this.model.on("stickman_move", function(stickman_pos)
-        {
-            var stick_pos = model.get_stickman_position().map(Math.round);
-            //this.initialize_stick_man(stick_pos, 0.0);
-
-        }.bind(this));
-
-        // Setup stickman
-        //this.initialize_stick_man(model.get_stickman_position(), 0.0);
     }
 };
