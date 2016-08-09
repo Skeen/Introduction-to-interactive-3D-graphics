@@ -31,6 +31,10 @@ export class Controller {
     private movementSpeed:number = 10.;
     private jumpHeight:number = .1;
 
+    // Environment vars.
+    private translateSun:boolean = true;
+    private sunSpeed:number = 50;
+
     private update():void {
         this.deltas();
         this.physics();
@@ -57,6 +61,10 @@ export class Controller {
         var deltaTime = this.deltaS;
         if (this.noClip) {
             return;
+        }
+        if (this.translateSun) {
+            var sun = this.model.getSunValue();
+            this.model.updateSunValue(sun + (deltaTime * this.sunSpeed));
         }
         var currentPos = this.model.get_stickman_position();
         if (this.isJumping) {
@@ -175,8 +183,13 @@ export class Controller {
         }.bind(this));
 
         $('#time_slider').on('input', function (e) {
+            this.translateSun = false;
             var value = $('#time_slider').val();
-            ;
+            this.model.updateSunValue(value);
+        }.bind(this));
+
+        $('#time_slider').on('change', function (e) {
+            this.translateSun = true;
         }.bind(this));
     }
 
@@ -342,7 +355,6 @@ export class Controller {
 
         this.model.on('sunchange', function(newVal:number) {
             $('#time_slider').val(newVal);
-            console.log(newVal);
         });
     }
 }

@@ -29,8 +29,11 @@ export class Model extends events.EventEmitter
 
     private sunValue:number = 0;
     public updateSunValue(newValue:number):void {
-        this.sunValue = newValue;
+        this.sunValue = newValue % 360;
         this.emit('sunchange', this.sunValue);
+    }
+    public getSunValue():number {
+        return this.sunValue;
     }
 
 

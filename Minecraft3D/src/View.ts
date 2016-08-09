@@ -948,8 +948,7 @@ export class View
 
     private render() : void
     {
-        this.sunTheta++;
-        var sunLoc = vec4(this.sunRadius * Math.cos(this.sunTheta / this.sunSpeedDivisor) + (this.model.worldX / 2), this.sunRadius * Math.sin(this.sunTheta / this.sunSpeedDivisor) + (this.model.worldY / 2), (this.model.worldZ / 2), 0);
+        var sunLoc = vec4(this.sunRadius * Math.cos(this.sunTheta) + (this.model.worldX / 2), this.sunRadius * Math.sin(this.sunTheta) + (this.model.worldY / 2), (this.model.worldZ / 2), 0);
 
         var gl = this.gl;
         var canvas = this.canvas;
@@ -1294,7 +1293,7 @@ export class View
     constructor(model : Model)
     {
         this.model = model;
-        this.sunRadius = this.model.worldX + 10;
+        this.sunRadius = this.model.worldX/2 + 10;
         // Setup WebGL context
         this.initWebGL();
         // Setup buffers
@@ -1329,6 +1328,10 @@ export class View
                 this.rebufferBlocks(pos);
             }
 
+        }.bind(this));
+
+        this.model.on('sunchange', function(newVal:number) {
+            this.sunTheta = radians(newVal);
         }.bind(this));
 
         // Whenever a block is destroyed
