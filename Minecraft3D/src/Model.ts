@@ -11,7 +11,7 @@ import {TerrainGenerator, DiamondTerrainGenerator} from "./TerrainGenerator";
 
 export class Model extends events.EventEmitter
 {
-    public worldPower : number = 5;
+    public worldPower : number = 7;
 
     public worldXZ : number = Math.pow(2, this.worldPower) + 1;
     public worldX : number = this.worldXZ;
@@ -19,7 +19,7 @@ export class Model extends events.EventEmitter
     public worldZ : number = this.worldXZ;
 
     public worldSize : number = this.worldX * this.worldY * this.worldZ;
-    public worldRoughness : number = 0.1;
+    public worldRoughness : number = 0.6;
     public worldGenerator : TerrainGenerator;
     private worldGrid : any[] = [];
 
