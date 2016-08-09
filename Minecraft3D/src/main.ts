@@ -1,11 +1,8 @@
-// TODO: Send stickman as buffer, then move via uniform variable?
-
 declare var $: any;
 
 import { Model } from "./Model";
 import { View } from "./View";
 import { Controller } from "./Controller";
-import { Tile, TileUtil } from "./Tile"
 
 function time(func, str_start : string, str_end : string)
 {
