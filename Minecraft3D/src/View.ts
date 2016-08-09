@@ -10,6 +10,8 @@ declare var add: any;
 declare var scale: any;
 declare var radians: any;
 
+declare var $:any;
+
 declare var rotate: any;
 declare var sizeof: any;
 declare var mult: any;
@@ -339,6 +341,8 @@ export class View
             // Redraw the tile of the block
             var tile : Tile = model.get_tile(pos);
             this.updateTile(offset, offset + 1, tile);
+            // Redraw the color of the block
+            this.updateColor(offset, offset + 1, pos, tile);
         }
     }
 
@@ -369,11 +373,16 @@ export class View
         }
     }
 
-    private updateColor(start, end, pos) : void
+    private updateColor(start, end, pos, tile) : void
     {
         var gl = this.gl;
+        var model = this.model;
 
-        var color = vec4(pos[0] / model.worldX, pos[1] / model.worldY, pos[2] / model.worldZ, 1.0);
+        var color;
+        if(tile == Tile.EMPTY)
+            color = vec4(0., 0., 0., 0.);
+        else
+            color = vec4(pos[0] / model.worldX, pos[1] / model.worldY, pos[2] / model.worldZ, 1.0);
 
         var replace_values = [];
         for(var i = 0; i < (end - start); i++)
@@ -1303,6 +1312,8 @@ export class View
             {
                 // Update the tile of the block
                 this.updateTile(offset, offset + 1, tile);
+                // Update the color of the block
+                this.updateColor(offset, offset + 1, pos, tile);
                 // Notify all adjacent blocks
                 this.rebufferBlocks(pos);
             }
@@ -1444,14 +1455,14 @@ export class View
             var pos = vec3(x, y, z);
 
             if (!this.model.valid_index(pos)) {
-                alert('you did not select a valid tile');
+                $('#bufferBlock').val('none');
             }
             else {
                 var tile = this.model.get_tile(pos);
-                alert('you selected a tile of type: ' + TileUtil.toString(tile));
+                $('#bufferBlock').val(TileUtil.toString(tile));
             }
 
-            gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+            gl.bindRenderbuffer(gl.RENDERBUFFER, null);
 
         }.bind(this));
     }
