@@ -426,6 +426,8 @@ export class View
         var gl = this.gl;
         var model = this.model;
 
+        this.renderBuffer = gl.createRenderbuffer();
+
         gl.useProgram(this.boxShaderProgram);
 
         // Get Shader variable positions
@@ -961,6 +963,12 @@ export class View
     private sunSpeedDivisor:number = 500;
     private sunTheta:number = 0;
 
+
+
+
+
+
+
     private render() : void
     {
         //var sunLoc = vec4(this.sunRadius * Math.cos(this.sunTheta) + (this.model.worldX / 2), this.sunRadius * Math.sin(this.sunTheta) + (this.model.worldY / 2), (this.model.worldZ / 2), 0);
@@ -1472,16 +1480,62 @@ export class View
         this.model.on("stickman_move", update_placeblock);
         this.model.on("mouse_move", update_placeblock);
 
-        /*
-        this.model.on("stickman_move", function(stickman_pos)
-        {
-            var stick_pos = model.get_stickman_position().map(Math.round);
-            this.initialize_stick_man(stick_pos);
+
+
+        this.model.on('offscreen', function(e){
+            var gl = this.gl;
+            var canvas = this.canvas;
+
+            var ext_angle = gl.getExtension("ANGLE_instanced_arrays");
+            if(!ext_angle)
+            {
+                console.log("'ANGLE_instanced_arrays' extension not available!");
+                alert("FUCK");
+            }
+
+            gl.bindRenderbuffer(gl.RENDERBUFFER, this.renderBuffer);
+            gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT16, canvas.width, canvas.height);
+
+            gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
+            gl.useProgram(this.mouseShaderProgram);
+
+            gl.bindBuffer(gl.ARRAY_BUFFER, this.cubeVertexBuffer);
+            gl.vertexAttribPointer(this.vM_Position, 3, gl.FLOAT, false, 0, 0);
+            ext_angle.vertexAttribDivisorANGLE(this.vM_Position, 0);
+
+            gl.bindBuffer(gl.ARRAY_BUFFER, this.worldTranslateBuffer);
+            gl.vertexAttribPointer(this.vM_Translate, 3, gl.FLOAT, false, 0, 0);
+            ext_angle.vertexAttribDivisorANGLE(this.vM_Translate, 1);
+
+            gl.bindBuffer(gl.ARRAY_BUFFER, this.worldCBuffer);
+            gl.vertexAttribPointer(this.vM_Color, 4, gl.FLOAT, false, 0, 0);
+            ext_angle.vertexAttribDivisorANGLE(this.vM_Color, 1);
+
+            // Draw all the blocks!
+            ext_angle.drawArraysInstancedANGLE(gl.TRIANGLES, 0, this.verts_per_block, this.blocks);
+
+            var pixels = new Uint8Array(4);
+            gl.readPixels(e.clientX, e.clientY, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
+
+            var x = Math.round(pixels[0] / 255 * this.model.worldX);
+            var y = Math.round(pixels[1] / 255 * this.model.worldY);
+            var z = Math.round(pixels[2] / 255 * this.model.worldZ);
+
+            var pos = vec3(x, y, z);
+
+            if (!this.model.valid_index(pos)) {
+                alert('you did not select a valid tile');
+            }
+            else {
+                var tile = this.model.get_tile(pos);
+                alert('you selected a tile of type: ' + TileUtil.toString(tile));
+            }
+
+            gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 
         }.bind(this));
-        */
-
-        // Setup stickman
-        //this.initialize_stick_man(model.get_stickman_position());
     }
+
+    private renderBuffer:any;
 };

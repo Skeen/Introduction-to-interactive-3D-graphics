@@ -247,31 +247,36 @@ export class Controller {
             this.canvas.requestPointerLock();
             return;
         }
-        var model = this.model;
-        var stick_pos = model.get_stickman_position().map(Math.round);
-        var mouse_pos = model.get_mouse_position();
-        var block_pos = add(stick_pos, mouse_pos).map(Math.round);
-
-        if (model.valid_index(block_pos) == false)
-            return;
-
-        // Check if block is free
-        var placeable = model.can_build(block_pos);
-        if (placeable && e.shiftKey == false) {
-            var block_picker:any = document.getElementById('block_picker');
-            var block_string = block_picker.options[block_picker.selectedIndex].value;
-            var tile_id = TileUtil.fromString(block_string);
-
-            model.update_destroyed(block_pos, 0);
-            model.update_tile(block_pos, tile_id);
-        }
-        else if (TileUtil.is_destroyable(model.get_tile(block_pos)) && e.shiftKey == true) {
-            model.update_destroyed(block_pos, model.FULLY_DESTROYED);
+        if (this.keyController.select()) {
+            this.model.triggerOffscreenRender(e);
         }
         else {
-            var current_destroyed = model.get_destroyed(block_pos);
-            if (current_destroyed != model.FULLY_DESTROYED)
-                model.update_destroyed(block_pos, current_destroyed + 1);
+            var model = this.model;
+            var stick_pos = model.get_stickman_position().map(Math.round);
+            var mouse_pos = model.get_mouse_position();
+            var block_pos = add(stick_pos, mouse_pos).map(Math.round);
+
+            if (model.valid_index(block_pos) == false)
+                return;
+
+            // Check if block is free
+            var placeable = model.can_build(block_pos);
+            if (placeable && e.shiftKey == false) {
+                var block_picker:any = document.getElementById('block_picker');
+                var block_string = block_picker.options[block_picker.selectedIndex].value;
+                var tile_id = TileUtil.fromString(block_string);
+
+                model.update_destroyed(block_pos, 0);
+                model.update_tile(block_pos, tile_id);
+            }
+            else if (TileUtil.is_destroyable(model.get_tile(block_pos)) && e.shiftKey == true) {
+                model.update_destroyed(block_pos, model.FULLY_DESTROYED);
+            }
+            else {
+                var current_destroyed = model.get_destroyed(block_pos);
+                if (current_destroyed != model.FULLY_DESTROYED)
+                    model.update_destroyed(block_pos, current_destroyed + 1);
+            }
         }
     }
 
@@ -375,14 +380,15 @@ export class KeyboardController {
     constructor() {
         this.keys = [];
         this.keyMap = {
-            forward: ['w'],
-            backward: ['s'],
-            left: ['a'],
-            right: ['d'],
+            forward: ['w', '38'],
+            backward: ['s', '40'],
+            left: ['a', '37'],
+            right: ['d', '39'],
             map: ['m'],
             projection: ['p'],
+            select: ['t'],
             jump: ['32'], // Space.
-            crouch: ['17'] // Ctrl.
+            crouch: ['c']
         };
         this.buttons = [];
         this.mouseMap = {
@@ -438,6 +444,10 @@ export class KeyboardController {
 
     public projection():boolean {
         return this.getAction('projection');
+    }
+
+    public select():boolean {
+        return this.getAction('select');
     }
 
     private getAction(action:string):boolean {

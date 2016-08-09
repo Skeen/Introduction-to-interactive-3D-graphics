@@ -32,6 +32,10 @@ export class Model extends events.EventEmitter
         return this.sunValue;
     }
 
+    public triggerOffscreenRender(e):void {
+        this.emit('offscreen', e);
+    }
+
     private stickman_position;
     private mouse_position;
     private map_active : boolean = false;
