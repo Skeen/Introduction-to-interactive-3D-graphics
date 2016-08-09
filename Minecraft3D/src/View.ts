@@ -207,6 +207,10 @@ export class View
     private mouseTranslateBuffer : WebGLBuffer;
     private mouseIndexBuffer : WebGLBuffer;
 
+    // Sun
+    private sunColorBuffer : WebGLBuffer;
+    private sunTranslateBuffer : WebGLBuffer;
+
     // Game related stuff.
     // world variables
     private verts_per_block : number = 36;
@@ -397,7 +401,7 @@ export class View
             return;
         }
         gl.viewport(0, 0, canvas.clientWidth, canvas.clientHeight);
-        gl.clearColor(1.0, 1.0, 1.0, 1.0);
+        gl.clearColor(0.7, 0.7, 1.0, 1.);
 
         gl.clearDepth(1.0);
         gl.enable(gl.DEPTH_TEST);
@@ -570,6 +574,25 @@ export class View
             1, 4
         ];
         gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint8Array(mouseVertexIndices), gl.STATIC_DRAW);
+
+
+        // Sun Translate buffer
+        this.sunTranslateBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.sunTranslateBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, sizeof['vec3'], gl.STATIC_DRAW);
+        gl.vertexAttribPointer(this.vM_Translate, 3, gl.FLOAT, false, 0, 0);
+        gl.enableVertexAttribArray(this.vM_Translate);
+
+        gl.bufferData(gl.ARRAY_BUFFER, flatten([vec4(0., this.model.worldY + 10., 0., 1.)]), gl.STATIC_DRAW);
+
+        // Sun Color buffer
+        this.sunColorBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.sunColorBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, sizeof['vec4'], gl.STATIC_DRAW);
+        gl.vertexAttribPointer(this.vM_Color, 4, gl.FLOAT, false, 0, 0);
+        gl.enableVertexAttribArray(this.vM_Color);
+
+        gl.bufferData(gl.ARRAY_BUFFER, flatten([vec4(1., 1., 0., 1.)]), gl.STATIC_DRAW);
     }
 
     private idx_to_offset(pos) : number
@@ -919,8 +942,14 @@ export class View
         //console.log("stick points length: " + stick_points.length);
     }
 
+    private sunRadius:number;
+    private sunSpeedDivisor:number = 500;
+    private sunTheta:number = 0;
+
     private render() : void
     {
+        var sunLoc = vec4(this.sunRadius * Math.cos(this.sunTheta) + (this.model.worldX / 2), this.sunRadius * Math.sin(this.sunTheta) + (this.model.worldY / 2), (this.model.worldZ / 2), 0);
+
         var gl = this.gl;
         var canvas = this.canvas;
 
@@ -956,6 +985,25 @@ export class View
             ext_angle.drawElementsInstancedANGLE(gl.LINES, 12 * 2, gl.UNSIGNED_BYTE, 0, 1);
         }
 
+        gl.useProgram(this.mouseShaderProgram);
+
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.cubeVertexBuffer);
+        gl.vertexAttribPointer(this.vM_Position, 3, gl.FLOAT, false, 0, 0);
+        ext_angle.vertexAttribDivisorANGLE(this.vM_Position, 0);
+
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.sunTranslateBuffer);
+        gl.vertexAttribPointer(this.vM_Translate, 3, gl.FLOAT, false, 0, 0);
+        ext_angle.vertexAttribDivisorANGLE(this.vM_Translate, 1);
+
+        gl.bufferData(gl.ARRAY_BUFFER, flatten([sunLoc]), gl.STATIC_DRAW);
+
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.sunColorBuffer);
+        gl.vertexAttribPointer(this.vM_Color, 4, gl.FLOAT, false, 0, 0);
+        ext_angle.vertexAttribDivisorANGLE(this.vM_Color, 1);
+
+        // Draw all the blocks!
+        ext_angle.drawArraysInstancedANGLE(gl.TRIANGLES, 0, this.verts_per_block, 1);
+
 
         // Draw the stickman
         //console.log(this.stickman_lines);
@@ -981,6 +1029,7 @@ export class View
         // Update theta for destroyed cubes
         this.theta += 0.1;
         gl.uniform1f(this.uTheta, this.theta);
+        gl.uniform4fv(gl.getUniformLocation(this.boxShaderProgram, 'vSunLoc'), sunLoc);
 
         // Load in cube buffers
         // Reuse cube vertices for all blocks
@@ -1244,6 +1293,7 @@ export class View
     constructor(model : Model)
     {
         this.model = model;
+        this.sunRadius = this.model.worldX/2 + 10;
         // Setup WebGL context
         this.initWebGL();
         // Setup buffers
@@ -1278,6 +1328,10 @@ export class View
                 this.rebufferBlocks(pos);
             }
 
+        }.bind(this));
+
+        this.model.on('sunchange', function(newVal:number) {
+            this.sunTheta = radians(newVal);
         }.bind(this));
 
         // Whenever a block is destroyed

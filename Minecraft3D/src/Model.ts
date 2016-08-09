@@ -26,6 +26,17 @@ export class Model extends events.EventEmitter
 
     private worldGrid : any[] = [];
 
+
+    private sunValue:number = 0;
+    public updateSunValue(newValue:number):void {
+        this.sunValue = newValue % 360;
+        this.emit('sunchange', this.sunValue);
+    }
+    public getSunValue():number {
+        return this.sunValue;
+    }
+
+
     private stickman_position;
     private mouse_position;
     private map_active : boolean = false;
@@ -229,7 +240,7 @@ export class Model extends events.EventEmitter
                 this.set_tile(vec3(x, 0, z), Tile.BEDROCK);
                 for (var y = 1; y < yHeight-1; y++)
                 {
-                    this.set_tile(vec3(x, y, z), Tile.METAL);
+                    this.set_tile(vec3(x, y, z), Tile.DIRT);
                 }
             }
         }
@@ -244,7 +255,7 @@ export class Model extends events.EventEmitter
                     var pos = vec3(x, y, z);
                     if (this.get_tile(pos) == Tile.EMPTY)
                     {
-                        this.set_tile(pos, Tile.FIRE);
+                        this.set_tile(pos, Tile.WATER);
                     }
                 }
             }
@@ -302,10 +313,10 @@ export class Model extends events.EventEmitter
         return this.mouse_position;
     }
 
-    public update_mouse_position(pos)
+    public update_mouse_position(pos, yaw:number)
     {
         this.mouse_position = pos;
-        this.emit("mouse_move", pos);
+        this.emit("mouse_move", pos, yaw);
     }
 
     private update_shockwave(pos)
@@ -332,7 +343,7 @@ export class Model extends events.EventEmitter
         this.setup_worldGrid();
         this.setup_world();
         this.update_stickman_position(vec3(this.worldX/2, this.worldY + 10, (this.worldZ - 1)/2));
-        this.update_mouse_position(vec3(1, -0.5, 0));
+        this.update_mouse_position(vec3(1, -0.5, 0), 0);
 
         this.emit('ready');
     }
