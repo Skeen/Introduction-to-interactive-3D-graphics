@@ -10,15 +10,17 @@ uniform mat4 uPMatrix;
 
 uniform float uTheta;
 uniform vec4 vSunLoc;
+uniform vec4 vTorchLoc;
 
 varying vec2 fTile;
 varying vec2 fTexCoord;
 varying float fPicking;
 
-varying vec4 fTranslate;
+varying vec3 Lsun;
+varying vec3 Ltorch;
+varying vec3 E, N;
 
-// LYSMAND
-varying vec3 L, E, N;
+varying float fDistance;
 
 mat4 rotMat(vec3 axis, float angle)
 {
@@ -61,10 +63,15 @@ void main(void)
     fTexCoord = vTexCoord;
     fPicking = vDestroyed;
 
-    vec3 posL = (uMVMatrix * translated_pos).xyz;
-    vec3 light = (uMVMatrix * vec4(vSunLoc.xyz, 1.)).xyz;
+    fDistance = distance(translated_pos, vTorchLoc);
 
-    L = normalize(light - posL);
+    vec3 posL = (uMVMatrix * translated_pos).xyz;
+    vec3 sunLight = (uMVMatrix * vec4(vSunLoc.xyz, 1.)).xyz;
+    vec3 torchLight = (uMVMatrix * vec4(vTorchLoc.xyz, 1.)).xyz;
+
+    Lsun = normalize(sunLight - posL);
+    Ltorch = normalize(torchLight - posL);
+
     E = normalize(-posL);
     //vec3 H = normalize(L + E);
 

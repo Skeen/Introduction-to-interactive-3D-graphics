@@ -19,13 +19,9 @@ export class Model extends events.EventEmitter
     public worldZ : number = this.worldXZ;
 
     public worldSize : number = this.worldX * this.worldY * this.worldZ;
-
     public worldRoughness : number = 0.8;
-
     public worldGenerator : TerrainGenerator;
-
     private worldGrid : any[] = [];
-
 
     private sunValue:number = 0;
     public updateSunValue(newValue:number):void {
@@ -35,7 +31,6 @@ export class Model extends events.EventEmitter
     public getSunValue():number {
         return this.sunValue;
     }
-
 
     private stickman_position;
     private mouse_position;
