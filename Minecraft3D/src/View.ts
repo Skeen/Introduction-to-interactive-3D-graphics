@@ -1379,7 +1379,7 @@ export class View
         this.model.on("mouse_move", update_camera);
         this.model.on("map_active", update_camera);
 
-        this.model.on("update_perspective", this.setup_perspective_matrix);
+        this.model.on("update_perspective", this.setup_perspective_matrix.bind(this));
 
         update_camera();
 
