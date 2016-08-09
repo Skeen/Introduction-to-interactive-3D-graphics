@@ -1342,6 +1342,15 @@ export class View
 
         this.model.on('sunchange', function(newVal:number) {
             this.sunTheta = radians(newVal);
+
+            if (newVal < 180) {
+                gl.clearColor(.7, .7, 1., 1.);
+            }
+            else {
+                var x = newVal - 180 - 90;
+                x = Math.abs(x) / 90;
+                gl.clearColor(x * .7, x * .7, x, 1.);
+            }
         }.bind(this));
 
         // Whenever a block is destroyed
