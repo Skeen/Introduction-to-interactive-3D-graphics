@@ -18,6 +18,7 @@ declare var subtract: any;
 declare var WebGLUtils: any;
 declare var initShaders: any;
 
+declare var ortho: any;
 declare var perspective: any;
 declare var lookAt: any;
 /*
@@ -1378,7 +1379,7 @@ export class View
         this.model.on("mouse_move", update_camera);
         this.model.on("map_active", update_camera);
 
-        this.model.on("update_perspective", setup_perspective_matrix);
+        this.model.on("update_perspective", this.setup_perspective_matrix);
 
         update_camera();
 

@@ -322,8 +322,8 @@ export class Model extends events.EventEmitter
 
     public toggleProjection()
     {
-        this.orthogonal = orthogonal;
-        this.emit("update_perspective", orthogonal);
+        this.orthogonal = ! this.orthogonal;
+        this.emit("update_perspective", this.orthogonal);
     }
 
     public isMapActive()
@@ -333,8 +333,8 @@ export class Model extends events.EventEmitter
 
     public toggleMap()
     {
-        this.map_active = !map_active;
-        this.emit("map_active", map_active);
+        this.map_active = ! this.map_active;
+        this.emit("map_active", this.map_active);
     }
 
     constructor(worldSeed:string)
