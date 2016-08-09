@@ -1084,9 +1084,9 @@ export class View
                 case Tile.STONE:
                     return vec2(0/16, 14/16);
                 case Tile.GRASS:
-                    return vec2(2/16, 15/16);
-                case Tile.DIRT:
                     return vec2(3/16, 15/16);
+                case Tile.DIRT:
+                    return vec2(2/16, 15/16);
                 case Tile.WOOD:
                     return vec2(4/16, 15/16);
                 case Tile.METAL:
