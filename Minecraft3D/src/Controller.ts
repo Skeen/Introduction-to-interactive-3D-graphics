@@ -169,6 +169,12 @@ export class Controller {
             var key = String.fromCharCode(e.which).toLowerCase();
             if (key === ' ' || e.ctrlKey || e.metaKey || e.key.toLowerCase() === 'control')
                 key = String(e.which).toLowerCase();
+            if (self.keyController.map()) {
+                self.model.toggleMap();
+            }
+            if (self.keyController.projection()) {
+                self.model.toggleProjection();
+            }
             self.keyController.setInactive(key);
         });
     }
@@ -373,6 +379,8 @@ export class KeyboardController {
             backward: ['s'],
             left: ['a'],
             right: ['d'],
+            map: ['m'],
+            projection: ['p'],
             jump: ['32'], // Space.
             crouch: ['17'] // Ctrl.
         };
@@ -422,6 +430,14 @@ export class KeyboardController {
 
     public crouch():boolean {
         return this.getAction('crouch');
+    }
+
+    public map():boolean {
+        return this.getAction('map');
+    }
+
+    public projection():boolean {
+        return this.getAction('projection');
     }
 
     private getAction(action:string):boolean {
