@@ -10,6 +10,8 @@ declare var add: any;
 declare var scale: any;
 declare var radians: any;
 
+declare var $:any;
+
 declare var rotate: any;
 declare var sizeof: any;
 declare var mult: any;
@@ -1525,14 +1527,14 @@ export class View
             var pos = vec3(x, y, z);
 
             if (!this.model.valid_index(pos)) {
-                alert('you did not select a valid tile');
+                $('#bufferBlock').val('none');
             }
             else {
                 var tile = this.model.get_tile(pos);
-                alert('you selected a tile of type: ' + TileUtil.toString(tile));
+                $('#bufferBlock').val(TileUtil.toString(tile));
             }
 
-            gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+            gl.bindRenderbuffer(gl.RENDERBUFFER, null);
 
         }.bind(this));
     }
