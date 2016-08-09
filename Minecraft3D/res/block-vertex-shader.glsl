@@ -3,6 +3,7 @@ attribute vec2 vTile;
 attribute vec3 vTranslate;
 attribute vec2 vTexCoord;
 attribute float vDestroyed;
+attribute vec3 vNormal;
 
 uniform mat4 uMVMatrix;
 uniform mat4 uPMatrix;

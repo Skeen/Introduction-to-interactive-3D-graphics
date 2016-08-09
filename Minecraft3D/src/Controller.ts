@@ -276,6 +276,7 @@ export class Controller
     private captureListener(e):void {
         if (document.pointerLockElement != this.canvas) {
             this.canvas.requestPointerLock();
+            return;
         }
         var model = this.model;
         var stick_pos = model.get_stickman_position().map(Math.round);
@@ -393,6 +394,9 @@ export class Controller
         this.model.on("stickman_move", function(pos)
         {
             var block_pos = vec3(Math.round(pos[0]), Math.round(pos[1]), Math.round(pos[2]));
+            if (this.model.valid_index(block_pos) == false) {
+                return;
+            }
             if(this.model.get_destroyed(block_pos) == model.FULLY_DESTROYED)
             {
                 console.log("Picked up block!");

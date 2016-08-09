@@ -30,7 +30,55 @@ var colors = [
     [1.0,  0.0,  1.0,  1.0]     // Left face: purple
 ];
 */
+var normals = [
+    // Front face
+    [0.0, 0.0,  1.0],
+    [0.0, 0.0,  1.0],
+    [0.0, 0.0,  1.0],
+    [0.0, 0.0,  1.0],
+    [0.0, 0.0,  1.0],
+    [0.0, 0.0,  1.0],
 
+    // Back face
+    [0.0, 0.0,  -1.0],
+    [0.0, 0.0,  -1.0],
+    [0.0, 0.0,  -1.0],
+    [0.0, 0.0,  -1.0],
+    [0.0, 0.0,  -1.0],
+    [0.0, 0.0,  -1.0],
+
+    // Top face
+    [0.0, 1.0,  0.0],
+    [0.0, 1.0,  0.0],
+    [0.0, 1.0,  0.0],
+    [0.0, 1.0,  0.0],
+    [0.0, 1.0,  0.0],
+    [0.0, 1.0,  0.0],
+
+    // Bottom face
+    [0.0, -1.0,  0.0],
+    [0.0, -1.0,  0.0],
+    [0.0, -1.0,  0.0],
+    [0.0, -1.0,  0.0],
+    [0.0, -1.0,  0.0],
+    [0.0, -1.0,  0.0],
+
+    // Right face
+    [1.0, 0.0,  0.0],
+    [1.0, 0.0,  0.0],
+    [1.0, 0.0,  0.0],
+    [1.0, 0.0,  0.0],
+    [1.0, 0.0,  0.0],
+    [1.0, 0.0,  0.0],
+
+    // Left face
+    [-1.0, 0.0,  0.0],
+    [-1.0, 0.0,  0.0],
+    [-1.0, 0.0,  0.0],
+    [-1.0, 0.0,  0.0],
+    [-1.0, 0.0,  0.0],
+    [-1.0, 0.0,  0.0],
+];
 var vertices = [
     // Front face (1)
     [-0.5, -0.5,  0.5],
@@ -120,6 +168,7 @@ export class View
     //-----------------
     // Blocks
     private vPosition;
+    private vNormal;
     private vTile;
     private vTranslate;
     private vTexCoord;
@@ -143,6 +192,7 @@ export class View
     // Shared
     private cubeVertexBuffer : WebGLBuffer;
     private cubeTextureBuffer : WebGLBuffer;
+    private cubeNormalBuffer : WebGLBuffer;
     // Blocks
     private worldTileBuffer : WebGLBuffer;
     private worldDBuffer : WebGLBuffer;
@@ -371,6 +421,7 @@ export class View
 
         // Get Shader variable positions
         this.vPosition  = gl.getAttribLocation(this.boxShaderProgram, "vPosition");
+        this.vNormal    = gl.getAttribLocation(this.boxShaderProgram, "vNormal");
         this.vTile      = gl.getAttribLocation(this.boxShaderProgram, "vTile");
         this.vTranslate = gl.getAttribLocation(this.boxShaderProgram, 'vTranslate');
         this.vTexCoord  = gl.getAttribLocation(this.boxShaderProgram, 'vTexCoord');
@@ -395,7 +446,14 @@ export class View
         gl.vertexAttribPointer(this.vTexCoord, 2, gl.FLOAT, false, 0, 0);
         gl.enableVertexAttribArray(this.vTexCoord);
         var cubeTextureBufferSize = gl.getBufferParameter(gl.ARRAY_BUFFER, gl.BUFFER_SIZE);
-
+        // Cube Normal buffer
+        this.cubeNormalBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.cubeNormalBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, sizeof['vec3'] * this.verts_per_block, gl.STATIC_DRAW);
+        gl.vertexAttribPointer(this.vNormal, 3, gl.FLOAT, false, 0, 0);
+        gl.enableVertexAttribArray(this.vNormal);
+        var cubeNormalBufferSize = gl.getBufferParameter(gl.ARRAY_BUFFER, gl.BUFFER_SIZE);
+        gl.bufferData(gl.ARRAY_BUFFER, flatten(normals), gl.STATIC_DRAW);
 
         // World Tile buffer
         this.worldTileBuffer = gl.createBuffer();
@@ -440,6 +498,7 @@ export class View
         // Output memory usage information
         output(["Total World Vertex memory consumption:",       formatBytes(cubeVertexBufferSize, 1)]);
         output(["Total World Texture memory consumption:",      formatBytes(cubeTextureBufferSize, 1)]);
+        output(["Total World Normal memory consumption:",       formatBytes(cubeNormalBufferSize, 1)]);
         output(["Total World Tile memory consumption:",         formatBytes(worldTileBufferSize, 1)]);
         output(["Total World Destroyed memory consumption:",    formatBytes(worldDBufferSize, 1)]);
         output(["Total World Translate memory consumption:",    formatBytes(worldTranslateBufferSize, 1)]);
@@ -929,6 +988,10 @@ export class View
         gl.bindBuffer(gl.ARRAY_BUFFER, this.cubeTextureBuffer);
         gl.vertexAttribPointer(this.vTexCoord, 2, gl.FLOAT, false, 0, 0);
         ext_angle.vertexAttribDivisorANGLE(this.vTexCoord, 0);
+        // Reuse cube normals for all blocks
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.cubeNormalBuffer);
+        gl.vertexAttribPointer(this.vNormal, 3, gl.FLOAT, false, 0, 0);
+        ext_angle.vertexAttribDivisorANGLE(this.vNormal, 0);
 
         // Use 1 tile for each block
         gl.bindBuffer(gl.ARRAY_BUFFER, this.worldTileBuffer);
@@ -1069,7 +1132,7 @@ export class View
         var gl = this.gl;
         var mouse_points = [];
 
-        var color = (placeable ? vec4(0.5, 0.5, 0.5, 1.) : vec4(1., 0., 0., 0.));
+        var color = (placeable ? vec4(1., 1., 1., 1.) : vec4(1., 0., 0., 0.));
 
         var mouse_color = [];
         mouse_color.push(color);
