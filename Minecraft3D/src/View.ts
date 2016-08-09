@@ -198,6 +198,7 @@ export class View
     private worldTileBuffer : WebGLBuffer;
     private worldDBuffer : WebGLBuffer;
     private worldTranslateBuffer : WebGLBuffer;
+    private worldCBuffer : WebGLBuffer;
     // Stick figure
     private stickVBuffer : WebGLBuffer;
     private stickCBuffer : WebGLBuffer;
@@ -485,6 +486,13 @@ export class View
         gl.enableVertexAttribArray(this.vDestroyed);
         var worldDBufferSize = gl.getBufferParameter(gl.ARRAY_BUFFER, gl.BUFFER_SIZE);
 
+        // World color
+        this.worldCBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.worldCBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, sizeof['vec4'] * model.worldX * model.worldZ * this.worldBufferLayers, gl.STATIC_DRAW);
+        gl.vertexAttribPointer(this.vM_Color, 4, gl.FLOAT, false, 0, 0);
+        gl.enableVertexAttribArray(this.vM_Color);
+
         function formatBytes(bytes, decimals)
         {
             if(bytes == 0)
@@ -638,6 +646,7 @@ export class View
         var world_tile = [];
         var world_translate = [];
         var world_destroyed = [];
+        var world_color = [];
 
         this.vec_to_offset = {};
 
@@ -662,6 +671,7 @@ export class View
                     world_tile.push(this.tile_to_texture_coord(tile));
                     world_translate.push(pos);
                     world_destroyed.push(model.get_destroyed(pos));
+                    world_color.push(vec4(x / model.worldX, y / model.worldY, z / model.worldZ, 1.0));
                 }
             }
         }
@@ -711,6 +721,10 @@ export class View
         // Buffer Destroyed
         gl.bindBuffer(gl.ARRAY_BUFFER, this.worldDBuffer);
         gl.bufferSubData(gl.ARRAY_BUFFER, 0, new Float32Array(world_destroyed));
+
+        // Buffer Translate
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.worldCBuffer);
+        gl.bufferSubData(gl.ARRAY_BUFFER, 0, flatten(world_color));
 
         var tsDone = new Date().getTime() - tsStart;
         console.log('Buffer transfer finished in', tsDone, 'ms.');
@@ -949,7 +963,7 @@ export class View
 
     private render() : void
     {
-        var sunLoc = vec4(this.sunRadius * Math.cos(this.sunTheta) + (this.model.worldX / 2), this.sunRadius * Math.sin(this.sunTheta) + (this.model.worldY / 2), (this.model.worldZ / 2), 0);
+        //var sunLoc = vec4(this.sunRadius * Math.cos(this.sunTheta) + (this.model.worldX / 2), this.sunRadius * Math.sin(this.sunTheta) + (this.model.worldY / 2), (this.model.worldZ / 2), 0);
 
         var gl = this.gl;
         var canvas = this.canvas;
@@ -963,7 +977,7 @@ export class View
             console.log("'ANGLE_instanced_arrays' extension not available!");
             alert("FUCK");
         }
-
+/*
         // Draw the mouse block
         if(this.draw_mouse == true)
         {
@@ -1004,7 +1018,7 @@ export class View
 
         // Draw all the blocks!
         ext_angle.drawArraysInstancedANGLE(gl.TRIANGLES, 0, this.verts_per_block, 1);
-
+*/
 
         // Draw the stickman
         //console.log(this.stickman_lines);
@@ -1025,19 +1039,24 @@ export class View
         */
 
         // Draw the world
-        gl.useProgram(this.boxShaderProgram);
+        //gl.useProgram(this.boxShaderProgram);
 
         // Update theta for destroyed cubes
+        /*
         this.theta += 0.1;
         gl.uniform1f(this.uTheta, this.theta);
         gl.uniform4fv(gl.getUniformLocation(this.boxShaderProgram, 'vSunLoc'), sunLoc);
 
         // Load in cube buffers
         // Reuse cube vertices for all blocks
+        /*/
+          gl.useProgram(this.mouseShaderProgram);
+
         gl.bindBuffer(gl.ARRAY_BUFFER, this.cubeVertexBuffer);
-        gl.vertexAttribPointer(this.vPosition, 3, gl.FLOAT, false, 0, 0);
-        ext_angle.vertexAttribDivisorANGLE(this.vPosition, 0);
+        gl.vertexAttribPointer(this.vM_Position, 3, gl.FLOAT, false, 0, 0);
+        ext_angle.vertexAttribDivisorANGLE(this.vM_Position, 0);
         // Reuse texture vertices for all blocks
+        /*
         gl.bindBuffer(gl.ARRAY_BUFFER, this.cubeTextureBuffer);
         gl.vertexAttribPointer(this.vTexCoord, 2, gl.FLOAT, false, 0, 0);
         ext_angle.vertexAttribDivisorANGLE(this.vTexCoord, 0);
@@ -1050,16 +1069,24 @@ export class View
         gl.bindBuffer(gl.ARRAY_BUFFER, this.worldTileBuffer);
         gl.vertexAttribPointer(this.vTile, 2, gl.FLOAT, false, 0, 0);
         ext_angle.vertexAttribDivisorANGLE(this.vTile, 1);
+        */
         // Use 1 translate for each block
         gl.bindBuffer(gl.ARRAY_BUFFER, this.worldTranslateBuffer);
-        gl.vertexAttribPointer(this.vTranslate, 3, gl.FLOAT, false, 0, 0);
-        ext_angle.vertexAttribDivisorANGLE(this.vTranslate, 1);
+        gl.vertexAttribPointer(this.vM_Translate, 3, gl.FLOAT, false, 0, 0);
+        ext_angle.vertexAttribDivisorANGLE(this.vM_Translate, 1);
+
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.worldCBuffer);
+        gl.vertexAttribPointer(this.vM_Color, 4, gl.FLOAT, false, 0, 0);
+        ext_angle.vertexAttribDivisorANGLE(this.vM_Color, 1);
+        
         // Use 1 destroyed status for each block
+        /*
         gl.bindBuffer(gl.ARRAY_BUFFER, this.worldDBuffer);
         gl.vertexAttribPointer(this.vDestroyed, 1, gl.FLOAT, false, 0, 0);
         ext_angle.vertexAttribDivisorANGLE(this.vDestroyed, 1);
         // Bind the texture
         gl.bindTexture(gl.TEXTURE_2D, this.tileTexture);
+        */
 
         // Draw all the blocks!
         ext_angle.drawArraysInstancedANGLE(gl.TRIANGLES, 0, this.verts_per_block, this.blocks);
