@@ -25,6 +25,7 @@
     </div>
 
     <div>
+        <label>Place block: </option>
         <select id="block_picker">
           <option value="STONE">Stone</option>
           <option value="GRASS">Grass</option>
@@ -34,14 +35,28 @@
           <option value="WATER">Water</option>
           <option value="FIRE">Fire</option>
         </select>
-
-        <button type="button">Left</button>
-        <button type="button">Up</button>
-        <button type="button">Right</button>
-        <!--label>Daylight control: </label-->
+        <br/>
+        <label>Daylight control: </label>
         <input id="time_slider" type="range" min="0" max="359" step="1"/>
+        <br/>
+        <label>World generator: </label>
         <input type="text" id="seed" /><button id="seedClick">Generate world!</button>
+        <br/>
         <label for="noclip"><input id="noclip" type="checkbox" /><b>NOCLIP</b></label>
+        <br/>
+        Usage: 
+        <br/>
+        Click the canvas to enable the game.
+        <br/>
+        Move around using 'WASD' or Arrow keys.
+        <br/>
+        Jump using 'SPACE' (or float up in no-clip mode, use 'ALT' to float down)
+        <br/>
+        Look around using the mouse.
+        <br/>
+        Enable map-mode using 'M'
+        <br/>
+        Change between orthogonal and perspective projection using 'P'
     </div>
 
     <img id="tileTextureImage" src="tileTextures.png" hidden>

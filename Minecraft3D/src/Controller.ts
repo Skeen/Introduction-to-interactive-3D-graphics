@@ -220,12 +220,14 @@ export class Controller {
         this.yaw += movementX * this.mouse_speed;
         this.pitch -= movementY * this.mouse_speed;
 
+        var max_pitch = 0.8;
+
         // Clamp us from looking directly up
-        if (this.pitch > Math.PI / 2 * 0.9)
-            this.pitch = Math.PI / 2 * 0.9;
+        if (this.pitch > Math.PI / 2 * max_pitch)
+            this.pitch = Math.PI / 2 * max_pitch;
         // Clamp us from looking directly down
-        if (this.pitch < -Math.PI / 2 * 0.9)
-            this.pitch = -Math.PI / 2 * 0.9;
+        if (this.pitch < -Math.PI / 2 * max_pitch)
+            this.pitch = -Math.PI / 2 * max_pitch;
 
         // Normalize our yaw
         if (this.yaw > Math.PI * 2)
