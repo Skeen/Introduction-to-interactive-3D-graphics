@@ -36,10 +36,10 @@ export class Model extends events.EventEmitter
         return this.sunValue;
     }
 
-
     private stickman_position;
     private mouse_position;
     private map_active : boolean = false;
+    private orthogonal : boolean = false;
 
     public FULLY_DESTROYED : number = 11;
 
@@ -319,19 +319,25 @@ export class Model extends events.EventEmitter
         this.emit("mouse_move", pos, yaw);
     }
 
-    private update_shockwave(pos)
+    public is_orthogonal()
     {
-        this.emit("shockwave", pos);
+        return this.orthogonal;
     }
 
-    public is_map_active()
+    public toggleProjection()
+    {
+        this.orthogonal = orthogonal;
+        this.emit("update_perspective", orthogonal);
+    }
+
+    public isMapActive()
     {
         return this.map_active;
     }
 
-    public update_map_active(map_active : boolean)
+    public toggleMap()
     {
-        this.map_active = map_active;
+        this.map_active = !map_active;
         this.emit("map_active", map_active);
     }
 

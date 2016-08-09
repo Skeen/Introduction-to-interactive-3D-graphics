@@ -1236,9 +1236,18 @@ export class View
             gl.uniformMatrix4fv(this.uM_PMatrix, false, matrix);
         };
 
-        var perspectiveMatrix = perspective(60, canvas.clientWidth / canvas.clientHeight, 0.1, 100.0);
-        var flat_perspectiveMatrix = flatten(perspectiveMatrix);
-        update_uniforms.bind(this)(flat_perspectiveMatrix);
+        var projection_matrix;
+        if(this.model.is_orthogonal())
+        {
+            var orthogonalMatrix = ortho(-this.model.worldX/2, this.model.worldX/2, -this.model.worldZ/2, this.model.worldZ/2, -100.0, 100.0);
+            projection_matrix = flatten(orthogonalMatrix);
+        }
+        else
+        {
+            var perspectiveMatrix = perspective(60, canvas.clientWidth / canvas.clientHeight, 0.1, 100.0);
+            projection_matrix = flatten(perspectiveMatrix);
+        }
+        update_uniforms.bind(this)(projection_matrix);
     }
 
     private setup_modelview_matrix() : void
@@ -1265,7 +1274,7 @@ export class View
         var map_height = 50;
 
         var modelview_matrix;
-        if(this.model.is_map_active())
+        if(this.model.isMapActive())
         {
             var modelMatrix = lookAt(vec3(stick_pos[0],
                                           stick_pos[1] + map_height,
@@ -1362,6 +1371,8 @@ export class View
         this.model.on("stickman_move", update_camera);
         this.model.on("mouse_move", update_camera);
         this.model.on("map_active", update_camera);
+
+        this.model.on("update_perspective", setup_perspective_matrix);
 
         update_camera();
 
