@@ -1363,6 +1363,12 @@ export class View
             }
         }.bind(this));
 
+        this.model.on("stickman_move", function(pos) {
+            gl.useProgram(this.boxShaderProgram);
+            var newPos = vec4(pos[0], pos[1] + 1, pos[2], 1.);
+            gl.uniform4fv(gl.getUniformLocation(this.boxShaderProgram, 'vTorchLoc'), newPos);
+        }.bind(this));
+
         var update_camera = function()
         {
             this.setup_modelview_matrix();
