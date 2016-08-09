@@ -344,6 +344,9 @@ export class View
                     if(i == 0 && j == 0 && k == 0)
                         continue;
 
+                    if (this.model.valid_index(vec3(x+i, y+j, z+k)) == false)
+                        continue;
+
                     if(this.render_block(x+i, y+j, z+k) == false)
                         continue;
 
