@@ -26,6 +26,14 @@ export class Model extends events.EventEmitter
 
     private worldGrid : any[] = [];
 
+
+    private sunValue:number = 0;
+    public updateSunValue(newValue:number):void {
+        this.sunValue = newValue;
+        this.emit('sunchange', this.sunValue);
+    }
+
+
     private stickman_position;
     private mouse_position;
     private map_active : boolean = false;
@@ -302,10 +310,10 @@ export class Model extends events.EventEmitter
         return this.mouse_position;
     }
 
-    public update_mouse_position(pos)
+    public update_mouse_position(pos, yaw:number)
     {
         this.mouse_position = pos;
-        this.emit("mouse_move", pos);
+        this.emit("mouse_move", pos, yaw);
     }
 
     private update_shockwave(pos)
@@ -332,7 +340,7 @@ export class Model extends events.EventEmitter
         this.setup_worldGrid();
         this.setup_world();
         this.update_stickman_position(vec3(this.worldX/2, this.worldY + 10, (this.worldZ - 1)/2));
-        this.update_mouse_position(vec3(1, -0.5, 0));
+        this.update_mouse_position(vec3(1, -0.5, 0), 0);
 
         this.emit('ready');
     }
